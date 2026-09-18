@@ -1,108 +1,104 @@
-﻿import React from "react";
-import { BrowserRouter, Routes, Route, NavLink, useNavigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import React, { useState } from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { TopNav } from "./components/TopNav";
+import { Sidebar } from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import ParkingPage from "./pages/ParkingPage";
 import BusesPage from "./pages/BusesPage";
 import BusFinder from "./pages/BusFinder";
 import OptimizePage from "./pages/OptimizePage";
 import SensorsPage from "./pages/SensorsPage";
+import ReportsPage from "./pages/ReportsPage";
+import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 
-const navItems = [
-  { to: "/", label: "📊 Dashboard" },
-  { to: "/parking", label: "🅿️ Parking Map" },
-  { to: "/buses", label: "🚌 Buses" },
-  { to: "/optimize", label: "🤖 Optimise" },
-  { to: "/sensors", label: "📡 Sensors" },
-  { to: "/find", label: "🔍 Find Bus" },
-];
-
-const linkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties => ({
-  display: "block", padding: "10px 16px", borderRadius: 8, textDecoration: "none",
-  color: isActive ? "#f9fafb" : "#9ca3af",
-  background: isActive ? "#1d4ed8" : "transparent",
-  fontWeight: isActive ? "bold" : "normal",
-  marginBottom: 4, fontSize: 14,
-  transition: "background 0.15s",
-});
-
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoggedIn, username, logout } = useAuth();
+const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    if (q.trim().length > 1) {
+      navigate(`/find?q=${encodeURIComponent(q.trim())}`);
+    }
+  };
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#030712", color: "#f9fafb" }}>
-      {/* Sidebar */}
-      <aside style={{
-        width: 220, background: "#0f172a", padding: 20,
-        borderRight: "1px solid #1e293b", flexShrink: 0,
-        display: "flex", flexDirection: "column",
-      }}>
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 28, marginBottom: 4 }}>🚍</div>
-          <div style={{ fontWeight: "bold", fontSize: 14, color: "#f9fafb" }}>Smart Bus Parking</div>
-          <div style={{ fontSize: 11, color: "#475569" }}>Rathinam College</div>
-        </div>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
+      {/* Background Liquid Glass Fluid Waveforms */}
+      <div className="liquid-bg-waves" />
+      <svg
+        className="liquid-silk-svg"
+        viewBox="0 0 1440 900"
+        fill="none"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M-100 150 C 300 0, 700 350, 1100 80 C 1300 -50, 1500 120, 1600 200"
+          stroke="rgba(255, 255, 255, 0.09)"
+          strokeWidth="2.5"
+          filter="blur(1px)"
+        />
+        <path
+          d="M-50 250 C 400 100, 800 450, 1200 180 C 1400 50, 1550 220, 1650 300"
+          stroke="rgba(56, 189, 248, 0.08)"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M-80 50 C 250 200, 650 50, 1050 220 C 1250 320, 1450 150, 1550 220"
+          stroke="rgba(255, 255, 255, 0.05)"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+        />
+      </svg>
 
-        <nav style={{ flex: 1 }}>
-          {navItems.map(item => (
-            <NavLink key={item.to} to={item.to} end={item.to === "/"} style={linkStyle}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+      {/* Top Navbar */}
+      <TopNav
+        searchQuery={searchQuery}
+        onSearchChange={handleSearch}
+        adminName="Admin"
+        roleTitle="Administrator"
+      />
 
-        <div style={{ borderTop: "1px solid #1e293b", paddingTop: 14 }}>
-          {isLoggedIn ? (
-            <>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>👤 {username}</div>
-              <button onClick={() => { logout(); navigate("/login"); }} style={{
-                width: "100%", background: "#1e293b", color: "#94a3b8",
-                border: "1px solid #334155", borderRadius: 6, padding: "8px", cursor: "pointer", fontSize: 13,
-              }}>Logout</button>
-            </>
-          ) : (
-            <button onClick={() => navigate("/login")} style={{
-              width: "100%", background: "#1d4ed8", color: "#fff",
-              border: "none", borderRadius: 6, padding: "8px", cursor: "pointer", fontSize: 13,
-            }}>Login</button>
-          )}
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main style={{ flex: 1, padding: 32, overflowY: "auto" }}>
-        {children}
-      </main>
+      {/* Body with Sidebar and Main Content */}
+      <div style={{ display: "flex", flex: 1, position: "relative", zIndex: 1 }}>
+        <Sidebar />
+        <main style={{ flex: 1, padding: "24px 28px", overflowY: "auto" }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
 
-const AppRoutes: React.FC = () => (
-  <Routes>
-    <Route path="/login" element={<LoginPage />} />
-    <Route path="*" element={
-      <Layout>
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/parking" element={<ParkingPage />} />
-          <Route path="/buses" element={<BusesPage />} />
-          <Route path="/optimize" element={<OptimizePage />} />
-          <Route path="/sensors" element={<SensorsPage />} />
-          <Route path="/find" element={<BusFinder />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/*"
+            element={
+              <MainLayout>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/parking" element={<ParkingPage />} />
+                  <Route path="/buses" element={<BusesPage />} />
+                  <Route path="/optimize" element={<OptimizePage />} />
+                  <Route path="/sensors" element={<SensorsPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/find" element={<BusFinder />} />
+                </Routes>
+              </MainLayout>
+            }
+          />
         </Routes>
-      </Layout>
-    } />
-  </Routes>
-);
-
-const App: React.FC = () => (
-  <AuthProvider>
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  </AuthProvider>
-);
+      </BrowserRouter>
+    </AuthProvider>
+  );
+};
 
 export default App;
