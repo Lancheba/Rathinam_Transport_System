@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 venv/
 __pycache__/
 *.pyc
@@ -19,7 +19,6 @@ media/
 
 # Node
 frontend/node_modules/
-frontend/dist/
 
 # IDE
 .vscode/
