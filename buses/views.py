@@ -20,6 +20,18 @@ class BusViewSet(viewsets.ModelViewSet):
         # create / update / partial_update / destroy
         return [CanManageBuses()]
 
+    def perform_destroy(self, instance):
+        # Free up the parking slot (if any) BEFORE the bus row disappears.
+        # Bus.parking_slot -> ParkingSlot.bus is a OneToOne with on_delete=SET_NULL,
+        # which would otherwise leave the slot marked is_occupied=True with bus=None.
+        slot = getattr(instance, "parking_slot", None)
+        if slot is not None:
+            slot.is_occupied = False
+            slot.is_blocked = False
+            slot.bus = None
+            slot.save(update_fields=["is_occupied", "is_blocked", "bus"])
+        instance.delete()
+
     @action(detail=False, methods=["get"], url_path="search")
     def search_by_number(self, request):
         number = request.query_params.get("q", "").strip()

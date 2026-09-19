@@ -16,6 +16,7 @@ import LandingPage from "./pages/LandingPage";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const { roleLabel } = useAuth();
 
@@ -29,11 +30,12 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
         position: "relative",
         background: "#07090e",
+        overflow: "hidden",
         padding: 0,
         margin: 0,
       }}
@@ -83,8 +85,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       />
 
       {/* Body with Sidebar and Main Content */}
-      <div style={{ display: "flex", flex: 1, position: "relative", zIndex: 1, margin: 0, padding: 0 }}>
-        <Sidebar />
+      <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative", zIndex: 1, margin: 0, padding: 0 }}>
+        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />
         <main
           style={{
             flex: 1,

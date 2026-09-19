@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CircleCheck, X } from "lucide-react";
-import { getBuses } from "../api/endpoints";
+import { CircleCheck, X, Trash2 } from "lucide-react";
+import { getBuses, deleteBus } from "../api/endpoints";
 import { AddBusButton } from "../components/AddBusButton";
+import { useAuth } from "../context/AuthContext";
 import type { Bus } from "../types";
 
 const BusesPage: React.FC = () => {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const { canManageBuses } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  // Arriving from the dashboard's "Add bus" carries the new bus number in history state
   const [notice, setNotice] = useState<string | null>(() => {
     const added = (location.state as { addedBus?: string } | null)?.addedBus;
     return added ? `Bus ${added} added.` : null;
@@ -18,7 +20,6 @@ const BusesPage: React.FC = () => {
 
   useEffect(() => { getBuses().then(setBuses).catch(() => {}); }, []);
 
-  // Clear it from history state so a refresh doesn't show the message again
   useEffect(() => {
     if ((location.state as { addedBus?: string } | null)?.addedBus) {
       navigate(location.pathname, { replace: true, state: null });
@@ -33,8 +34,22 @@ const BusesPage: React.FC = () => {
 
   const handleCreated = (bus: Bus) => {
     setBuses(prev => [...prev, bus].sort((a, b) => a.bus_number.localeCompare(b.bus_number)));
-    setSearch(""); // otherwise an active filter could hide the new bus
+    setSearch("");
     setNotice(`Bus ${bus.bus_number} added.`);
+  };
+
+  const handleDelete = async (bus: Bus) => {
+    if (!window.confirm(`Remove bus ${bus.bus_number}? This cannot be undone.`)) return;
+    setDeletingId(bus.id);
+    try {
+      await deleteBus(bus.id);
+      setBuses(prev => prev.filter(b => b.id !== bus.id));
+      setNotice(`Bus ${bus.bus_number} removed.`);
+    } catch {
+      window.alert("Couldn't remove the bus. Check your connection or permissions and try again.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const filtered = buses.filter(b =>
@@ -95,11 +110,31 @@ const BusesPage: React.FC = () => {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <span style={{ fontSize: 20, fontWeight: "bold", color: "#f9fafb" }}>🚌 {bus.bus_number}</span>
-                <span style={{
-                  background: bus.is_active ? "#14532d" : "#374151",
-                  color: bus.is_active ? "#86efac" : "#9ca3af",
-                  padding: "2px 8px", borderRadius: 4, fontSize: 11
-                }}>{bus.is_active ? "ACTIVE" : "INACTIVE"}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    background: bus.is_active ? "#14532d" : "#374151",
+                    color: bus.is_active ? "#86efac" : "#9ca3af",
+                    padding: "2px 8px", borderRadius: 4, fontSize: 11
+                  }}>{bus.is_active ? "ACTIVE" : "INACTIVE"}</span>
+                  {canManageBuses && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(bus)}
+                      disabled={deletingId === bus.id}
+                      aria-label={`Remove bus ${bus.bus_number}`}
+                      title="Remove bus"
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 26, height: 26, borderRadius: 6,
+                        border: "1px solid #374151", background: "transparent",
+                        color: "#f87171", cursor: deletingId === bus.id ? "default" : "pointer",
+                        opacity: deletingId === bus.id ? 0.5 : 1,
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.7 }}>
                 <div>🛣️ {bus.route}</div>

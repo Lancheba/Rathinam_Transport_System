@@ -1,7 +1,7 @@
 ﻿import api from "./client";
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
-  ParkingEvent, ParkingSummary, OptimizationResult
+  ParkingEvent, ParkingSummary, OptimizationResult, SensorInput
 } from "../types";
 
 // Buses
@@ -40,3 +40,7 @@ export const applyOptimization = (result_id: number) =>
 export const login = (username: string, password: string) =>
   api.post<{ access: string; refresh: string }>("/auth/login/", { username, password }).then(r => r.data);
 export const getMe = () => api.get<CurrentUser>("/auth/me/").then(r => r.data);
+
+// Sensors: create / delete
+export const createSensor = (data: SensorInput) => api.post<Sensor>("/sensors/", data).then(r => r.data);
+export const deleteSensor = (id: number) => api.delete(`/sensors/${id}/`);

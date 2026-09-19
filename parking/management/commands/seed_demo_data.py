@@ -14,6 +14,24 @@ DEMO_BUSES = [
     {"bus_number": "B06", "rfid_uid": "DEMO-RFID-006", "route": "Route 6 - Library Loop",   "departure_time": "09:00", "length_m": 12.0, "width_m": 2.5},
     {"bus_number": "B07", "rfid_uid": "DEMO-RFID-007", "route": "Route 7 - Admin Block",    "departure_time": "09:30", "length_m": 12.0, "width_m": 2.5},
     {"bus_number": "B08", "rfid_uid": "DEMO-RFID-008", "route": "Route 8 - Sports Block",   "departure_time": "10:00", "length_m": 12.0, "width_m": 2.5},
+    {"bus_number": "B09", "rfid_uid": "DEMO-RFID-009", "route": "Route 9 - Hostel Extension","departure_time": "06:15", "length_m": 12.0, "width_m": 2.5},
+    {"bus_number": "B10", "rfid_uid": "DEMO-RFID-010", "route": "Route 10 - Tech Park",     "departure_time": "10:30", "length_m": 12.0, "width_m": 2.5},
+    {"bus_number": "B11", "rfid_uid": "DEMO-RFID-011", "route": "Route 11 - Old Campus",    "departure_time": "07:15", "length_m": 12.0, "width_m": 2.5},
+    {"bus_number": "B12", "rfid_uid": "DEMO-RFID-012", "route": "Route 12 - New Block",     "departure_time": "09:15", "length_m": 12.0, "width_m": 2.5},
+]
+
+# Row A, slot 1 -> slot 8, explicit bus numbers (reverse departure order so
+# B08 sits closest to the exit and blocks everyone behind it).
+ROW_A_PLAN = ["B08", "B07", "B06", "B05", "B04", "B03", "B02", "B01"]
+
+# Extra buses parked outside row A, deliberately scattered (not sequential from
+# slot 1) to look like a messy real-world yard: two in the middle rows, one
+# alone in a corner slot.
+EXTRA_PARKING = [
+    ("B09", "B", 3),
+    ("B10", "B", 6),
+    ("B11", "C", 2),
+    ("B12", "D", 8),
 ]
 
 DEMO_SENSORS = [
@@ -51,7 +69,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("  32 slots ready"))
 
         # --- Buses ---
-        buses = []
+        buses_by_number = {}
         for data in DEMO_BUSES:
             bus, created = Bus.objects.get_or_create(
                 bus_number=data["bus_number"],
@@ -63,20 +81,28 @@ class Command(BaseCommand):
                     "width_m": data["width_m"],
                 },
             )
-            buses.append(bus)
-        self.stdout.write(self.style.SUCCESS("  8 demo buses ready"))
+            buses_by_number[data["bus_number"]] = bus
+        self.stdout.write(self.style.SUCCESS(f"  {len(DEMO_BUSES)} demo buses ready"))
 
-        # --- Park buses in a realistic (non-optimal) arrangement ---
-        # Intentionally park them in reverse departure order so some are blocked
-        slots_qs = list(
-            ParkingSlot.objects.filter(is_occupied=False)
-            .order_by("row", "slot_number")[:8]
-        )
-        reversed_buses = list(reversed(buses))  # B08 goes in slot 1 (blocks earlier buses)
-        for slot, bus in zip(slots_qs, reversed_buses):
+        # --- Park buses at explicit slots (idempotent: skip anyone already parked) ---
+        def park(bus_number, row, slot_number):
+            bus = buses_by_number.get(bus_number)
+            if not bus:
+                return
+            if ParkingSlot.objects.filter(bus=bus).exists():
+                return  # already parked somewhere, don't touch it
+            slot = ParkingSlot.objects.filter(row=row, slot_number=slot_number, is_occupied=False).first()
+            if not slot:
+                return  # target slot already taken by a different bus
             slot.bus = bus
             slot.is_occupied = True
             slot.save()
+
+        for slot_number, bus_number in enumerate(ROW_A_PLAN, start=1):
+            park(bus_number, "A", slot_number)
+
+        for bus_number, row, slot_number in EXTRA_PARKING:
+            park(bus_number, row, slot_number)
 
         # Recompute blocked
         for slot in ParkingSlot.objects.filter(is_occupied=True):
@@ -86,7 +112,7 @@ class Command(BaseCommand):
             ).exists()
             slot.is_blocked = blocking
             slot.save(update_fields=["is_blocked"])
-        self.stdout.write(self.style.SUCCESS("  Buses parked (reverse order to show blocking)"))
+        self.stdout.write(self.style.SUCCESS("  Buses parked (row A reversed + scattered extras)"))
 
         # --- Sensors ---
         for data in DEMO_SENSORS:
@@ -94,7 +120,7 @@ class Command(BaseCommand):
                 sensor_id=data["sensor_id"],
                 defaults={"sensor_type": data["sensor_type"], "location": data["location"]},
             )
-        self.stdout.write(self.style.SUCCESS("  6 demo sensors ready"))
+        self.stdout.write(self.style.SUCCESS(f"  {len(DEMO_SENSORS)} demo sensors ready"))
 
         # --- Admin user ---
         if not User.objects.filter(username="admin").exists():

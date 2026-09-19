@@ -114,3 +114,11 @@ export interface OptimizationResult {
   current: OptimizationSlot[];
   recommended: OptimizationSlot[];
 }
+
+/** Fields the "Add sensor" form sends to POST /api/sensors/ */
+export interface SensorInput {
+  sensor_id: string;
+  sensor_type: "RFID" | "ULTRASONIC";
+  location: string;
+  is_active: boolean;
+}

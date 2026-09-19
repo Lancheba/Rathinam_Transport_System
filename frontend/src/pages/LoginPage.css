@@ -1,8 +1,8 @@
-/* ─────────────────────────────────────────────────────────────
-   Rathinam Smart Parking – login screen
+/* -------------------------------------------------------------
+   Rathinam Smart Parking - login screen
    Full-bleed night scene, centred glass card, sizes that adapt
    to both the width and the height of the window.
-   ───────────────────────────────────────────────────────────── */
+   ------------------------------------------------------------- */
 
 .lp {
   --ink: #f5f5f5;
@@ -12,8 +12,8 @@
   --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* sizes that follow the window height so the card always fits */
-  --field-h: clamp(44px, 6.2dvh, 54px);
-  --gap: clamp(9px, 1.4dvh, 13px);
+  --field-h: clamp(50px, 7dvh, 64px);
+  --gap: clamp(10px, 1.7dvh, 16px);
 
   position: relative;
   min-height: 100vh;
@@ -25,7 +25,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Background ────────────────────────────────────────────── */
+/* -- Background ---------------------------------------------- */
 .lp__scene {
   position: fixed;
   inset: 0;
@@ -56,7 +56,7 @@
 .lp__blob--bl { bottom: 0; left: 0; width: clamp(90px, 12vw, 230px); }
 .lp__blob--br { bottom: 0; right: 0; width: clamp(70px, 8.5vw, 170px); }
 
-/* ── Page column ───────────────────────────────────────────── */
+/* -- Page column --------------------------------------------- */
 .lp__page {
   position: relative;
   z-index: 1;
@@ -140,21 +140,22 @@
   white-space: nowrap;
 }
 
-/* ── Card ──────────────────────────────────────────────────── */
+/* -- Card ---------------------------------------------------- */
 .lp__card {
   position: relative;
   width: 100%;
-  max-width: 440px;
-  margin-top: clamp(10px, 1.8dvh, 20px);
-  padding: clamp(18px, 3dvh, 30px) clamp(20px, 3.4vw, 40px) clamp(16px, 2.8dvh, 26px);
-  border-radius: clamp(24px, 3.8dvh, 34px);
-  background: linear-gradient(158deg, rgba(58, 58, 58, 0.55) 0%, rgba(26, 26, 26, 0.74) 34%, rgba(10, 10, 10, 0.86) 100%);
+  max-width: 580px;
+  margin-top: clamp(12px, 2.2dvh, 24px);
+  padding: clamp(22px, 3.6dvh, 36px) clamp(22px, 4.2vw, 52px) clamp(20px, 3.4dvh, 32px);
+  border-radius: clamp(28px, 4.4dvh, 42px);
+  background: linear-gradient(158deg, rgba(78, 78, 78, 0.36) 0%, rgba(30, 30, 30, 0.56) 34%, rgba(12, 12, 12, 0.72) 100%);
   -webkit-backdrop-filter: blur(26px) saturate(130%);
   backdrop-filter: blur(26px) saturate(130%);
   box-shadow:
-    0 0 22px rgba(255, 255, 255, 0.06),
-    0 30px 70px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    0 0 34px rgba(255, 255, 255, 0.09),
+    0 40px 90px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 70px rgba(255, 255, 255, 0.03);
 }
 .lp__card::before {
   content: "";
@@ -171,7 +172,7 @@
 
 .lp__title {
   text-align: center;
-  font-size: clamp(22px, 3.8dvh, 30px);
+  font-size: clamp(27px, 4.5dvh, 38px);
   line-height: 1.15;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -180,7 +181,7 @@
 .lp__subtitle {
   margin-top: 6px;
   text-align: center;
-  font-size: clamp(13px, 1.8dvh, 15px);
+  font-size: clamp(14px, 2dvh, 17px);
   color: var(--ink-soft);
 }
 
@@ -188,7 +189,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  margin-top: clamp(12px, 2.4dvh, 22px);
+  margin-top: clamp(16px, 3dvh, 28px);
 }
 
 /* fields */
@@ -196,24 +197,24 @@
   position: relative;
   display: block;
   height: var(--field-h);
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden; /* browser autofill can't paint square corners over the rounded shape */
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
   border: 1.5px solid rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 14px rgba(0, 0, 0, 0.25);
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 .lp__field:focus-within {
   border-color: rgba(255, 255, 255, 0.6);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.07));
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.09), 0 4px 18px rgba(0, 0, 0, 0.3);
 }
 .lp__field-icon {
   position: absolute;
-  left: 16px;
+  left: 20px;
   top: 50%;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   transform: translateY(-50%);
   color: #ececec;
   pointer-events: none;
@@ -221,29 +222,29 @@
 .lp__field input {
   width: 100%;
   height: 100%;
-  padding: 0 16px 0 48px;
+  padding: 0 20px 0 58px;
   background: transparent;
   border: 0;
   border-radius: inherit;
   outline: 0;
   color: #fff;
-  font: 400 15px / 1 var(--font);
+  font: 400 16px / 1 var(--font);
 }
-.lp__field--pass input { padding-right: 52px; }
+.lp__field--pass input { padding-right: 60px; }
 .lp__field input::placeholder { color: var(--ink-dim); opacity: 1; }
 .lp__field input:-webkit-autofill,
 .lp__field input:-webkit-autofill:hover,
 .lp__field input:-webkit-autofill:focus {
   -webkit-text-fill-color: #fff;
-  -webkit-box-shadow: 0 0 0 100px #232323 inset;
+  -webkit-box-shadow: 0 0 0 100px #262626 inset;
   caret-color: #fff;
 }
 .lp__eye {
   position: absolute;
-  right: 6px;
+  right: 10px;
   top: 50%;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   transform: translateY(-50%);
   display: grid;
   place-items: center;
@@ -253,7 +254,7 @@
   color: #ececec;
   cursor: pointer;
 }
-.lp__eye svg { width: 20px; height: 20px; }
+.lp__eye svg { width: 22px; height: 22px; }
 .lp__eye:hover { background: rgba(255, 255, 255, 0.09); }
 
 /* remember / forgot */
@@ -261,13 +262,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13.5px;
+  font-size: 14.5px;
 }
 .lp__remember {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   color: #e8e8e8;
   cursor: pointer;
   user-select: none;
@@ -275,17 +276,17 @@
 .lp__remember input { position: absolute; opacity: 0; width: 0; height: 0; }
 .lp__box {
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 7px;
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.03);
   color: transparent;
   transition: background 0.15s, color 0.15s;
 }
-.lp__box svg { width: 13px; height: 13px; }
+.lp__box svg { width: 15px; height: 15px; }
 .lp__remember input:checked + .lp__box { background: #ececec; color: #111; border-color: #ececec; }
 .lp__remember input:focus-visible + .lp__box { outline: 2px solid #fff; outline-offset: 3px; }
 .lp__forgot {
@@ -300,7 +301,7 @@
 
 .lp__error {
   text-align: center;
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.35;
   color: #ffb4b4;
 }
@@ -309,7 +310,7 @@
 .lp__submit {
   position: relative;
   overflow: hidden;
-  height: clamp(46px, 6.4dvh, 54px);
+  height: clamp(52px, 7.4dvh, 66px);
   margin-top: 2px;
   display: flex;
   align-items: center;
@@ -319,7 +320,7 @@
   border-radius: 999px;
   cursor: pointer;
   color: #161616;
-  font: 700 16px / 1 var(--font);
+  font: 700 18px / 1 var(--font);
   background: radial-gradient(90% 130% at 50% 0%, #f4f4f4 0%, #d0d0d0 42%, #a2a2a2 100%);
   box-shadow:
     0 0 32px rgba(255, 255, 255, 0.26),
@@ -345,15 +346,15 @@
 }
 .lp__submit:active:not(:disabled) { transform: scale(0.99); }
 .lp__submit:disabled { cursor: progress; filter: brightness(0.85); }
-.lp__submit svg { width: 18px; height: 18px; }
+.lp__submit svg { width: 20px; height: 20px; }
 
 /* divider */
 .lp__divider {
   display: flex;
   align-items: center;
   gap: 18px;
-  margin-top: clamp(12px, 2.2dvh, 20px);
-  font-size: 13px;
+  margin-top: clamp(14px, 2.6dvh, 24px);
+  font-size: 14px;
   color: #d8d8d8;
   white-space: nowrap;
 }
@@ -369,12 +370,12 @@
 .lp__socials {
   display: flex;
   justify-content: center;
-  gap: 18px;
-  margin-top: clamp(10px, 1.8dvh, 16px);
+  gap: 22px;
+  margin-top: clamp(12px, 2.2dvh, 20px);
 }
 .lp__social {
-  width: clamp(42px, 5.8dvh, 50px);
-  height: clamp(42px, 5.8dvh, 50px);
+  width: clamp(48px, 6.8dvh, 60px);
+  height: clamp(48px, 6.8dvh, 60px);
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -390,13 +391,13 @@
   background: radial-gradient(circle at 50% 30%, #414141 0%, #1e1e1e 100%);
   transform: translateY(-2px);
 }
-.lp__social-icon { width: 21px; height: 21px; }
-.lp__g { font: 700 21px / 1 var(--font); }
+.lp__social-icon { width: 24px; height: 24px; }
+.lp__g { font: 700 24px / 1 var(--font); }
 
 .lp__signup {
-  margin-top: clamp(12px, 2dvh, 18px);
+  margin-top: clamp(14px, 2.4dvh, 22px);
   text-align: center;
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: #d8d8d8;
 }
 .lp__signup a {
@@ -410,7 +411,7 @@
 .lp__signup a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .lp__signup a svg { width: 1.05em; height: 1.05em; }
 
-/* ── Feature strip ─────────────────────────────────────────── */
+/* -- Feature strip ------------------------------------------- */
 .lp__features {
   width: 100%;
   max-width: 760px;
@@ -442,7 +443,7 @@
 }
 .lp__features svg { width: 26px; height: 26px; color: #9a9a9a; }
 
-/* ── Shared ────────────────────────────────────────────────── */
+/* -- Shared -------------------------------------------------- */
 .lp__sr {
   position: absolute;
   width: 1px;
@@ -470,13 +471,13 @@
   .lp * { transition: none !important; }
 }
 
-/* ── Short windows: tighten a little more ──────────────────── */
+/* -- Short windows: tighten a little more -------------------- */
 @media (max-height: 760px) {
   .lp__features li span { display: none; }
   .lp__features li + li::before { height: 28px; }
 }
 
-/* ── Phones ────────────────────────────────────────────────── */
+/* -- Phones -------------------------------------------------- */
 @media (max-width: 600px) {
   .lp__scene { background-position: 30% 30%; }
 
@@ -490,10 +491,10 @@
   .lp__logo-word { width: 172px; }
   .lp__product { font-size: 10.5px; letter-spacing: 0.34em; text-indent: 0.34em; }
 
-  .lp__card { padding: 22px 18px 20px; border-radius: 26px; }
-  .lp__field-icon { left: 14px; width: 19px; height: 19px; }
-  .lp__field input { padding-left: 44px; font-size: 15px; }
-  .lp__row { font-size: 13px; }
+  .lp__card { padding: 26px 20px 24px; border-radius: 30px; }
+  .lp__field-icon { left: 16px; width: 20px; height: 20px; }
+  .lp__field input { padding-left: 50px; font-size: 15px; }
+  .lp__row { font-size: 13.5px; }
   .lp__features li { font-size: 9.5px; }
   .lp__features svg { width: 24px; height: 24px; }
 }
