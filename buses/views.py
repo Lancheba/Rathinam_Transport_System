@@ -1,6 +1,7 @@
 ﻿from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from accounts.permissions import CanManageBuses
 from .models import Bus
 from .serializers import BusSerializer
 
@@ -14,7 +15,10 @@ class BusViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        if self.action == "search_by_number":
+            return [permissions.IsAuthenticated()]
+        # create / update / partial_update / destroy
+        return [CanManageBuses()]
 
     @action(detail=False, methods=["get"], url_path="search")
     def search_by_number(self, request):

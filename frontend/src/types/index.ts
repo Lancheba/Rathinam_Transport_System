@@ -16,6 +16,25 @@ export interface Bus {
   } | null;
 }
 
+/** Fields the "Add bus" form sends to POST /api/buses/ */
+export interface BusInput {
+  bus_number: string;
+  rfid_uid: string;
+  route: string;
+  departure_time: string; // "HH:MM"
+  length_m: string;
+  width_m: string;
+  is_active: boolean;
+}
+
+export interface CurrentUser {
+  id: number;
+  username: string;
+  email: string;
+  role: "ADMIN" | "STAFF" | "STUDENT";
+  can_manage_buses: boolean;
+}
+
 export interface ParkingSlot {
   id: number;
   ground: number;

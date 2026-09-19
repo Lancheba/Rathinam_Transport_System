@@ -1,6 +1,6 @@
 ﻿import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -17,6 +17,7 @@ import LandingPage from "./pages/LandingPage";
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { roleLabel } = useAuth();
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
@@ -78,7 +79,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         searchQuery={searchQuery}
         onSearchChange={handleSearch}
         adminName="Admin"
-        roleTitle="Administrator"
+        roleTitle={roleLabel ?? "Administrator"}
       />
 
       {/* Body with Sidebar and Main Content */}

@@ -1,6 +1,7 @@
 ﻿from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile
+from .permissions import can_manage_buses
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -25,7 +26,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source="profile.role", read_only=True)
+    can_manage_buses = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role"]
+        fields = ["id", "username", "email", "role", "can_manage_buses"]
+
+    def get_can_manage_buses(self, obj):
+        return can_manage_buses(obj)

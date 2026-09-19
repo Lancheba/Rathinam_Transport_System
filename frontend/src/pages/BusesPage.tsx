@@ -1,12 +1,41 @@
 import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { CircleCheck, X } from "lucide-react";
 import { getBuses } from "../api/endpoints";
+import { AddBusButton } from "../components/AddBusButton";
 import type { Bus } from "../types";
 
 const BusesPage: React.FC = () => {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [search, setSearch] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Arriving from the dashboard's "Add bus" carries the new bus number in history state
+  const [notice, setNotice] = useState<string | null>(() => {
+    const added = (location.state as { addedBus?: string } | null)?.addedBus;
+    return added ? `Bus ${added} added.` : null;
+  });
 
   useEffect(() => { getBuses().then(setBuses).catch(() => {}); }, []);
+
+  // Clear it from history state so a refresh doesn't show the message again
+  useEffect(() => {
+    if ((location.state as { addedBus?: string } | null)?.addedBus) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const handleCreated = (bus: Bus) => {
+    setBuses(prev => [...prev, bus].sort((a, b) => a.bus_number.localeCompare(b.bus_number)));
+    setSearch(""); // otherwise an active filter could hide the new bus
+    setNotice(`Bus ${bus.bus_number} added.`);
+  };
 
   const filtered = buses.filter(b =>
     b.bus_number.toLowerCase().includes(search.toLowerCase()) ||
@@ -29,7 +58,32 @@ const BusesPage: React.FC = () => {
         <span style={{ color: "#9ca3af", alignSelf: "center", fontSize: 13 }}>
           {filtered.length} buses
         </span>
+        <AddBusButton onCreated={handleCreated} />
       </div>
+
+      {notice && (
+        <div role="status" style={{
+          display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
+          padding: "10px 14px", borderRadius: 8, fontSize: 13,
+          color: "#6ee7b7", background: "rgba(16, 185, 129, 0.12)",
+          border: "1px solid rgba(16, 185, 129, 0.35)"
+        }}>
+          <CircleCheck size={16} />
+          <span style={{ flex: 1 }}>{notice}</span>
+          <button
+            type="button" onClick={() => setNotice(null)} aria-label="Dismiss"
+            style={{ display: "flex", background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 2 }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {filtered.length === 0 && (
+        <div style={{ color: "#9ca3af", fontSize: 14, padding: "32px 0", textAlign: "center" }}>
+          {buses.length === 0 ? "No buses yet." : "No buses match your search."}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
         {filtered.map(bus => {

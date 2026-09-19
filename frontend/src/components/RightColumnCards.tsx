@@ -9,9 +9,11 @@ import {
   CreditCard,
   AlertTriangle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { AddBusButton } from "./AddBusButton";
 
 export const BusInformationCard: React.FC = () => {
+  const navigate = useNavigate();
   const buses = [
     { num: "B01", route: "Route 1", slot: "D1", status: "Parked", blocked: false },
     { num: "B02", route: "Route 2", slot: "C2", status: "Parked", blocked: false },
@@ -26,22 +28,31 @@ export const BusInformationCard: React.FC = () => {
           <BusIcon size={17} style={{ color: "#ffffff" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Bus Information</span>
         </div>
-        <Link
-          to="/buses"
-          style={{
-            fontSize: 11,
-            color: "#94a3b8",
-            textDecoration: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-            fontWeight: 500,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
-        >
-          View All →
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Admins and transport staff only; hidden for everyone else */}
+          <AddBusButton
+            variant="subtle"
+            onCreated={(bus) =>
+              navigate("/dashboard/buses", { state: { addedBus: bus.bus_number } })
+            }
+          />
+          <Link
+            to="/dashboard/buses"
+            style={{
+              fontSize: 11,
+              color: "#94a3b8",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 3,
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+          >
+            View All →
+          </Link>
+        </div>
       </div>
 
       {/* Table */}

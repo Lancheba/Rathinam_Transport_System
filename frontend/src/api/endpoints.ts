@@ -1,6 +1,6 @@
 ﻿import api from "./client";
 import type {
-  Bus, ParkingSlot, ParkingGround, Sensor,
+  Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult
 } from "../types";
 
@@ -8,7 +8,7 @@ import type {
 export const getBuses = () => api.get<Bus[]>("/buses/").then(r => r.data);
 export const getBus = (id: number) => api.get<Bus>(`/buses/${id}/`).then(r => r.data);
 export const searchBus = (q: string) => api.get<Bus>(`/buses/search/?q=${q}`).then(r => r.data);
-export const createBus = (data: Partial<Bus>) => api.post<Bus>("/buses/", data).then(r => r.data);
+export const createBus = (data: BusInput) => api.post<Bus>("/buses/", data).then(r => r.data);
 export const updateBus = (id: number, data: Partial<Bus>) => api.put<Bus>(`/buses/${id}/`, data).then(r => r.data);
 export const deleteBus = (id: number) => api.delete(`/buses/${id}/`);
 
@@ -39,3 +39,4 @@ export const applyOptimization = (result_id: number) =>
 // Auth
 export const login = (username: string, password: string) =>
   api.post<{ access: string; refresh: string }>("/auth/login/", { username, password }).then(r => r.data);
+export const getMe = () => api.get<CurrentUser>("/auth/me/").then(r => r.data);
