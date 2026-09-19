@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Bus, Search, Bell, ChevronDown, LogOut, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -221,7 +221,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   onClick={() => {
                     logout();
                     setDropdownOpen(false);
-                    navigate("/login");
+                    navigate("/");
                   }}
                   style={{
                     width: "100%",

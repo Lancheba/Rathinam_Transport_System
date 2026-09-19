@@ -5,9 +5,6 @@ interface Props {
   slots: ParkingSlot[];
 }
 
-const ROWS = ["A", "B", "C", "D"];
-const SLOT_NUMS = [1, 2, 3, 4, 5, 6, 7, 8];
-
 const slotColor = (slot: ParkingSlot): string => {
   if (!slot.is_occupied) return "#22c55e";   // green — free
   if (slot.is_blocked) return "#ef4444";     // red — blocked
@@ -21,7 +18,23 @@ const slotLabel = (slot: ParkingSlot): string => {
 
 const ParkingMap2D: React.FC<Props> = ({ slots }) => {
   const slotMap: Record<string, ParkingSlot> = {};
-  slots.forEach((s) => { slotMap[`${s.row}${s.slot_number}`] = s; });
+  const rowSet = new Set<string>();
+  let maxSlotNum = 0;
+  slots.forEach((s) => {
+    slotMap[`${s.row}${s.slot_number}`] = s;
+    rowSet.add(s.row);
+    if (s.slot_number > maxSlotNum) maxSlotNum = s.slot_number;
+  });
+  const rows = Array.from(rowSet).sort();
+  const slotNums = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
+
+  if (rows.length === 0) {
+    return (
+      <div style={{ color: "#64748b", fontSize: 13, padding: "24px 0" }}>
+        No parking slots are configured on the server yet.
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "monospace", overflowX: "auto" }}>
@@ -40,10 +53,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         <div style={{ textAlign: "center", color: "#fbbf24", marginBottom: 8, fontSize: 12 }}>
           ↑  EXIT / ENTRY
         </div>
-        {ROWS.map((row) => (
+        {rows.map((row) => (
           <div key={row} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
             <span style={{ color: "#9ca3af", width: 24, fontSize: 13 }}>{row}</span>
-            {SLOT_NUMS.map((num) => {
+            {slotNums.map((num) => {
               const key = `${row}${num}`;
               const slot = slotMap[key];
               if (!slot) return (
@@ -74,7 +87,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
           </div>
         ))}
         <div style={{ textAlign: "center", color: "#9ca3af", marginTop: 4, fontSize: 11 }}>
-          Slots 1–8 (1 = closest to exit)
+          Slots 1–{maxSlotNum} (1 = closest to exit)
         </div>
       </div>
     </div>
