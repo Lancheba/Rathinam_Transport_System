@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { Bus, Search, Bell, ChevronDown, LogOut, Lock } from "lucide-react";
+import { Search, Bell, ChevronDown, LogOut, Lock } from "lucide-react";
+import rathinamLogo from "../assets/rathinam_logo.jpg";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { NotificationPanel } from "./NotificationPanel";
 
 interface TopNavProps {
   searchQuery: string;
@@ -18,6 +20,7 @@ export const TopNav: React.FC<TopNavProps> = ({
 }) => {
   const { isLoggedIn, username, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -38,28 +41,29 @@ export const TopNav: React.FC<TopNavProps> = ({
       }}
     >
       {/* Brand */}
-      <Link to="/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
+      <Link to="/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12 }}>
         <div
           style={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            background: "linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+            width: 46,
+            height: 46,
+            borderRadius: 10,
+            background: "#ffffff",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#ffffff",
+            overflow: "hidden",
+            flexShrink: 0,
           }}
         >
-          <Bus size={22} strokeWidth={2.2} />
+          <img src={rathinamLogo} alt="Rathinam" style={{ width: 42, height: 42, objectFit: "contain" }} />
         </div>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em" }}>
-            Smart Bus Parking
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+            Rathinam Smart Bus Parking
           </div>
-          <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginTop: 1 }}>
+          <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginTop: 2 }}>
             College Bus Parking &amp; Retrieval System
           </div>
         </div>
@@ -121,44 +125,56 @@ export const TopNav: React.FC<TopNavProps> = ({
       {/* Right Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {/* Notification Bell */}
-        <button
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#94a3b8",
-            cursor: "pointer",
-            position: "relative",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "#ffffff";
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.09)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#94a3b8";
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-          }}
-        >
-          <Bell size={16} />
-          <span
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setNotifOpen((v) => !v)}
             style={{
-              position: "absolute",
-              top: 7,
-              right: 7,
-              width: 7,
-              height: 7,
+              width: 36,
+              height: 36,
               borderRadius: "50%",
-              background: "#ef4444",
-              boxShadow: "0 0 8px #ef4444",
+              background: notifOpen
+                ? "rgba(56, 189, 248, 0.15)"
+                : "rgba(255, 255, 255, 0.05)",
+              border: notifOpen
+                ? "1px solid rgba(56, 189, 248, 0.4)"
+                : "1px solid rgba(255, 255, 255, 0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: notifOpen ? "#38bdf8" : "#94a3b8",
+              cursor: "pointer",
+              position: "relative",
+              transition: "all 0.2s ease",
             }}
-          />
-        </button>
+            onMouseEnter={(e) => {
+              if (!notifOpen) {
+                e.currentTarget.style.color = "#ffffff";
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.09)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!notifOpen) {
+                e.currentTarget.style.color = "#94a3b8";
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+              }
+            }}
+          >
+            <Bell size={16} />
+            <span
+              style={{
+                position: "absolute",
+                top: 7,
+                right: 7,
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "#ef4444",
+                boxShadow: "0 0 8px #ef4444",
+              }}
+            />
+          </button>
+          <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
+        </div>
 
         {/* User Pill with Dropdown */}
         <div style={{ position: "relative" }}>
