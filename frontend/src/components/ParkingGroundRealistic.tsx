@@ -3,6 +3,7 @@ import { MapPin, TriangleAlert, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Build
 import { getGround, getSlots } from "../api/endpoints";
 import type { ParkingGround, ParkingSlot } from "../types";
 import { useIsMobile } from "../hooks/useMediaQuery";
+import { alpha } from "../utils/color";
 
 interface ParkingGroundRealisticProps {
   onSlotClick?: (slotId: string, busNumber?: string) => void;
@@ -21,15 +22,15 @@ const fmtMeters = (val: string | number | undefined): string => {
 const slotBg = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
   if (isBlocked)  return "radial-gradient(circle at 50% 30%, rgba(251,191,36,0.22) 0%, rgba(251,191,36,0.05) 100%)";
   if (isSelected) return "radial-gradient(circle at 50% 30%, rgba(96,165,250,0.22) 0%, rgba(96,165,250,0.05) 100%)";
-  if (hasBus)     return "radial-gradient(circle at 50% 30%, rgba(96,165,250,0.1) 0%, rgba(10,10,20,0.4) 100%)";
-  return "rgba(0,0,0,0.22)";
+  if (hasBus)     return "radial-gradient(circle at 50% 30%, rgba(96,165,250,0.1) 0%, var(--slot-fade) 100%)";
+  return "rgb(var(--shadow-rgb) / calc(0.22 * var(--shadow-k)))";
 };
 
 const slotBorder = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
   if (isBlocked)  return "1.5px solid rgba(251,191,36,0.7)";
   if (isSelected) return "1.5px solid rgba(96,165,250,0.8)";
   if (hasBus)     return "1px solid rgba(96,165,250,0.35)";
-  return "1px dashed rgba(74,222,128,0.22)";
+  return "1px dashed var(--slot-free-border)";
 };
 
 const slotGlow = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
@@ -43,7 +44,7 @@ const slotGlow = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
 const busBg = (isBlocked: boolean) =>
   isBlocked
     ? "linear-gradient(180deg, #92400e 0%, #78350f 60%, #451a03 100%)"
-    : "linear-gradient(180deg, #dbeafe 0%, #93c5fd 50%, #3b82f6 100%)";
+    : "linear-gradient(180deg, #dbeafe 0%, var(--accent-blue-soft) 50%, #3b82f6 100%)";
 
 const busGlow = (isBlocked: boolean) =>
   isBlocked
@@ -111,9 +112,9 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
       {/* ── Header ── */}
       <div className="pg__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div className="pg__title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <MapPin size={18} style={{ color: "#a78bfa" }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Parking Ground Overview</span>
-          {error && <span style={{ fontSize: 11, color: "#f87171", fontWeight: 600 }}>{error}</span>}
+          <MapPin size={18} style={{ color: "var(--accent-violet)" }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>Parking Ground Overview</span>
+          {error && <span style={{ fontSize: 11, color: "var(--accent-red)", fontWeight: 600 }}>{error}</span>}
         </div>
 
         <div className="pg__tools" style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -121,17 +122,17 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
           {!loading && rows.length > 0 && (
             <div style={{ display: "flex", gap: 6 }}>
               {[
-                { val: freeCount,    color: "#4ade80", bg: "rgba(74,222,128,0.1)",  label: "Free"    },
-                { val: parkedCount,  color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  label: "Parked"  },
-                { val: blockedCount, color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  label: "Blocked" },
+                { val: freeCount,    color: "var(--accent-green)", bg: "rgba(74,222,128,0.1)",  label: "Free"    },
+                { val: parkedCount,  color: "var(--accent-blue)", bg: "rgba(96,165,250,0.1)",  label: "Parked"  },
+                { val: blockedCount, color: "var(--accent-amber)", bg: "rgba(251,191,36,0.1)",  label: "Blocked" },
               ].map(p => (
                 <div key={p.label} style={{
                   display: "flex", alignItems: "center", gap: 4,
                   padding: "3px 9px", borderRadius: 9999,
-                  background: p.bg, border: `1px solid ${p.color}44`, fontSize: 11,
+                  background: p.bg, border: `1px solid ${alpha(p.color, 27)}`, fontSize: 11,
                 }}>
                   <span style={{ color: p.color, fontWeight: 800 }}>{p.val}</span>
-                  <span style={{ color: "#9ca3af" }}>{p.label}</span>
+                  <span style={{ color: "var(--text-muted)" }}>{p.label}</span>
                 </div>
               ))}
             </div>
@@ -139,9 +140,9 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
 
           {/* 2D / 3D toggle */}
           <div className="pg__toggle" style={{
-            display: "flex", background: "rgba(255,255,255,0.05)",
+            display: "flex", background: "rgb(var(--ov) / 0.05)",
             borderRadius: 9999, padding: 3,
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid rgb(var(--ov) / 0.08)",
           }}>
             {(["2D","3D"] as const).map(mode => (
               <button key={mode} onClick={() => setViewMode(mode)} style={{
@@ -150,7 +151,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                 background: viewMode === mode
                   ? "linear-gradient(135deg,rgba(99,102,241,0.6) 0%,rgba(139,92,246,0.4) 100%)"
                   : "transparent",
-                color: viewMode === mode ? "#ffffff" : "#9ca3af",
+                color: viewMode === mode ? "var(--text-strong)" : "var(--text-muted)",
                 boxShadow: viewMode === mode ? "0 0 12px rgba(99,102,241,0.3)" : "none",
                 transition: "all 0.2s ease",
               }}>{mode} View</button>
@@ -164,13 +165,13 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
 
         {/* Top dimension line */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, fontSize: 11, fontFamily: "monospace" }}>
-          <ArrowLeft size={12} style={{ color: "#6b7280" }} />
+          <ArrowLeft size={12} style={{ color: "var(--text-dim)" }} />
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, rgba(167,139,250,0.4), rgba(167,139,250,0.15))" }} />
-          <span style={{ fontWeight: 700, color: "#a78bfa", padding: "2px 8px", borderRadius: 9999, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}>
+          <span style={{ fontWeight: 700, color: "var(--accent-violet)", padding: "2px 8px", borderRadius: 9999, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {ground ? `${fmtMeters(ground.length_m)} m` : loading ? "…" : "— m"}
           </span>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, rgba(167,139,250,0.4), rgba(167,139,250,0.15))" }} />
-          <ArrowRight size={12} style={{ color: "#6b7280" }} />
+          <ArrowRight size={12} style={{ color: "var(--text-dim)" }} />
         </div>
 
         {/* Right width label */}
@@ -179,19 +180,19 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
           display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
           fontSize: 11, fontFamily: "monospace",
         }}>
-          <ArrowUp size={12} style={{ color: "#6b7280" }} />
-          <span style={{ fontWeight: 700, color: "#a78bfa", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+          <ArrowUp size={12} style={{ color: "var(--text-dim)" }} />
+          <span style={{ fontWeight: 700, color: "var(--accent-violet)", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
             {ground ? `${fmtMeters(ground.width_m)} m` : loading ? "…" : "— m"}
           </span>
-          <ArrowDown size={12} style={{ color: "#6b7280" }} />
+          <ArrowDown size={12} style={{ color: "var(--text-dim)" }} />
         </div>
 
         {/* ── The Ground ── */}
         <div className="pg__ground" style={{
-          background: "radial-gradient(ellipse at 50% 20%, #0f1120 0%, #080810 60%, #040408 100%)",
+          background: "var(--canvas-grad)",
           borderRadius: 16,
           border: "1px solid rgba(99,102,241,0.2)",
-          boxShadow: "inset 0 0 60px rgba(0,0,0,0.9), 0 12px 36px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.08)",
+          boxShadow: "var(--canvas-shadow)",
           padding: "24px 20px 20px 20px",
           position: "relative",
           overflow: "hidden",
@@ -216,20 +217,20 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
           {/* subtle lane lines */}
           <div style={{
             position: "absolute", inset: 0, borderRadius: 16,
-            backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 80px)",
+            backgroundImage: "repeating-linear-gradient(90deg, rgb(var(--ov) / 0.012) 0px, rgb(var(--ov) / 0.012) 1px, transparent 1px, transparent 80px)",
             pointerEvents: "none",
           }} />
 
           {/* Lamp icons */}
-          <Lightbulb size={13} style={{ position: "absolute", top: 8, left: 14, color: "#60a5fa", filter: "drop-shadow(0 0 4px #60a5fa)" }} />
-          <Lightbulb size={13} style={{ position: "absolute", top: 8, right: 14, color: "#a78bfa", filter: "drop-shadow(0 0 4px #a78bfa)" }} />
+          <Lightbulb size={13} style={{ position: "absolute", top: 8, left: 14, color: "var(--accent-blue)", filter: "drop-shadow(0 0 4px var(--accent-blue))" }} />
+          <Lightbulb size={13} style={{ position: "absolute", top: 8, right: 14, color: "var(--accent-violet)", filter: "drop-shadow(0 0 4px var(--accent-violet))" }} />
 
           {loading ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-dim)", fontSize: 13 }}>
               Loading live slot data…
             </div>
           ) : rows.length === 0 ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-dim)", fontSize: 13 }}>
               No parking slots are configured on the server yet.
             </div>
           ) : (
@@ -243,7 +244,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   {/* Row label */}
                   <div className="pg__label" style={{
                     width: 24, fontSize: 13, fontWeight: 800,
-                    color: "#a78bfa", textAlign: "center",
+                    color: "var(--accent-violet)", textAlign: "center",
                     textShadow: "0 0 10px rgba(167,139,250,0.6)",
                     fontFamily: "monospace",
                   }}>{row}</div>
@@ -287,7 +288,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                               : slotGlow(hasBus, isBlocked, isSelected),
                             cursor: exists ? "pointer" : "default",
                             // blocked/occupied styling hides the blue "selected" look, so mark the tapped slot explicitly
-                            outline: pickedKey === slotKey ? "2px solid rgba(255,255,255,0.9)" : undefined,
+                            outline: pickedKey === slotKey ? "2px solid rgb(var(--ov) / 0.9)" : undefined,
                             outlineOffset: pickedKey === slotKey ? 2 : undefined,
                             display: "flex", flexDirection: "column",
                             alignItems: "center", justifyContent: "center",
@@ -308,11 +309,11 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                               <div style={{
                                 position: "absolute", left: 3,
                                 width: 5, height: 16,
-                                background: isBlocked ? "rgba(0,0,0,0.5)" : "rgba(30,58,138,0.8)",
+                                background: isBlocked ? "rgb(var(--shadow-rgb) / calc(0.5 * var(--shadow-k)))" : "rgba(30,58,138,0.8)",
                                 borderRadius: 1,
                               }} />
                               {isBlocked ? (
-                                <TriangleAlert size={12} style={{ color: "#fbbf24", filter: "drop-shadow(0 0 4px #fbbf24)" }} />
+                                <TriangleAlert size={12} style={{ color: "var(--accent-amber)", filter: "drop-shadow(0 0 4px var(--accent-amber))" }} />
                               ) : (
                                 <span style={{
                                   fontSize: 8, fontWeight: 800,
@@ -325,9 +326,9 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                           <span style={{
                             position: "absolute", bottom: 2,
                             fontSize: 9, fontFamily: "monospace", fontWeight: 600,
-                            color: isBlocked ? "#fbbf24"
-                              : hasBus ? "#60a5fa"
-                              : "rgba(74,222,128,0.45)",
+                            color: isBlocked ? "var(--accent-amber)"
+                              : hasBus ? "var(--accent-blue)"
+                              : "var(--slot-free-label)",
                           }}>{slotKey}</span>
                         </div>
                       );
@@ -353,14 +354,14 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                 display: "flex", alignItems: "center", justifyContent: "center",
                 boxShadow: "0 0 12px rgba(74,222,128,0.2)",
               }}>
-                <Building2 size={15} style={{ color: "#4ade80" }} />
+                <Building2 size={15} style={{ color: "var(--accent-green)" }} />
               </div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em" }}>
-                  <ArrowUp size={12} style={{ color: "#4ade80" }} />
-                  <span style={{ color: "#4ade80", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY</span>
+                  <ArrowUp size={12} style={{ color: "var(--accent-green)" }} />
+                  <span style={{ color: "var(--accent-green)", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY</span>
                 </div>
-                <div style={{ fontSize: 9, color: "#6b7280", fontFamily: "monospace" }}>
+                <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
                   Gate A ({ground ? fmtMeters(ground.entrance_width_m) : "—"}m)
                 </div>
               </div>
@@ -370,10 +371,10 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ textAlign: "right" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", justifyContent: "flex-end" }}>
-                  <ArrowDown size={12} style={{ color: "#f87171" }} />
-                  <span style={{ color: "#f87171", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>EXIT</span>
+                  <ArrowDown size={12} style={{ color: "var(--accent-red)" }} />
+                  <span style={{ color: "var(--accent-red)", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>EXIT</span>
                 </div>
-                <div style={{ fontSize: 9, color: "#6b7280", fontFamily: "monospace" }}>
+                <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
                   Gate B ({ground ? fmtMeters(ground.exit_width_m) : "—"}m)
                 </div>
               </div>
@@ -384,7 +385,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                 display: "flex", alignItems: "center", justifyContent: "center",
                 boxShadow: "0 0 12px rgba(248,113,113,0.2)",
               }}>
-                <Building2 size={15} style={{ color: "#f87171" }} />
+                <Building2 size={15} style={{ color: "var(--accent-red)" }} />
               </div>
             </div>
           </div>

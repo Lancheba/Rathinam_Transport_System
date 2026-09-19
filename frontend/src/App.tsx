@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
@@ -51,18 +52,18 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       >
         <path
           d="M-100 150 C 300 0, 700 350, 1100 80 C 1300 -50, 1500 120, 1600 200"
-          stroke="rgba(255, 255, 255, 0.09)"
+          stroke="rgb(var(--ov) / 0.09)"
           strokeWidth="2.5"
           filter="blur(1px)"
         />
         <path
           d="M-50 250 C 400 100, 800 450, 1200 180 C 1400 50, 1550 220, 1650 300"
-          stroke="rgba(255, 255, 255, 0.08)"
+          stroke="rgb(var(--ov) / 0.08)"
           strokeWidth="1.5"
         />
         <path
           d="M-80 50 C 250 200, 650 50, 1050 220 C 1250 320, 1450 150, 1550 220"
-          stroke="rgba(255, 255, 255, 0.05)"
+          stroke="rgb(var(--ov) / 0.05)"
           strokeWidth="1"
           strokeDasharray="4 4"
         />
@@ -89,6 +90,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export const App: React.FC = () => {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -117,6 +119,7 @@ export const App: React.FC = () => {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   );
 };
 

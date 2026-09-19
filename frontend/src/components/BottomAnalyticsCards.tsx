@@ -1,5 +1,6 @@
 import React from "react";
 import { PieChart as PieIcon, BarChart2 } from "lucide-react";
+import { alpha } from "../utils/color";
 
 export const SlotUtilizationCard: React.FC<{
   occupied?: number;
@@ -11,15 +12,15 @@ export const SlotUtilizationCard: React.FC<{
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 22px", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 16 }}>
-        <PieIcon size={17} style={{ color: "#f472b6" }} />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Slot Utilization</span>
+        <PieIcon size={17} style={{ color: "var(--accent-pink)" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>Slot Utilization</span>
       </div>
 
       <div className="util-body" style={{ display: "flex", alignItems: "center", justifyContent: "space-around", gap: 16 }}>
         {/* SVG Donut */}
         <div style={{ position: "relative", width: 110, height: 110 }}>
           <svg viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
-            <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.07)" strokeWidth="11" />
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgb(var(--ov) / 0.07)" strokeWidth="11" />
             <circle
               cx="50" cy="50" r="40" fill="transparent"
               stroke="url(#donutGradColor)" strokeWidth="11"
@@ -30,28 +31,28 @@ export const SlotUtilizationCard: React.FC<{
             />
             <defs>
               <linearGradient id="donutGradColor" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%"   stopColor="#f472b6" />
-                <stop offset="100%" stopColor="#a78bfa" />
+                <stop offset="0%"   stopColor="var(--accent-pink)" />
+                <stop offset="100%" stopColor="var(--accent-violet)" />
               </linearGradient>
             </defs>
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.1 }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: "#f472b6" }}>{pct}%</span>
-            <span style={{ fontSize: 10, color: "#9ca3af" }}>Occupied</span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "var(--accent-pink)" }}>{pct}%</span>
+            <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Occupied</span>
           </div>
         </div>
 
         {/* Legend */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
-            { color: "#f472b6", label: "Occupied", val: occupied },
-            { color: "#4ade80", label: "Free",     val: free     },
-            { color: "#6b7280", label: "Total",    val: total    },
+            { color: "var(--accent-pink)", label: "Occupied", val: occupied },
+            { color: "var(--accent-green)", label: "Free",     val: free     },
+            { color: "var(--text-dim)", label: "Total",    val: total    },
           ].map(item => (
             <div key={item.label} className="util-legend-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: item.color, boxShadow: `0 0 6px ${item.color}` }} />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>{item.label}</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{item.label}</span>
               </div>
               <span style={{ fontSize: 13, fontWeight: 700, color: item.color, fontFamily: "monospace" }}>{item.val}</span>
             </div>
@@ -64,25 +65,25 @@ export const SlotUtilizationCard: React.FC<{
 
 export const BusRouteDistributionCard: React.FC = () => {
   const routes = [
-    { name: "Route 1", count: 1, color: "#60a5fa" },
-    { name: "Route 2", count: 1, color: "#a78bfa" },
-    { name: "Route 3", count: 1, color: "#f472b6" },
-    { name: "Route 4", count: 1, color: "#4ade80" },
+    { name: "Route 1", count: 1, color: "var(--accent-blue)" },
+    { name: "Route 2", count: 1, color: "var(--accent-violet)" },
+    { name: "Route 3", count: 1, color: "var(--accent-pink)" },
+    { name: "Route 4", count: 1, color: "var(--accent-green)" },
   ];
   const maxScale = 6;
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 22px", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 16 }}>
-        <BarChart2 size={17} style={{ color: "#60a5fa" }} />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Bus Route Distribution</span>
+        <BarChart2 size={17} style={{ color: "var(--accent-blue)" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>Bus Route Distribution</span>
       </div>
 
       <div style={{ display: "flex", height: 110, gap: 10, alignItems: "flex-end", paddingBottom: 6 }}>
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", color: "#6b7280", fontSize: 10, fontFamily: "monospace", paddingRight: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", color: "var(--text-dim)", fontSize: 10, fontFamily: "monospace", paddingRight: 6 }}>
           <span>6</span><span>4</span><span>2</span><span>0</span>
         </div>
-        <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "flex-end", justifyContent: "space-around", borderBottom: "1px solid rgba(255,255,255,0.1)", borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: 12, paddingRight: 12 }}>
+        <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "flex-end", justifyContent: "space-around", borderBottom: "1px solid rgb(var(--ov) / 0.1)", borderLeft: "1px solid rgb(var(--ov) / 0.1)", paddingLeft: 12, paddingRight: 12 }}>
           {routes.map((r, i) => {
             const heightPct = (r.count / maxScale) * 100;
             return (
@@ -91,8 +92,8 @@ export const BusRouteDistributionCard: React.FC = () => {
                 <div style={{
                   width: "100%", height: `${heightPct}%`,
                   borderRadius: "4px 4px 0 0",
-                  background: `linear-gradient(180deg, ${r.color} 0%, ${r.color}55 100%)`,
-                  boxShadow: `0 0 12px ${r.color}55`,
+                  background: `linear-gradient(180deg, ${r.color} 0%, ${alpha(r.color, 33)} 100%)`,
+                  boxShadow: `0 0 12px ${alpha(r.color, 33)}`,
                   transition: "height 0.6s cubic-bezier(0.16,1,0.3,1)",
                 }} />
               </div>

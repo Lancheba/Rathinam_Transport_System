@@ -40,7 +40,7 @@ button, a, [role="button"], label, input, select, textarea {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: #080808;
+  background: var(--bg-solid);
   overflow: hidden;
 }
 .app-body {
@@ -65,19 +65,19 @@ button, a, [role="button"], label, input, select, textarea {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  color: #a3a3a3;
+  color: var(--text-muted);
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(var(--ov) / 0.05);
+  border: 1px solid rgb(var(--ov) / 0.1);
 }
 .tn__menu-id {
   display: none;
   padding: 6px 12px 9px;
   margin-bottom: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgb(var(--ov) / 0.08);
 }
-.tn__menu-name { font-size: 13px; font-weight: 700; color: #ffffff; }
-.tn__menu-role { margin-top: 1px; font-size: 11px; color: #a3a3a3; }
+.tn__menu-name { font-size: 13px; font-weight: 700; color: var(--text-strong); }
+.tn__menu-role { margin-top: 1px; font-size: 11px; color: var(--text-muted); }
 
 /* Slot details strip shown under the parking map when a slot is tapped */
 .pg__info {
@@ -93,25 +93,25 @@ button, a, [role="button"], label, input, select, textarea {
   align-items: center;
   gap: 4px 10px;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
-.pg__info-main strong { font-size: 15px; color: #ffffff; }
+.pg__info-main strong { font-size: 15px; color: var(--text-strong); }
 .pg__info-flag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
   font-weight: 700;
-  color: #fbbf24;
+  color: var(--accent-amber);
 }
-.pg__info-sub { margin-top: 3px; font-size: 12px; color: #9ca3af; }
+.pg__info-sub { margin-top: 3px; font-size: 12px; color: var(--text-muted); }
 
 /* Popovers that live inside the top bar: the bar has its own backdrop-filter, and a nested
    backdrop-filter can't see the page behind the bar, so the glass card was see-through and
    unblurred. A solid background keeps the text readable over page content. */
 .notif-panel.liquid-glass-card,
 .tn__menu.liquid-glass-card {
-  background: #141414;
+  background: var(--surface-solid);
 }
 
 /* Small screens and touch: 16px inputs stop iOS Safari zooming the page on focus */
@@ -290,7 +290,7 @@ button, a, [role="button"], label, input, select, textarea {
     position: sticky;
     left: 10px;
     z-index: 3;
-    background: #090911;
+    background: var(--canvas-solid);
   }
   .pg__gates { flex-wrap: wrap; gap: 10px; }
 
@@ -319,7 +319,7 @@ button, a, [role="button"], label, input, select, textarea {
     left: 4px;
     z-index: 3;
     width: 22px !important;
-    background: #0b0b15;
+    background: var(--canvas-solid);
   }
   .pm2d { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 
@@ -340,25 +340,25 @@ button, a, [role="button"], label, input, select, textarea {
     row-gap: 2px;
     margin-bottom: 8px;
     padding: 11px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgb(var(--ov) / 0.03);
+    border: 1px solid rgb(var(--ov) / 0.08) !important;
     border-radius: 12px;
   }
   .pk-table td { display: block; padding: 0 !important; border: 0; }
   .pk-table .c-row,
   .pk-table .c-num { display: none; }
   .pk-table .c-slot { grid-area: slot; font-size: 18px; }
-  .pk-table .c-bus { grid-area: bus; font-size: 14px; font-weight: 700; color: #ffffff !important; }
+  .pk-table .c-bus { grid-area: bus; font-size: 14px; font-weight: 700; color: var(--text-strong) !important; }
   .pk-table .c-status { grid-area: status; justify-self: end; font-size: 13px; white-space: nowrap; }
   .pk-table .c-route { grid-area: route; min-width: 0; overflow-wrap: anywhere; }
   .pk-table .c-dep {
     grid-area: dep;
     justify-self: end;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-muted);
     white-space: nowrap;
   }
-  .pk-table .c-dep::before { content: "Departs "; color: #6b7280; }
+  .pk-table .c-dep::before { content: "Departs "; color: var(--text-dim); }
 
   /* ---- Buses / Sensors ---- */
   .bp-toolbar { flex-wrap: wrap; gap: 10px !important; margin-bottom: 14px !important; }
@@ -404,6 +404,8 @@ button, a, [role="button"], label, input, select, textarea {
   .lp-nav__actions { flex-shrink: 0; gap: 6px !important; }
   .lp-nav__link { width: 38px; height: 38px; padding: 0 !important; justify-content: center; }
   .lp-nav__link span { display: none; }
+  .theme-toggle--pill { width: 38px; height: 38px; padding: 0 !important; }
+  .theme-toggle--pill span { display: none; }
   .lp-nav__cta { height: 38px; padding: 0 14px !important; }
 
   .lp-hero { padding: 20px 16px 40px !important; }

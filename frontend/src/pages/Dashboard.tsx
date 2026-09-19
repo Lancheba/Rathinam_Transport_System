@@ -94,7 +94,7 @@ export const Dashboard: React.FC = () => {
             style={{
               fontSize: 22,
               fontWeight: 800,
-              color: "#ffffff",
+              color: "var(--text-strong)",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -103,7 +103,7 @@ export const Dashboard: React.FC = () => {
           >
             <span>{greeting}, Admin</span>
           </h1>
-          <p style={{ fontSize: 13, color: "#a3a3a3", marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
             Here's what's happening at the college bus parking ground today.
           </p>
         </div>
@@ -117,22 +117,22 @@ export const Dashboard: React.FC = () => {
             gap: 12,
             padding: "8px 16px",
             borderRadius: 9999,
-            background: "rgba(255, 255, 255, 0.05)",
+            background: "rgb(var(--ov) / 0.05)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+            border: "1px solid rgb(var(--ov) / 0.1)",
+            boxShadow: "0 4px 12px rgb(var(--shadow-rgb) / calc(0.3 * var(--shadow-k)))",
           }}
         >
-          <span style={{ fontSize: 12, color: "#a3a3a3", fontWeight: 500 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
             {currentDate || "Sep 26, 2025"}
           </span>
-          <div style={{ width: 1, height: 14, background: "rgba(255, 255, 255, 0.15)" }} />
+          <div style={{ width: 1, height: 14, background: "rgb(var(--ov) / 0.15)" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontFamily: "monospace" }}>
               {currentTime || "12:28 PM"}
             </span>
-            <Clock size={14} style={{ color: "#a3a3a3" }} />
+            <Clock size={14} style={{ color: "var(--text-muted)" }} />
           </div>
         </div>
       </div>

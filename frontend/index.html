@@ -5,13 +5,31 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#080808" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Bus Parking" />
     <meta name="format-detection" content="telephone=no" />
     <title>Rathinam Smart Bus Parking</title>
+    <script>
+      /* Apply the saved theme before first paint so there is no flash of the wrong one.
+         Keep the storage key and colours in sync with src/context/ThemeContext.tsx */
+      (function () {
+        var theme = "dark";
+        try {
+          var pref = localStorage.getItem("rsbp-theme") || "system";
+          theme = pref === "system"
+            ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+            : pref;
+        } catch (e) {}
+        var root = document.documentElement;
+        root.setAttribute("data-theme", theme);
+        root.style.colorScheme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "light" ? "#eef2f9" : "#080808");
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

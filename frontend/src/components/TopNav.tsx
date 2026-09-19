@@ -4,6 +4,7 @@ import rathinamLogo from "../assets/rathinam_logo.jpg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { NotificationPanel } from "./NotificationPanel";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface TopNavProps {
   searchQuery: string;
@@ -59,10 +60,10 @@ export const TopNav: React.FC<TopNavProps> = ({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "12px 28px",
-        background: "rgba(10, 10, 10, 0.85)",
+        background: "var(--surface-nav)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        borderBottom: "1px solid rgb(var(--ov) / 0.08)",
         position: "sticky",
         top: 0,
         zIndex: 50,
@@ -78,8 +79,8 @@ export const TopNav: React.FC<TopNavProps> = ({
             height: 46,
             borderRadius: 10,
             background: "#ffffff",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+            border: "1px solid rgb(var(--ov) / 0.15)",
+            boxShadow: "0 4px 16px rgb(var(--shadow-rgb) / calc(0.4 * var(--shadow-k)))",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -90,10 +91,10 @@ export const TopNav: React.FC<TopNavProps> = ({
           <img src={rathinamLogo} alt="Rathinam" className="tn__logo-img" style={{ width: 42, height: 42, objectFit: "contain" }} />
         </div>
         <div className="tn__text">
-          <div className="tn__title" style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+          <div className="tn__title" style={{ fontSize: 15, fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
             Rathinam Smart Bus Parking
           </div>
-          <div className="tn__sub" style={{ fontSize: 10, color: "#a3a3a3", fontWeight: 400, marginTop: 2 }}>
+          <div className="tn__sub" style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 400, marginTop: 2 }}>
             College Bus Parking &amp; Retrieval System
           </div>
         </div>
@@ -116,7 +117,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             left: 16,
             top: "50%",
             transform: "translateY(-50%)",
-            color: "#a3a3a3",
+            color: "var(--text-muted)",
             pointerEvents: "none",
           }}
         />
@@ -133,26 +134,26 @@ export const TopNav: React.FC<TopNavProps> = ({
             width: "100%",
             padding: "9px 18px 9px 42px",
             borderRadius: 9999,
-            background: "rgba(255, 255, 255, 0.05)",
+            background: "rgb(var(--ov) / 0.05)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderTop: "1px solid rgba(255, 255, 255, 0.18)",
-            color: "#ffffff",
+            border: "1px solid rgb(var(--ov) / 0.1)",
+            borderTop: "1px solid rgb(var(--ov) / 0.18)",
+            color: "var(--text-strong)",
             fontSize: 13,
             outline: "none",
             transition: "all 0.2s ease",
-            boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.3)",
+            boxShadow: "inset 0 1px 3px rgb(var(--shadow-rgb) / calc(0.3 * var(--shadow-k)))",
           }}
           onFocus={(e) => {
-            e.target.style.background = "rgba(255, 255, 255, 0.08)";
-            e.target.style.borderColor = "rgba(255, 255, 255, 0.28)";
-            e.target.style.boxShadow = "0 0 16px rgba(255, 255, 255, 0.15), inset 0 1px 3px rgba(0, 0, 0, 0.4)";
+            e.target.style.background = "rgb(var(--ov) / 0.08)";
+            e.target.style.borderColor = "rgb(var(--ov) / 0.28)";
+            e.target.style.boxShadow = "0 0 16px rgb(var(--ov) / 0.15), inset 0 1px 3px rgb(var(--shadow-rgb) / calc(0.4 * var(--shadow-k)))";
           }}
           onBlur={(e) => {
-            e.target.style.background = "rgba(255, 255, 255, 0.05)";
-            e.target.style.borderColor = "rgba(255, 255, 255, 0.1)";
-            e.target.style.boxShadow = "inset 0 1px 3px rgba(0, 0, 0, 0.3)";
+            e.target.style.background = "rgb(var(--ov) / 0.05)";
+            e.target.style.borderColor = "rgb(var(--ov) / 0.1)";
+            e.target.style.boxShadow = "inset 0 1px 3px rgb(var(--shadow-rgb) / calc(0.3 * var(--shadow-k)))";
           }}
         />
       </div>
@@ -170,6 +171,9 @@ export const TopNav: React.FC<TopNavProps> = ({
           {searchOpen ? <X size={16} /> : <Search size={16} />}
         </button>
 
+        {/* Light / dark switch */}
+        <ThemeToggle />
+
         {/* Notification Bell */}
         <div className="tn__bell-wrap" style={{ position: "relative" }}>
           <button
@@ -181,29 +185,29 @@ export const TopNav: React.FC<TopNavProps> = ({
               height: 36,
               borderRadius: "50%",
               background: notifOpen
-                ? "rgba(255, 255, 255, 0.15)"
-                : "rgba(255, 255, 255, 0.05)",
+                ? "rgb(var(--ov) / 0.15)"
+                : "rgb(var(--ov) / 0.05)",
               border: notifOpen
-                ? "1px solid rgba(255, 255, 255, 0.4)"
-                : "1px solid rgba(255, 255, 255, 0.1)",
+                ? "1px solid rgb(var(--ov) / 0.4)"
+                : "1px solid rgb(var(--ov) / 0.1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: notifOpen ? "#c4c4c4" : "#a3a3a3",
+              color: notifOpen ? "var(--text-soft)" : "var(--text-muted)",
               cursor: "pointer",
               position: "relative",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
               if (!notifOpen) {
-                e.currentTarget.style.color = "#ffffff";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.09)";
+                e.currentTarget.style.color = "var(--text-strong)";
+                e.currentTarget.style.background = "rgb(var(--ov) / 0.09)";
               }
             }}
             onMouseLeave={(e) => {
               if (!notifOpen) {
-                e.currentTarget.style.color = "#a3a3a3";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                e.currentTarget.style.color = "var(--text-muted)";
+                e.currentTarget.style.background = "rgb(var(--ov) / 0.05)";
               }
             }}
           >
@@ -216,8 +220,8 @@ export const TopNav: React.FC<TopNavProps> = ({
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: "#b3b3b3",
-                boxShadow: "0 0 8px #b3b3b3",
+                background: "var(--text-muted)",
+                boxShadow: "0 0 8px var(--text-muted)",
               }}
             />
           </button>
@@ -247,8 +251,8 @@ export const TopNav: React.FC<TopNavProps> = ({
               gap: 10,
               padding: "4px 14px 4px 5px",
               borderRadius: 9999,
-              background: "rgba(255, 255, 255, 0.06)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
+              background: "rgb(var(--ov) / 0.06)",
+              border: "1px solid rgb(var(--ov) / 0.12)",
               cursor: "pointer",
             }}
           >
@@ -257,11 +261,11 @@ export const TopNav: React.FC<TopNavProps> = ({
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #e5e5e5 0%, #a3a3a3 100%)",
+                background: "linear-gradient(135deg, var(--text-soft) 0%, var(--text-muted) 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#141414",
+                color: "var(--btn-fg)",
                 fontWeight: 700,
                 fontSize: 13,
               }}
@@ -269,12 +273,12 @@ export const TopNav: React.FC<TopNavProps> = ({
               {(username || adminName)[0]?.toUpperCase()}
             </div>
             <div className="tn__user-text" style={{ textAlign: "left", lineHeight: 1.2 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#ffffff" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-strong)" }}>
                 {isLoggedIn ? username : adminName}
               </div>
-              <div style={{ fontSize: 9, color: "#a3a3a3" }}>{roleTitle}</div>
+              <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{roleTitle}</div>
             </div>
-            <ChevronDown className="tn__user-chev" size={13} style={{ color: "#a3a3a3", marginLeft: 2 }} />
+            <ChevronDown className="tn__user-chev" size={13} style={{ color: "var(--text-muted)", marginLeft: 2 }} />
           </div>
 
           {/* Dropdown Menu */}
@@ -291,7 +295,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 padding: "8px 6px",
                 borderRadius: 14,
                 zIndex: 60,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.7)",
+                boxShadow: "0 10px 30px rgb(var(--shadow-rgb) / calc(0.7 * var(--shadow-k)))",
               }}
             >
               {/* The name is hidden in the bar on phones, so show who is signed in here */}
@@ -315,13 +319,13 @@ export const TopNav: React.FC<TopNavProps> = ({
                     background: "transparent",
                     border: "none",
                     borderRadius: 8,
-                    color: "#b3b3b3",
+                    color: "var(--text-muted)",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
                     textAlign: "left",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgb(var(--ov) / 0.1)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <LogOut size={14} />
@@ -338,11 +342,11 @@ export const TopNav: React.FC<TopNavProps> = ({
                     padding: "8px 12px",
                     textDecoration: "none",
                     borderRadius: 8,
-                    color: "#ffffff",
+                    color: "var(--text-strong)",
                     fontSize: 12,
                     fontWeight: 600,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgb(var(--ov) / 0.08)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <Lock size={14} />

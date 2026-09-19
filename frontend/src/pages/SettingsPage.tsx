@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Sliders, Wifi, Check, Loader2 } from "lucide-react";
+import { Sliders, Wifi, Check, Loader2, Palette, Sun, Moon, Monitor } from "lucide-react";
 import { getGround, updateGround } from "../api/endpoints";
 import type { ParkingGround } from "../types";
+import { useTheme, type ThemePreference } from "../context/ThemeContext";
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; hint: string; Icon: React.ElementType }[] = [
+  { value: "light",  label: "Light",  hint: "Bright surfaces",        Icon: Sun },
+  { value: "dark",   label: "Dark",   hint: "Easy on the eyes",       Icon: Moon },
+  { value: "system", label: "System", hint: "Match this device",      Icon: Monitor },
+];
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px",
   background: "rgba(99,102,241,0.06)",
   border: "1px solid rgba(99,102,241,0.2)",
-  borderRadius: 8, color: "#f0f4ff",
+  borderRadius: 8, color: "var(--text-strong)",
   marginTop: 4, fontSize: 14, outline: "none",
   transition: "border-color 0.2s",
 };
@@ -20,6 +27,7 @@ export const SettingsPage: React.FC = () => {
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState("");
+  const { preference, setPreference } = useTheme();
 
   useEffect(() => {
     getGround()
@@ -47,37 +55,74 @@ export const SettingsPage: React.FC = () => {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#818cf8", display: "flex", alignItems: "center", gap: 10 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--accent-indigo)", display: "flex", alignItems: "center", gap: 10 }}>
           <Sliders size={19} strokeWidth={1.9} /> System Settings
         </h2>
-        <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
           Ground dimensions, sensor configurations, and role permissions.
         </p>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(167,139,250,0.25)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <Palette size={18} style={{ color: "var(--accent-violet)" }} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>Appearance</span>
+          </div>
+          <div role="radiogroup" aria-label="Colour theme" className="st-theme" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {THEME_OPTIONS.map(({ value, label, hint, Icon }) => {
+              const active = preference === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setPreference(value)}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
+                    padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+                    font: "inherit", transition: "all 0.2s ease",
+                    background: active ? "rgba(139,92,246,0.14)" : "rgb(var(--ov) / 0.04)",
+                    border: active ? "1px solid var(--accent-violet)" : "1px solid rgb(var(--ov) / 0.12)",
+                    boxShadow: active ? "0 0 0 3px rgba(139,92,246,0.15)" : "none",
+                    color: active ? "var(--text-strong)" : "var(--text-soft)",
+                  }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700 }}>
+                    <Icon size={16} style={{ color: active ? "var(--accent-violet)" : "var(--text-muted)" }} />
+                    {label}
+                    {active && <Check size={13} style={{ color: "var(--accent-violet)", marginLeft: "auto" }} />}
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{hint}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(129,140,248,0.25)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <Sliders size={18} style={{ color: "#818cf8" }} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Ground Dimensions</span>
+            <Sliders size={18} style={{ color: "var(--accent-indigo)" }} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>Ground Dimensions</span>
           </div>
 
           {loading ? (
-            <p style={{ fontSize: 13, color: "#9ca3af" }}>Loading current dimensions…</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading current dimensions…</p>
           ) : !ground ? (
-            <p style={{ fontSize: 13, color: "#f87171" }}>No parking ground record found on the server.</p>
+            <p style={{ fontSize: 13, color: "var(--accent-red)" }}>No parking ground record found on the server.</p>
           ) : (
             <>
               <div className="st-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
-                  <label htmlFor="st-length" style={{ fontSize: 12, color: "#9ca3af" }}>Ground Length (meters)</label>
+                  <label htmlFor="st-length" style={{ fontSize: 12, color: "var(--text-muted)" }}>Ground Length (meters)</label>
                   <input id="st-length" type="number" inputMode="decimal" step="0.01" min="0" value={length}
                     onChange={e => setLength(e.target.value)} style={inputStyle}
                     onFocus={e  => (e.currentTarget.style.borderColor = "rgba(129,140,248,0.6)")}
                     onBlur={e   => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)")} />
                 </div>
                 <div>
-                  <label htmlFor="st-width" style={{ fontSize: 12, color: "#9ca3af" }}>Ground Width (meters)</label>
+                  <label htmlFor="st-width" style={{ fontSize: 12, color: "var(--text-muted)" }}>Ground Width (meters)</label>
                   <input id="st-width" type="number" inputMode="decimal" step="0.01" min="0" value={width}
                     onChange={e => setWidth(e.target.value)} style={inputStyle}
                     onFocus={e  => (e.currentTarget.style.borderColor = "rgba(129,140,248,0.6)")}
@@ -92,19 +137,19 @@ export const SettingsPage: React.FC = () => {
                   fontSize: 13, fontWeight: 700, transition: "all 0.2s",
                   cursor: hasChanges && !saving ? "pointer" : "not-allowed",
                   background: hasChanges && !saving
-                    ? "linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)"
-                    : "rgba(255,255,255,0.06)",
-                  color: hasChanges && !saving ? "#ffffff" : "#6b7280",
+                    ? "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 100%)"
+                    : "rgb(var(--ov) / 0.06)",
+                  color: hasChanges && !saving ? "var(--text-strong)" : "var(--text-dim)",
                   boxShadow: hasChanges && !saving ? "0 0 20px rgba(129,140,248,0.4)" : undefined,
                 }}>
                   {saving ? <><Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} /><span>Saving…</span></> : <span>Save Changes</span>}
                 </button>
                 {saved && (
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4ade80" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--accent-green)" }}>
                     <Check size={14} /> Saved
                   </span>
                 )}
-                {error && <span style={{ fontSize: 12, color: "#f87171" }}>{error}</span>}
+                {error && <span style={{ fontSize: 12, color: "var(--accent-red)" }}>{error}</span>}
               </div>
               <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </>
@@ -113,11 +158,11 @@ export const SettingsPage: React.FC = () => {
 
         <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(34,211,238,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <Wifi size={18} style={{ color: "#22d3ee" }} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>ESP32 Gateway &amp; IoT</span>
+            <Wifi size={18} style={{ color: "var(--accent-cyan)" }} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>ESP32 Gateway &amp; IoT</span>
           </div>
-          <p style={{ fontSize: 13, color: "#9ca3af" }}>
-            RFID readers listen on <code style={{ color: "#22d3ee" }}>POST /api/sensors/rfid/</code> and ultrasonic arrays on <code style={{ color: "#a78bfa" }}>POST /api/sensors/occupancy/</code>.
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            RFID readers listen on <code style={{ color: "var(--accent-cyan)" }}>POST /api/sensors/rfid/</code> and ultrasonic arrays on <code style={{ color: "var(--accent-violet)" }}>POST /api/sensors/occupancy/</code>.
           </p>
         </div>
       </div>

@@ -35,14 +35,14 @@ const SensorsPage: React.FC = () => {
 
   return (
     <div>
-      <h2 style={{ color: "#22d3ee", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+      <h2 style={{ color: "var(--accent-cyan)", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
         <Radio size={20} strokeWidth={1.9} /> Sensor Monitoring
       </h2>
       <div className="sp-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>
+        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>
           Auto-refreshes every 10 seconds ·{" "}
-          <span style={{ color: "#4ade80", fontWeight: 700 }}>{online}</span>
-          <span style={{ color: "#9ca3af" }}>/{sensors.length} online</span>
+          <span style={{ color: "var(--accent-green)", fontWeight: 700 }}>{online}</span>
+          <span style={{ color: "var(--text-muted)" }}>/{sensors.length} online</span>
         </p>
         <AddSensorButton onCreated={handleCreated} />
       </div>
@@ -57,16 +57,16 @@ const SensorsPage: React.FC = () => {
               : "var(--glass-glow), 0 0 16px rgba(248,113,113,0.08)",
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontWeight: "bold", color: "#f0f4ff", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontWeight: "bold", color: "var(--text-strong)", display: "flex", alignItems: "center", gap: 8 }}>
                 {sensor.sensor_type === "RFID"
-                  ? <Radio size={14} style={{ color: "#22d3ee" }} />
-                  : <Volume2 size={14} style={{ color: "#a78bfa" }} />}
+                  ? <Radio size={14} style={{ color: "var(--accent-cyan)" }} />
+                  : <Volume2 size={14} style={{ color: "var(--accent-violet)" }} />}
                 {sensor.sensor_id}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{
                   background: sensor.is_active ? "rgba(74,222,128,0.1)" : "rgba(248,113,113,0.1)",
-                  color: sensor.is_active ? "#4ade80" : "#f87171",
+                  color: sensor.is_active ? "var(--accent-green)" : "var(--accent-red)",
                   border: `1px solid ${sensor.is_active ? "rgba(74,222,128,0.3)" : "rgba(248,113,113,0.3)"}`,
                   padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
                 }}>
@@ -79,7 +79,7 @@ const SensorsPage: React.FC = () => {
                       display: "flex", alignItems: "center", justifyContent: "center",
                       width: 26, height: 26, borderRadius: 6,
                       border: "1px solid rgba(248,113,113,0.25)", background: "rgba(248,113,113,0.06)",
-                      color: "#f87171", cursor: deletingId === sensor.id ? "default" : "pointer",
+                      color: "var(--accent-red)", cursor: deletingId === sensor.id ? "default" : "pointer",
                       opacity: deletingId === sensor.id ? 0.5 : 1,
                     }}>
                     <Trash2 size={13} />
@@ -87,14 +87,14 @@ const SensorsPage: React.FC = () => {
                 )}
               </div>
             </div>
-            <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.7 }}>
-              <div>Type: <strong style={{ color: "#22d3ee" }}>{sensor.sensor_type}</strong></div>
-              <div>Location: <strong style={{ color: "#d1d5db" }}>{sensor.location}</strong></div>
+            <div style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7 }}>
+              <div>Type: <strong style={{ color: "var(--accent-cyan)" }}>{sensor.sensor_type}</strong></div>
+              <div>Location: <strong style={{ color: "var(--text-soft)" }}>{sensor.location}</strong></div>
               {sensor.last_reading && (
-                <div>Last reading: <code style={{ color: "#a78bfa", fontSize: 11, overflowWrap: "anywhere" }}>{sensor.last_reading}</code></div>
+                <div>Last reading: <code style={{ color: "var(--accent-violet)", fontSize: 11, overflowWrap: "anywhere" }}>{sensor.last_reading}</code></div>
               )}
               {sensor.last_seen && (
-                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                <div style={{ fontSize: 11, color: "var(--text-dim)" }}>
                   Last seen: {new Date(sensor.last_seen).toLocaleString("en-IN")}
                 </div>
               )}
@@ -102,7 +102,7 @@ const SensorsPage: React.FC = () => {
           </div>
         ))}
         {sensors.length === 0 && (
-          <div style={{ color: "#6b7280", gridColumn: "1/-1" }}>
+          <div style={{ color: "var(--text-dim)", gridColumn: "1/-1" }}>
             No sensors found. Run <code>seed_demo_data</code> to add demo sensors.
           </div>
         )}

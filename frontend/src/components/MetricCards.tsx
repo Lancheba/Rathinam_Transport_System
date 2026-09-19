@@ -35,11 +35,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: totalBuses,
       sub: `Active: ${activeBuses} | Inactive: ${totalBuses - activeBuses}`,
       icon: Bus,
-      iconColor: "#60a5fa",
+      iconColor: "var(--accent-blue)",
       iconBg: "rgba(96,165,250,0.15)",
       iconBorder: "rgba(96,165,250,0.3)",
-      valueColor: "#f0f4ff",
-      subColor: "#60a5fa",
+      valueColor: "var(--text-strong)",
+      subColor: "var(--accent-blue)",
       accentBorder: "rgba(96,165,250,0.25)",
     },
     {
@@ -47,11 +47,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: blockedBuses,
       sub: "● Needs attention",
       icon: AlertTriangle,
-      iconColor: "#fbbf24",
+      iconColor: "var(--accent-amber)",
       iconBg: "rgba(251,191,36,0.15)",
       iconBorder: "rgba(251,191,36,0.3)",
-      valueColor: blockedBuses > 0 ? "#fbbf24" : "#f0f4ff",
-      subColor: blockedBuses > 0 ? "#fbbf24" : "#9ca3af",
+      valueColor: blockedBuses > 0 ? "var(--accent-amber)" : "var(--text-strong)",
+      subColor: blockedBuses > 0 ? "var(--accent-amber)" : "var(--text-muted)",
       accentBorder: blockedBuses > 0 ? "rgba(251,191,36,0.4)" : undefined,
       glowCard: blockedBuses > 0 ? "0 0 20px rgba(251,191,36,0.12)" : undefined,
     },
@@ -60,11 +60,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: occupiedSlots,
       sub: `● ${occupiedPct}% of ${totalSlots}`,
       icon: ParkingCircle,
-      iconColor: "#f472b6",
+      iconColor: "var(--accent-pink)",
       iconBg: "rgba(244,114,182,0.15)",
       iconBorder: "rgba(244,114,182,0.3)",
-      valueColor: "#f0f4ff",
-      subColor: "#f472b6",
+      valueColor: "var(--text-strong)",
+      subColor: "var(--accent-pink)",
       accentBorder: "rgba(244,114,182,0.2)",
     },
     {
@@ -72,11 +72,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: freeSlots,
       sub: `● ${freePct}% of ${totalSlots}`,
       icon: Car,
-      iconColor: "#4ade80",
+      iconColor: "var(--accent-green)",
       iconBg: "rgba(74,222,128,0.15)",
       iconBorder: "rgba(74,222,128,0.3)",
-      valueColor: "#4ade80",
-      subColor: "#4ade80",
+      valueColor: "var(--accent-green)",
+      subColor: "var(--accent-green)",
       accentBorder: "rgba(74,222,128,0.25)",
     },
     {
@@ -84,11 +84,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: avgRetrievalTime,
       sub: retrievalImprovement,
       icon: Clock,
-      iconColor: "#22d3ee",
+      iconColor: "var(--accent-cyan)",
       iconBg: "rgba(34,211,238,0.15)",
       iconBorder: "rgba(34,211,238,0.3)",
-      valueColor: "#f0f4ff",
-      subColor: "#22d3ee",
+      valueColor: "var(--text-strong)",
+      subColor: "var(--accent-cyan)",
       accentBorder: "rgba(34,211,238,0.2)",
     },
     {
@@ -96,11 +96,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: activeSensors,
       sub: `● ${offlineSensors} Offline`,
       icon: Radio,
-      iconColor: "#a78bfa",
+      iconColor: "var(--accent-violet)",
       iconBg: "rgba(167,139,250,0.15)",
       iconBorder: "rgba(167,139,250,0.3)",
-      valueColor: "#f0f4ff",
-      subColor: offlineSensors > 0 ? "#fbbf24" : "#a78bfa",
+      valueColor: "var(--text-strong)",
+      subColor: offlineSensors > 0 ? "var(--accent-amber)" : "var(--accent-violet)",
       accentBorder: "rgba(167,139,250,0.2)",
     },
   ];
@@ -144,7 +144,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               >
                 <Icon size={16} strokeWidth={2} />
               </div>
-              <span className="metric-card__title" style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af" }}>{c.title}</span>
+              <span className="metric-card__title" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>{c.title}</span>
             </div>
 
             {/* Value */}

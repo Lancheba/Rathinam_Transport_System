@@ -57,7 +57,7 @@ const BusesPage: React.FC = () => {
 
   return (
     <div>
-      <h2 style={{ color: "#60a5fa", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+      <h2 style={{ color: "var(--accent-blue)", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
         <BusIcon size={20} strokeWidth={1.9} /> Bus Management
       </h2>
       <div className="bp-toolbar" style={{ display: "flex", gap: 12, marginBottom: 20 }}>
@@ -71,10 +71,10 @@ const BusesPage: React.FC = () => {
             flex: 1, padding: "10px 14px", borderRadius: 10,
             border: "1px solid rgba(96,165,250,0.2)",
             background: "rgba(96,165,250,0.05)",
-            color: "#f0f4ff", fontSize: 14, outline: "none",
+            color: "var(--text-strong)", fontSize: 14, outline: "none",
           }}
         />
-        <span className="bp-count" style={{ color: "#9ca3af", alignSelf: "center", fontSize: 13 }}>{filtered.length} buses</span>
+        <span className="bp-count" style={{ color: "var(--text-muted)", alignSelf: "center", fontSize: 13 }}>{filtered.length} buses</span>
         <AddBusButton onCreated={handleCreated} />
       </div>
 
@@ -82,7 +82,7 @@ const BusesPage: React.FC = () => {
         <div role="status" style={{
           display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
           padding: "10px 14px", borderRadius: 10, fontSize: 13,
-          color: "#4ade80", background: "rgba(74,222,128,0.08)",
+          color: "var(--accent-green)", background: "rgba(74,222,128,0.08)",
           border: "1px solid rgba(74,222,128,0.35)"
         }}>
           <CircleCheck size={16} />
@@ -95,7 +95,7 @@ const BusesPage: React.FC = () => {
       )}
 
       {filtered.length === 0 && (
-        <div style={{ color: "#9ca3af", fontSize: 14, padding: "32px 0", textAlign: "center" }}>
+        <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "32px 0", textAlign: "center" }}>
           {buses.length === 0 ? "No buses yet." : "No buses match your search."}
         </div>
       )}
@@ -113,13 +113,13 @@ const BusesPage: React.FC = () => {
                 : undefined,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <span style={{ fontSize: 18, fontWeight: "bold", color: "#f0f4ff", display: "flex", alignItems: "center", gap: 8 }}>
-                  <BusIcon size={18} strokeWidth={1.9} style={{ color: "#60a5fa" }} /> {bus.bus_number}
+                <span style={{ fontSize: 18, fontWeight: "bold", color: "var(--text-strong)", display: "flex", alignItems: "center", gap: 8 }}>
+                  <BusIcon size={18} strokeWidth={1.9} style={{ color: "var(--accent-blue)" }} /> {bus.bus_number}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{
                     background: bus.is_active ? "rgba(74,222,128,0.12)" : "rgba(107,114,128,0.15)",
-                    color: bus.is_active ? "#4ade80" : "#9ca3af",
+                    color: bus.is_active ? "var(--accent-green)" : "var(--text-muted)",
                     border: `1px solid ${bus.is_active ? "rgba(74,222,128,0.3)" : "rgba(107,114,128,0.2)"}`,
                     padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
                   }}>{bus.is_active ? "ACTIVE" : "INACTIVE"}</span>
@@ -130,7 +130,7 @@ const BusesPage: React.FC = () => {
                         display: "flex", alignItems: "center", justifyContent: "center",
                         width: 26, height: 26, borderRadius: 6,
                         border: "1px solid rgba(248,113,113,0.25)", background: "rgba(248,113,113,0.06)",
-                        color: "#f87171", cursor: deletingId === bus.id ? "default" : "pointer",
+                        color: "var(--accent-red)", cursor: deletingId === bus.id ? "default" : "pointer",
                         opacity: deletingId === bus.id ? 0.5 : 1,
                       }}>
                       <Trash2 size={13} />
@@ -138,26 +138,26 @@ const BusesPage: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 5 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7, color: "#a78bfa" }}><RouteIcon size={13} /> {bus.route}</div>
+              <div style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, color: "var(--accent-violet)" }}><RouteIcon size={13} /> {bus.route}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <Clock size={13} style={{ color: "#22d3ee" }} /> Departs: <strong style={{ color: "#d1d5db" }}>{bus.departure_time}</strong>
+                  <Clock size={13} style={{ color: "var(--accent-cyan)" }} /> Departs: <strong style={{ color: "var(--text-soft)" }}>{bus.departure_time}</strong>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <Radio size={13} style={{ color: "#22d3ee" }} /> RFID: <code style={{ color: "#d1d5db", fontSize: 11 }}>{bus.rfid_uid}</code>
+                  <Radio size={13} style={{ color: "var(--accent-cyan)" }} /> RFID: <code style={{ color: "var(--text-soft)", fontSize: 11 }}>{bus.rfid_uid}</code>
                 </div>
                 {slot ? (
                   <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 7 }}>
-                    <MapPin size={13} style={{ color: "#4ade80" }} />
-                    <strong style={{ color: "#d1d5db" }}>Row {slot.row}, Slot {slot.slot_number}</strong>
+                    <MapPin size={13} style={{ color: "var(--accent-green)" }} />
+                    <strong style={{ color: "var(--text-soft)" }}>Row {slot.row}, Slot {slot.slot_number}</strong>
                     {slot.is_blocked && (
-                      <span style={{ color: "#fbbf24", marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+                      <span style={{ color: "var(--accent-amber)", marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
                         <TriangleAlert size={12} /> BLOCKED
                       </span>
                     )}
                   </div>
                 ) : (
-                  <div style={{ marginTop: 4, color: "#6b7280", display: "flex", alignItems: "center", gap: 7 }}>
+                  <div style={{ marginTop: 4, color: "var(--text-dim)", display: "flex", alignItems: "center", gap: 7 }}>
                     <MapPin size={13} /> Not parked
                   </div>
                 )}

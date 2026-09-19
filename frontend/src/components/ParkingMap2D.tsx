@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TriangleAlert, Bus } from "lucide-react";
 import type { ParkingSlot } from "../types";
+import { alpha } from "../utils/color";
 
 interface Props {
   slots: ParkingSlot[];
@@ -10,7 +11,7 @@ const slotStyle = (slot: ParkingSlot): React.CSSProperties => {
   if (!slot.is_occupied) {
     return {
       background: "rgba(74,222,128,0.04)",
-      border: "1px dashed rgba(74,222,128,0.28)",
+      border: "1px dashed var(--slot-free-border-2d)",
       boxShadow: "none",
     };
   }
@@ -29,9 +30,9 @@ const slotStyle = (slot: ParkingSlot): React.CSSProperties => {
 };
 
 const slotTextColor = (slot: ParkingSlot): string => {
-  if (!slot.is_occupied) return "rgba(74,222,128,0.5)";
-  if (slot.is_blocked) return "#fbbf24";
-  return "#93c5fd";
+  if (!slot.is_occupied) return "var(--slot-free-label)";
+  if (slot.is_blocked) return "var(--accent-amber)";
+  return "var(--accent-blue-soft)";
 };
 
 const ParkingMap2D: React.FC<Props> = ({ slots }) => {
@@ -55,7 +56,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
 
   if (rows.length === 0) {
     return (
-      <div style={{ color: "#6b7280", fontSize: 13, padding: "24px 0" }}>
+      <div style={{ color: "var(--text-dim)", fontSize: 13, padding: "24px 0" }}>
         No parking slots are configured on the server yet.
       </div>
     );
@@ -70,10 +71,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
           <span style={{
             width: 24, height: 14, borderRadius: 3,
             background: "rgba(74,222,128,0.06)",
-            border: "1px dashed rgba(74,222,128,0.3)",
+            border: "1px dashed var(--slot-free-border-2d)",
             display: "inline-block",
           }} />
-          <span style={{ color: "#4ade80", fontWeight: 600 }}>Free</span>
+          <span style={{ color: "var(--accent-green)", fontWeight: 600 }}>Free</span>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <span style={{
@@ -82,7 +83,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
             border: "1px solid rgba(96,165,250,0.5)",
             display: "inline-block",
           }} />
-          <span style={{ color: "#60a5fa", fontWeight: 600 }}>Parked</span>
+          <span style={{ color: "var(--accent-blue)", fontWeight: 600 }}>Parked</span>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <span style={{
@@ -91,25 +92,25 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
             border: "2px solid rgba(251,191,36,0.6)",
             display: "inline-block",
           }} />
-          <span style={{ color: "#fbbf24", fontWeight: 600 }}>Blocked</span>
+          <span style={{ color: "var(--accent-amber)", fontWeight: 600 }}>Blocked</span>
         </span>
 
         {/* Mini stat pills */}
         <div className="pm2d__pills" style={{ marginLeft: "auto", display: "flex", flexWrap: "wrap", gap: 8 }}>
           {[
-            { label: "Free",     val: freeSlots,     color: "#4ade80", bg: "rgba(74,222,128,0.1)"  },
-            { label: "Parked",   val: occupiedSlots, color: "#60a5fa", bg: "rgba(96,165,250,0.1)"  },
-            { label: "Blocked",  val: blockedSlots,  color: "#fbbf24", bg: "rgba(251,191,36,0.1)"  },
-            { label: "Total",    val: totalSlots,    color: "#a78bfa", bg: "rgba(167,139,250,0.1)" },
+            { label: "Free",     val: freeSlots,     color: "var(--accent-green)", bg: "rgba(74,222,128,0.1)"  },
+            { label: "Parked",   val: occupiedSlots, color: "var(--accent-blue)", bg: "rgba(96,165,250,0.1)"  },
+            { label: "Blocked",  val: blockedSlots,  color: "var(--accent-amber)", bg: "rgba(251,191,36,0.1)"  },
+            { label: "Total",    val: totalSlots,    color: "var(--accent-violet)", bg: "rgba(167,139,250,0.1)" },
           ].map(p => (
             <div key={p.label} style={{
               display: "flex", alignItems: "center", gap: 5,
               padding: "3px 10px", borderRadius: 9999,
-              background: p.bg, border: `1px solid ${p.color}44`,
+              background: p.bg, border: `1px solid ${alpha(p.color, 27)}`,
               fontSize: 11,
             }}>
               <span style={{ color: p.color, fontWeight: 800 }}>{p.val}</span>
-              <span style={{ color: "#9ca3af" }}>{p.label}</span>
+              <span style={{ color: "var(--text-muted)" }}>{p.label}</span>
             </div>
           ))}
         </div>
@@ -120,19 +121,19 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         border: "1px solid rgba(167,139,250,0.2)",
         borderRadius: 16,
         padding: "18px 20px",
-        background: "rgba(10,10,20,0.6)",
+        background: "var(--canvas-glass)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         display: "inline-block",
-        boxShadow: "0 0 40px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.06)",
+        boxShadow: "0 0 40px rgba(99,102,241,0.08), inset 0 1px 0 rgb(var(--ov) / 0.06)",
         position: "relative",
       }}>
         {/* Subtle grid lines background */}
         <div style={{
           position: "absolute", inset: 0, borderRadius: 16,
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)
+            linear-gradient(rgb(var(--ov) / 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(var(--ov) / 0.015) 1px, transparent 1px)
           `,
           backgroundSize: "74px 50px",
           pointerEvents: "none",
@@ -146,7 +147,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         }}>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, rgba(167,139,250,0.4))" }} />
           <span style={{
-            color: "#a78bfa", padding: "4px 14px", borderRadius: 9999,
+            color: "var(--accent-violet)", padding: "4px 14px", borderRadius: 9999,
             background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)",
           }}>
             ↑ EXIT / ENTRY
@@ -160,7 +161,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
             {/* Row label */}
             <span className="pm2d__label" style={{
               width: 26, fontSize: 13, fontWeight: 800,
-              color: "#a78bfa", textAlign: "center",
+              color: "var(--accent-violet)", textAlign: "center",
               textShadow: "0 0 8px rgba(167,139,250,0.5)",
             }}>{row}</span>
 
@@ -172,9 +173,9 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
               if (!slot) return (
                 <div key={num} className="pm2d__slot" style={{
                   width: 68, height: 48, margin: "0 3px",
-                  background: "rgba(255,255,255,0.01)",
+                  background: "rgb(var(--ov) / 0.01)",
                   borderRadius: 5,
-                  border: "1px dashed rgba(255,255,255,0.04)",
+                  border: "1px dashed rgb(var(--ov) / 0.04)",
                 }} />
               );
 
@@ -212,10 +213,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
                   }}
                 >
                   {slot.is_blocked && (
-                    <TriangleAlert size={11} style={{ marginBottom: 1, color: "#fbbf24" }} />
+                    <TriangleAlert size={11} style={{ marginBottom: 1, color: "var(--accent-amber)" }} />
                   )}
                   {slot.is_occupied && !slot.is_blocked && (
-                    <Bus size={10} style={{ marginBottom: 1, color: "#60a5fa", opacity: 0.8 }} />
+                    <Bus size={10} style={{ marginBottom: 1, color: "var(--accent-blue)", opacity: 0.8 }} />
                   )}
                   <span style={{ lineHeight: 1.2 }}>
                     {slot.is_occupied ? (slot.bus_number ?? "") : ""}
@@ -230,7 +231,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         {/* Footer */}
         <div style={{
           textAlign: "center", marginTop: 8, fontSize: 10,
-          color: "#6b7280", letterSpacing: "0.05em",
+          color: "var(--text-dim)", letterSpacing: "0.05em",
         }}>
           Slots 1–{maxSlotNum} &nbsp;·&nbsp; 1 = closest to exit
         </div>

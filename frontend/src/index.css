@@ -6,29 +6,75 @@
   padding: 0;
 }
 
+/* =============================================================
+   THEME TOKENS
+   Dark is the default. Light overrides live in [data-theme="light"].
+   The active theme is set on <html data-theme="..."> by
+   ThemeContext (and by the tiny script in index.html, before first paint).
+
+   Colour tokens that take an alpha are stored as bare RGB triplets so any
+   opacity can be applied:   rgb(var(--ov) / 0.08)
+   ============================================================= */
 :root {
+  color-scheme: dark;
+
+  /* Overlay tint: white on dark surfaces, slate on light ones */
+  --ov: 255 255 255;
+  /* Shadow tint and strength (shadows are much softer on light) */
+  --shadow-rgb: 0 0 0;
+  --shadow-k: 1;
+
   /* Background */
   --bg-dark: #04050f;
   --bg-gradient: radial-gradient(circle at 50% 0%, #141428 0%, #06060f 60%, #020208 100%);
+  --bg-solid: #080808;
+  --waves-opacity: 0.18;
+  --silk-opacity: 0.2;
 
   /* Glass cards */
   --glass-card: rgba(255, 255, 255, 0.04);
   --glass-card-hover: rgba(255, 255, 255, 0.07);
   --glass-card-border: rgba(255, 255, 255, 0.1);
+  --glass-card-border-hover: rgba(255, 255, 255, 0.16);
   --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-highlight-hover: rgba(255, 255, 255, 0.28);
+  --glass-edge: rgba(255, 255, 255, 0.25);
   --glass-sheen: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0) 100%);
   --glass-glow: 0 10px 32px 0 rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.12);
+  --glass-glow-hover: 0 14px 40px 0 rgba(0,0,0,0.65), inset 0 1px 0 0 rgba(255,255,255,0.18);
   --glass-pill-active: linear-gradient(135deg, rgba(99,102,241,0.55) 0%, rgba(139,92,246,0.35) 100%);
+  --glass-pill-active-fg: #ffffff;
+
+  /* Solid + translucent surfaces */
+  --surface-solid: #141414;          /* dropdowns, sheets, sticky footers */
+  --surface-nav: rgba(10, 10, 10, 0.85);
+  --surface-nav-strong: rgba(10, 10, 10, 0.9);
+  --surface-side: rgba(10, 10, 10, 0.6);
+  --surface-float: rgba(14, 14, 14, 0.75);
+  --surface-strip: rgba(16, 16, 16, 0.5);
+  --scrim: rgba(5, 5, 5, 0.72);
+  --scrim-soft: rgba(5, 5, 5, 0.62);
+
+  /* Parking canvas */
+  --canvas-grad: radial-gradient(ellipse at 50% 20%, #0f1120 0%, #080810 60%, #040408 100%);
+  --canvas-solid: #090911;
+  --canvas-glass: rgba(10, 10, 20, 0.6);
+  --canvas-shadow: inset 0 0 60px rgba(0,0,0,0.9), 0 12px 36px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.08);
+  --slot-fade: rgba(10, 10, 20, 0.4);
+  --slot-free-border: rgba(74, 222, 128, 0.22);
+  --slot-free-label: rgba(74, 222, 128, 0.5);
+  --slot-free-border-2d: rgba(74, 222, 128, 0.3);
 
   /* Brand accent palette */
-  --accent-blue:   #60a5fa;
-  --accent-violet: #a78bfa;
-  --accent-indigo: #818cf8;
-  --accent-cyan:   #22d3ee;
-  --accent-green:  #4ade80;
-  --accent-amber:  #fbbf24;
-  --accent-red:    #f87171;
-  --accent-pink:   #f472b6;
+  --accent-blue:      #60a5fa;
+  --accent-blue-soft: #93c5fd;
+  --accent-violet:    #a78bfa;
+  --accent-indigo:    #818cf8;
+  --accent-cyan:      #22d3ee;
+  --accent-green:     #4ade80;
+  --accent-amber:     #fbbf24;
+  --accent-red:       #f87171;
+  --accent-pink:      #f472b6;
 
   /* Glow versions (for shadows) */
   --glow-blue:   rgba(96,165,250,0.35);
@@ -44,13 +90,101 @@
   --status-off:  #6b7280;
 
   /* Text */
-  --text-main:  #f0f4ff;
-  --text-muted: #9ca3af;
-  --text-dim:   #6b7280;
+  --text-strong: #ffffff;
+  --text-main:   #f0f4ff;
+  --text-soft:   #d4d4d4;
+  --text-muted:  #9ca3af;
+  --text-dim:    #6b7280;
+  /* Text that sits on a solid "strong" fill (primary buttons, avatar, badges) */
+  --btn-fg:      #141414;
 
   /* Lines */
   --line:        rgba(255,255,255,0.08);
   --line-strong: rgba(255,255,255,0.18);
+
+  /* Hero */
+  --hero-text-shadow: 0 2px 20px rgba(0,0,0,0.8);
+  --scroll-thumb: rgba(99,102,241,0.2);
+  --scroll-thumb-hover: rgba(99,102,241,0.4);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --ov: 15 23 42;
+  --shadow-rgb: 15 23 42;
+  --shadow-k: 0.28;
+
+  --bg-dark: #eef2f9;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #eef2f9 55%, #e1e8f4 100%);
+  --bg-solid: #eef2f9;
+  --waves-opacity: 0.32;
+  --silk-opacity: 0.5;
+
+  --glass-card: rgba(255, 255, 255, 0.78);
+  --glass-card-hover: rgba(255, 255, 255, 0.95);
+  --glass-card-border: rgba(15, 23, 42, 0.09);
+  --glass-card-border-hover: rgba(15, 23, 42, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-highlight-hover: rgba(255, 255, 255, 1);
+  --glass-edge: rgba(255, 255, 255, 0.95);
+  --glass-sheen: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.15) 45%, rgba(255,255,255,0) 100%);
+  --glass-glow: 0 8px 28px 0 rgba(15,23,42,0.08), 0 1px 3px 0 rgba(15,23,42,0.06), inset 0 1px 0 0 rgba(255,255,255,0.9);
+  --glass-glow-hover: 0 12px 34px 0 rgba(15,23,42,0.13), 0 1px 3px 0 rgba(15,23,42,0.08), inset 0 1px 0 0 rgba(255,255,255,1);
+  --glass-pill-active: linear-gradient(135deg, rgba(79,70,229,0.95) 0%, rgba(124,58,237,0.9) 100%);
+  --glass-pill-active-fg: #ffffff;
+
+  --surface-solid: #ffffff;
+  --surface-nav: rgba(255, 255, 255, 0.82);
+  --surface-nav-strong: rgba(255, 255, 255, 0.92);
+  --surface-side: rgba(255, 255, 255, 0.6);
+  --surface-float: rgba(255, 255, 255, 0.8);
+  --surface-strip: rgba(255, 255, 255, 0.62);
+  --scrim: rgba(15, 23, 42, 0.45);
+  --scrim-soft: rgba(15, 23, 42, 0.35);
+
+  --canvas-grad: radial-gradient(ellipse at 50% 20%, #ffffff 0%, #f1f5fb 60%, #e3e9f4 100%);
+  --canvas-solid: #eaeff8;
+  --canvas-glass: rgba(255, 255, 255, 0.65);
+  --canvas-shadow: inset 0 0 40px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.08), 0 0 0 1px rgba(99,102,241,0.1);
+  --slot-fade: rgba(15, 23, 42, 0.05);
+  --slot-free-border: rgba(22, 163, 74, 0.42);
+  --slot-free-label: rgba(21, 128, 61, 0.78);
+  --slot-free-border-2d: rgba(22, 163, 74, 0.45);
+
+  /* Darker accents so text and thin strokes stay readable on white */
+  --accent-blue:      #2563eb;
+  --accent-blue-soft: #3b82f6;
+  --accent-violet:    #7c3aed;
+  --accent-indigo:    #4f46e5;
+  --accent-cyan:      #0891b2;
+  --accent-green:     #16a34a;
+  --accent-amber:     #d97706;
+  --accent-red:       #dc2626;
+  --accent-pink:      #db2777;
+
+  --glow-blue:   rgba(37,99,235,0.25);
+  --glow-violet: rgba(124,58,237,0.25);
+  --glow-green:  rgba(22,163,74,0.25);
+  --glow-amber:  rgba(217,119,6,0.25);
+  --glow-red:    rgba(220,38,38,0.25);
+  --glow-cyan:   rgba(8,145,178,0.25);
+
+  --status-off:  #94a3b8;
+
+  --text-strong: #0f172a;
+  --text-main:   #0f172a;
+  --text-soft:   #334155;
+  --text-muted:  #475569;
+  --text-dim:    #64748b;
+  --btn-fg:      #ffffff;
+
+  --line:        rgba(15,23,42,0.1);
+  --line-strong: rgba(15,23,42,0.2);
+
+  --hero-text-shadow: none;
+  --scroll-thumb: rgba(71,85,105,0.3);
+  --scroll-thumb-hover: rgba(71,85,105,0.5);
 }
 
 body {
@@ -74,7 +208,7 @@ code, .mono {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.18;
+  opacity: var(--waves-opacity);
   background:
     radial-gradient(ellipse 60% 40% at 85% 15%, rgba(99,102,241,0.4), transparent 70%),
     radial-gradient(ellipse 50% 50% at 15% 45%, rgba(34,211,238,0.25), transparent 60%),
@@ -88,7 +222,7 @@ code, .mono {
   height: 100%;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.2;
+  opacity: var(--silk-opacity);
 }
 
 /* Liquid Glass Cards */
@@ -110,23 +244,23 @@ code, .mono {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  background: linear-gradient(90deg, transparent, var(--glass-edge), transparent);
   pointer-events: none;
 }
 
 .liquid-glass-card:hover {
-  border-color: rgba(255,255,255,0.16);
-  border-top-color: rgba(255,255,255,0.28);
-  box-shadow: 0 14px 40px 0 rgba(0,0,0,0.65), inset 0 1px 0 0 rgba(255,255,255,0.18);
+  border-color: var(--glass-card-border-hover);
+  border-top-color: var(--glass-highlight-hover);
+  box-shadow: var(--glass-glow-hover);
 }
 
 /* Glass Pill */
 .liquid-pill {
-  background: rgba(255,255,255,0.04);
+  background: rgb(var(--ov) / 0.04);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-top: 1px solid rgba(255,255,255,0.16);
+  border: 1px solid rgb(var(--ov) / 0.1);
+  border-top: 1px solid rgb(var(--ov) / 0.16);
   border-radius: 9999px;
   transition: all 0.2s ease;
 }
@@ -140,7 +274,7 @@ code, .mono {
   background: var(--glass-pill-active);
   border: 1px solid rgba(139,92,246,0.5);
   box-shadow: 0 0 20px rgba(99,102,241,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
-  color: #ffffff !important;
+  color: var(--glass-pill-active-fg) !important;
 }
 
 /* Status chips */
@@ -152,7 +286,7 @@ code, .mono {
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(255,255,255,0.05);
+  background: rgb(var(--ov) / 0.05);
   border: 1px solid var(--line);
   color: var(--text-muted);
 }
@@ -175,8 +309,8 @@ code, .mono {
 /* Scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.2); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.4); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
 
 .spin {
   animation: spin 0.9s linear infinite;
@@ -185,3 +319,39 @@ code, .mono {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* Theme toggle (TopNav icon button + landing-page pill) */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: rgb(var(--ov) / 0.05);
+  border: 1px solid rgb(var(--ov) / 0.1);
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.theme-toggle:hover {
+  color: var(--text-strong);
+  background: rgb(var(--ov) / 0.09);
+}
+.theme-toggle:active { transform: scale(0.94); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent-indigo); outline-offset: 2px; }
+.theme-toggle--icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.theme-toggle--pill {
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+/* The login screen is a fixed night-time photo scene, so it stays dark in both themes */
+.lp { color-scheme: dark; }
