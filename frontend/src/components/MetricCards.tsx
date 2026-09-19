@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Bus, AlertTriangle, ParkingCircle, Car, Clock, Radio } from "lucide-react";
 
 interface MetricCardsProps {
@@ -35,50 +35,73 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       value: totalBuses,
       sub: `Active: ${activeBuses} | Inactive: ${totalBuses - activeBuses}`,
       icon: Bus,
-      badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: "#a3a3a3",
+      iconColor: "#60a5fa",
+      iconBg: "rgba(96,165,250,0.15)",
+      iconBorder: "rgba(96,165,250,0.3)",
+      valueColor: "#f0f4ff",
+      subColor: "#60a5fa",
+      accentBorder: "rgba(96,165,250,0.25)",
     },
     {
       title: "Blocked Buses",
       value: blockedBuses,
       sub: "● Needs attention",
       icon: AlertTriangle,
-      badgeBg: "rgba(255, 255, 255, 0.1)",
-      valueColor: blockedBuses > 0 ? "#ffffff" : "#ffffff",
-      subColor: blockedBuses > 0 ? "#b3b3b3" : "#a3a3a3",
-      glowBorder: blockedBuses > 0 ? "rgba(255, 255, 255, 0.28)" : undefined,
+      iconColor: "#fbbf24",
+      iconBg: "rgba(251,191,36,0.15)",
+      iconBorder: "rgba(251,191,36,0.3)",
+      valueColor: blockedBuses > 0 ? "#fbbf24" : "#f0f4ff",
+      subColor: blockedBuses > 0 ? "#fbbf24" : "#9ca3af",
+      accentBorder: blockedBuses > 0 ? "rgba(251,191,36,0.4)" : undefined,
+      glowCard: blockedBuses > 0 ? "0 0 20px rgba(251,191,36,0.12)" : undefined,
     },
     {
       title: "Occupied Slots",
       value: occupiedSlots,
       sub: `● ${occupiedPct}% of ${totalSlots}`,
       icon: ParkingCircle,
-      badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: "#a3a3a3",
+      iconColor: "#f472b6",
+      iconBg: "rgba(244,114,182,0.15)",
+      iconBorder: "rgba(244,114,182,0.3)",
+      valueColor: "#f0f4ff",
+      subColor: "#f472b6",
+      accentBorder: "rgba(244,114,182,0.2)",
     },
     {
       title: "Free Slots",
       value: freeSlots,
       sub: `● ${freePct}% of ${totalSlots}`,
       icon: Car,
-      badgeBg: "rgba(255, 255, 255, 0.1)",
-      subColor: "#a3a3a3",
+      iconColor: "#4ade80",
+      iconBg: "rgba(74,222,128,0.15)",
+      iconBorder: "rgba(74,222,128,0.3)",
+      valueColor: "#4ade80",
+      subColor: "#4ade80",
+      accentBorder: "rgba(74,222,128,0.25)",
     },
     {
       title: "Avg. Retrieval Time",
       value: avgRetrievalTime,
       sub: retrievalImprovement,
       icon: Clock,
-      badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: "#a3a3a3",
+      iconColor: "#22d3ee",
+      iconBg: "rgba(34,211,238,0.15)",
+      iconBorder: "rgba(34,211,238,0.3)",
+      valueColor: "#f0f4ff",
+      subColor: "#22d3ee",
+      accentBorder: "rgba(34,211,238,0.2)",
     },
     {
       title: "Active Sensors",
       value: activeSensors,
       sub: `● ${offlineSensors} Offline`,
       icon: Radio,
-      badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: offlineSensors > 0 ? "#b3b3b3" : "#a3a3a3",
+      iconColor: "#a78bfa",
+      iconBg: "rgba(167,139,250,0.15)",
+      iconBorder: "rgba(167,139,250,0.3)",
+      valueColor: "#f0f4ff",
+      subColor: offlineSensors > 0 ? "#fbbf24" : "#a78bfa",
+      accentBorder: "rgba(167,139,250,0.2)",
     },
   ];
 
@@ -99,52 +122,46 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             className="liquid-glass-card"
             style={{
               padding: "16px 18px",
-              borderColor: c.glowBorder || undefined,
+              borderColor: c.accentBorder,
+              boxShadow: c.glowCard
+                ? `var(--glass-glow), ${c.glowCard}`
+                : undefined,
             }}
           >
-            {/* Top row: Icon Badge + Title */}
+            {/* Top row */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: c.badgeBg,
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#ffffff",
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: c.iconBg,
+                  border: `1px solid ${c.iconBorder}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: c.iconColor,
+                  boxShadow: `0 0 12px ${c.iconBg}`,
                 }}
               >
                 <Icon size={16} strokeWidth={2} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#a3a3a3" }}>{c.title}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af" }}>{c.title}</span>
             </div>
 
-            {/* Middle: Big Value */}
+            {/* Value */}
             <div
               style={{
-                fontSize: 26,
-                fontWeight: 800,
-                color: c.valueColor || "#ffffff",
-                lineHeight: 1.1,
-                marginBottom: 8,
+                fontSize: 26, fontWeight: 800,
+                color: c.valueColor,
+                lineHeight: 1.1, marginBottom: 8,
                 letterSpacing: "-0.02em",
               }}
             >
               {c.value}
             </div>
 
-            {/* Bottom: Subtitle info */}
+            {/* Sub */}
             <div
               style={{
-                fontSize: 11,
-                color: c.subColor,
-                fontWeight: 500,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                fontSize: 11, color: c.subColor, fontWeight: 600,
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               }}
             >
               {c.sub}

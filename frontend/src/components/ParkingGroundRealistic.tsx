@@ -6,7 +6,6 @@ import type { ParkingGround, ParkingSlot } from "../types";
 interface ParkingGroundRealisticProps {
   onSlotClick?: (slotId: string, busNumber?: string) => void;
   selectedSlot?: string | null;
-  /** Poll the backend for live updates. Set to 0 to disable. */
   refreshIntervalMs?: number;
 }
 
@@ -16,6 +15,42 @@ const fmtMeters = (val: string | number | undefined): string => {
   if (Number.isNaN(n)) return "—";
   return (Math.round(n * 100) / 100).toString();
 };
+
+/* ── slot appearance ── */
+const slotBg = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
+  if (isBlocked)  return "radial-gradient(circle at 50% 30%, rgba(251,191,36,0.22) 0%, rgba(251,191,36,0.05) 100%)";
+  if (isSelected) return "radial-gradient(circle at 50% 30%, rgba(96,165,250,0.22) 0%, rgba(96,165,250,0.05) 100%)";
+  if (hasBus)     return "radial-gradient(circle at 50% 30%, rgba(96,165,250,0.1) 0%, rgba(10,10,20,0.4) 100%)";
+  return "rgba(0,0,0,0.22)";
+};
+
+const slotBorder = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
+  if (isBlocked)  return "1.5px solid rgba(251,191,36,0.7)";
+  if (isSelected) return "1.5px solid rgba(96,165,250,0.8)";
+  if (hasBus)     return "1px solid rgba(96,165,250,0.35)";
+  return "1px dashed rgba(74,222,128,0.22)";
+};
+
+const slotGlow = (hasBus: boolean, isBlocked: boolean, isSelected: boolean) => {
+  if (isBlocked)  return "0 0 18px rgba(251,191,36,0.35), inset 0 0 10px rgba(251,191,36,0.1)";
+  if (isSelected) return "0 0 16px rgba(96,165,250,0.45)";
+  if (hasBus)     return "0 0 10px rgba(96,165,250,0.15)";
+  return "none";
+};
+
+/* bus body gradient */
+const busBg = (isBlocked: boolean) =>
+  isBlocked
+    ? "linear-gradient(180deg, #92400e 0%, #78350f 60%, #451a03 100%)"
+    : "linear-gradient(180deg, #dbeafe 0%, #93c5fd 50%, #3b82f6 100%)";
+
+const busGlow = (isBlocked: boolean) =>
+  isBlocked
+    ? "0 4px 14px rgba(251,191,36,0.5)"
+    : "0 4px 12px rgba(59,130,246,0.55)";
+
+const busBorder = (isBlocked: boolean) =>
+  isBlocked ? "1px solid rgba(251,191,36,0.6)" : "1px solid rgba(147,197,253,0.8)";
 
 export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   onSlotClick,
@@ -27,6 +62,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const [slots, setSlots] = useState<ParkingSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hovered, setHovered] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -48,7 +84,6 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
     return () => clearInterval(id);
   }, [load, refreshIntervalMs]);
 
-  // Build the grid dynamically from whatever slots actually exist on the server
   const slotMap: Record<string, ParkingSlot> = {};
   const rowSet = new Set<string>();
   let maxSlotNum = 0;
@@ -60,309 +95,222 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const rows = Array.from(rowSet).sort();
   const slotNumbers = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
 
+  /* live mini-stats */
+  const freeCount     = slots.filter(s => !s.is_occupied).length;
+  const parkedCount   = slots.filter(s => s.is_occupied && !s.is_blocked).length;
+  const blockedCount  = slots.filter(s => s.is_blocked).length;
+
   return (
     <div className="liquid-glass-card" style={{ padding: "20px 22px" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
-        }}
-      >
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <MapPin size={18} style={{ color: "#ffffff" }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>
-            Parking Ground Overview
-          </span>
-          {error && (
-            <span style={{ fontSize: 11, color: "#c4c4c4", fontWeight: 600 }}>
-              {error}
-            </span>
-          )}
+          <MapPin size={18} style={{ color: "#a78bfa" }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Parking Ground Overview</span>
+          {error && <span style={{ fontSize: 11, color: "#f87171", fontWeight: 600 }}>{error}</span>}
         </div>
 
-        {/* 2D / 3D Toggle Pill */}
-        <div
-          style={{
-            display: "flex",
-            background: "rgba(255, 255, 255, 0.06)",
-            borderRadius: 9999,
-            padding: 3,
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-          }}
-        >
-          <button
-            onClick={() => setViewMode("2D")}
-            style={{
-              padding: "5px 14px",
-              borderRadius: 9999,
-              border: "none",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              background: viewMode === "2D" ? "rgba(255, 255, 255, 0.2)" : "transparent",
-              color: viewMode === "2D" ? "#ffffff" : "#a3a3a3",
-              boxShadow: viewMode === "2D" ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
-              transition: "all 0.2s ease",
-            }}
-          >
-            2D View
-          </button>
-          <button
-            onClick={() => setViewMode("3D")}
-            style={{
-              padding: "5px 14px",
-              borderRadius: 9999,
-              border: "none",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              background: viewMode === "3D" ? "rgba(255, 255, 255, 0.2)" : "transparent",
-              color: viewMode === "3D" ? "#ffffff" : "#a3a3a3",
-              boxShadow: viewMode === "3D" ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
-              transition: "all 0.2s ease",
-            }}
-          >
-            3D View
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Live stat pills */}
+          {!loading && rows.length > 0 && (
+            <div style={{ display: "flex", gap: 6 }}>
+              {[
+                { val: freeCount,    color: "#4ade80", bg: "rgba(74,222,128,0.1)",  label: "Free"    },
+                { val: parkedCount,  color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  label: "Parked"  },
+                { val: blockedCount, color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  label: "Blocked" },
+              ].map(p => (
+                <div key={p.label} style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "3px 9px", borderRadius: 9999,
+                  background: p.bg, border: `1px solid ${p.color}44`, fontSize: 11,
+                }}>
+                  <span style={{ color: p.color, fontWeight: 800 }}>{p.val}</span>
+                  <span style={{ color: "#9ca3af" }}>{p.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 2D / 3D toggle */}
+          <div style={{
+            display: "flex", background: "rgba(255,255,255,0.05)",
+            borderRadius: 9999, padding: 3,
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}>
+            {(["2D","3D"] as const).map(mode => (
+              <button key={mode} onClick={() => setViewMode(mode)} style={{
+                padding: "5px 14px", borderRadius: 9999, border: "none",
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: viewMode === mode
+                  ? "linear-gradient(135deg,rgba(99,102,241,0.6) 0%,rgba(139,92,246,0.4) 100%)"
+                  : "transparent",
+                color: viewMode === mode ? "#ffffff" : "#9ca3af",
+                boxShadow: viewMode === mode ? "0 0 12px rgba(99,102,241,0.3)" : "none",
+                transition: "all 0.2s ease",
+              }}>{mode} View</button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Ground Container with Top and Right Dimension Labels — driven by /api/parking/ground/ */}
-      <div style={{ position: "relative", padding: "18px 24px 8px 12px" }}>
-        {/* Top Length Dimension Line */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            marginBottom: 8,
-            color: "#a3a3a3",
-            fontSize: 11,
-            fontFamily: "monospace",
-          }}
-        >
-          <ArrowLeft size={12} style={{ opacity: 0.5 }} />
-          <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.15)" }} />
-          <span style={{ fontWeight: 600, color: "#d4d4d4" }}>
+      {/* ── Dimension wrapper ── */}
+      <div style={{ position: "relative", padding: "18px 28px 8px 12px" }}>
+
+        {/* Top dimension line */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, fontSize: 11, fontFamily: "monospace" }}>
+          <ArrowLeft size={12} style={{ color: "#6b7280" }} />
+          <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, rgba(167,139,250,0.4), rgba(167,139,250,0.15))" }} />
+          <span style={{ fontWeight: 700, color: "#a78bfa", padding: "2px 8px", borderRadius: 9999, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {ground ? `${fmtMeters(ground.length_m)} m` : loading ? "…" : "— m"}
           </span>
-          <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.15)" }} />
-          <ArrowRight size={12} style={{ opacity: 0.5 }} />
+          <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, rgba(167,139,250,0.4), rgba(167,139,250,0.15))" }} />
+          <ArrowRight size={12} style={{ color: "#6b7280" }} />
         </div>
 
-        {/* Right Width Dimension Line */}
-        <div
-          style={{
-            position: "absolute",
-            right: 2,
-            top: "50%",
-            transform: "translateY(-50%)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 6,
-            color: "#a3a3a3",
-            fontSize: 11,
-            fontFamily: "monospace",
-          }}
-        >
-          <ArrowUp size={12} style={{ opacity: 0.5 }} />
-          <span style={{ fontWeight: 600, color: "#d4d4d4", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+        {/* Right width label */}
+        <div style={{
+          position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+          fontSize: 11, fontFamily: "monospace",
+        }}>
+          <ArrowUp size={12} style={{ color: "#6b7280" }} />
+          <span style={{ fontWeight: 700, color: "#a78bfa", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
             {ground ? `${fmtMeters(ground.width_m)} m` : loading ? "…" : "— m"}
           </span>
-          <ArrowDown size={12} style={{ opacity: 0.5 }} />
+          <ArrowDown size={12} style={{ color: "#6b7280" }} />
         </div>
 
-        {/* The Realistic Ground Area */}
-        <div
-          style={{
-            background: "radial-gradient(ellipse at 50% 40%, #191919 0%, #0e0e0e 70%, #080808 100%)",
-            borderRadius: 16,
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            boxShadow: "inset 0 0 60px rgba(0, 0, 0, 0.85), 0 12px 36px rgba(0, 0, 0, 0.6)",
-            padding: "24px 20px 20px 20px",
-            position: "relative",
-            overflow: "hidden",
-            transform: viewMode === "3D" ? "perspective(1200px) rotateX(18deg) scale(0.98)" : "none",
-            transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-            transformOrigin: "center bottom",
-          }}
-        >
-          {/* Subtle Asphalt Texture & Overhead Lamp Glows */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 30,
-              width: 140,
-              height: 140,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 30,
-              width: 140,
-              height: 140,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
+        {/* ── The Ground ── */}
+        <div style={{
+          background: "radial-gradient(ellipse at 50% 20%, #0f1120 0%, #080810 60%, #040408 100%)",
+          borderRadius: 16,
+          border: "1px solid rgba(99,102,241,0.2)",
+          boxShadow: "inset 0 0 60px rgba(0,0,0,0.9), 0 12px 36px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.08)",
+          padding: "24px 20px 20px 20px",
+          position: "relative",
+          overflow: "hidden",
+          transform: viewMode === "3D" ? "perspective(1200px) rotateX(18deg) scale(0.98)" : "none",
+          transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
+          transformOrigin: "center bottom",
+        }}>
 
-          {/* Lamp Post Visuals at corners */}
-          <Lightbulb size={13} style={{ position: "absolute", top: 8, left: 14, color: "#a3a3a3" }} />
-          <Lightbulb size={13} style={{ position: "absolute", top: 8, right: 14, color: "#a3a3a3" }} />
+          {/* Colored lamp glows */}
+          <div style={{
+            position: "absolute", top: 0, left: 30, width: 160, height: 160,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(96,165,250,0.12) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+          <div style={{
+            position: "absolute", top: 0, right: 30, width: 160, height: 160,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+          {/* subtle lane lines */}
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: 16,
+            backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 80px)",
+            pointerEvents: "none",
+          }} />
+
+          {/* Lamp icons */}
+          <Lightbulb size={13} style={{ position: "absolute", top: 8, left: 14, color: "#60a5fa", filter: "drop-shadow(0 0 4px #60a5fa)" }} />
+          <Lightbulb size={13} style={{ position: "absolute", top: 8, right: 14, color: "#a78bfa", filter: "drop-shadow(0 0 4px #a78bfa)" }} />
 
           {loading ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#737373", fontSize: 13 }}>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "#6b7280", fontSize: 13 }}>
               Loading live slot data…
             </div>
           ) : rows.length === 0 ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#737373", fontSize: 13 }}>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "#6b7280", fontSize: 13 }}>
               No parking slots are configured on the server yet.
             </div>
           ) : (
-            /* Rows — derived from real slot rows returned by /api/parking/slots/ */
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
               {rows.map((row) => (
                 <div key={row} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {/* Row Label */}
-                  <div
-                    style={{
-                      width: 24,
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: "#ffffff",
-                      textAlign: "center",
-                      textShadow: "0 0 10px rgba(255, 255, 255, 0.4)",
-                    }}
-                  >
-                    {row}
-                  </div>
+                  {/* Row label */}
+                  <div style={{
+                    width: 24, fontSize: 13, fontWeight: 800,
+                    color: "#a78bfa", textAlign: "center",
+                    textShadow: "0 0 10px rgba(167,139,250,0.6)",
+                    fontFamily: "monospace",
+                  }}>{row}</div>
 
-                  {/* Parking Slots for this row */}
                   <div style={{ display: "flex", flex: 1, gap: 6 }}>
                     {slotNumbers.map((num) => {
                       const slotKey = `${row}${num}`;
                       const slot = slotMap[slotKey];
-                      const hasBus = !!slot?.is_occupied;
+                      const hasBus    = !!slot?.is_occupied;
                       const isBlocked = !!slot?.is_blocked;
                       const isSelected = selectedSlot === slotKey;
                       const exists = !!slot;
+                      const isHov = hovered === slotKey;
 
                       return (
                         <div
                           key={num}
                           onClick={() => exists && onSlotClick?.(slotKey, slot?.bus_number ?? undefined)}
+                          onMouseEnter={() => exists && setHovered(slotKey)}
+                          onMouseLeave={() => setHovered(null)}
                           title={
-                            !exists
-                              ? "No such slot"
-                              : hasBus
-                              ? `${slot?.bus_number ?? "Unknown bus"}${isBlocked ? " — BLOCKED" : ""}`
-                              : "Free"
+                            !exists ? "No such slot"
+                            : hasBus ? `${slot?.bus_number ?? "Unknown"}${isBlocked ? " — ⚠ BLOCKED" : ""}\n${slot?.bus_route ?? ""}\nDeparts: ${slot?.bus_departure ?? "—"}`
+                            : `${slotKey} — Free`
                           }
                           style={{
-                            flex: 1,
-                            height: 48,
-                            borderRadius: 6,
+                            flex: 1, height: 48, borderRadius: 6,
                             position: "relative",
-                            opacity: exists ? 1 : 0.35,
-                            border: isBlocked
-                              ? "1.5px solid #b3b3b3"
-                              : isSelected
-                              ? "1.5px solid #c4c4c4"
-                              : "1px dashed rgba(255, 255, 255, 0.16)",
-                            background: isBlocked
-                              ? "radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 100%)"
-                              : hasBus
-                              ? "rgba(255, 255, 255, 0.04)"
-                              : "rgba(0, 0, 0, 0.2)",
-                            boxShadow: isBlocked
-                              ? "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 12px rgba(255, 255, 255, 0.18)"
-                              : isSelected
-                              ? "0 0 16px rgba(255, 255, 255, 0.35)"
-                              : "none",
+                            opacity: exists ? 1 : 0.25,
+                            background: slotBg(hasBus, isBlocked, isSelected),
+                            border: slotBorder(hasBus, isBlocked, isSelected),
+                            boxShadow: isHov && exists
+                              ? (isBlocked ? "0 0 22px rgba(251,191,36,0.5), inset 0 0 10px rgba(251,191,36,0.12)"
+                                : hasBus ? "0 0 18px rgba(96,165,250,0.4), inset 0 0 8px rgba(96,165,250,0.08)"
+                                : "0 0 10px rgba(74,222,128,0.2)")
+                              : slotGlow(hasBus, isBlocked, isSelected),
                             cursor: exists ? "pointer" : "default",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "all 0.2s ease",
+                            display: "flex", flexDirection: "column",
+                            alignItems: "center", justifyContent: "center",
+                            transition: "all 0.15s ease",
+                            transform: isHov && hasBus ? "translateY(-2px)" : "none",
                           }}
                         >
-                          {/* Bus Vehicle Rendering */}
                           {hasBus ? (
-                            <div
-                              style={{
-                                width: "82%",
-                                height: 24,
-                                borderRadius: 4,
-                                background: isBlocked
-                                  ? "linear-gradient(180deg, #8f8f8f 0%, #737373 100%)"
-                                  : "linear-gradient(180deg, #f5f5f5 0%, #d4d4d4 50%, #a3a3a3 100%)",
-                                boxShadow: isBlocked
-                                  ? "0 4px 12px rgba(255, 255, 255, 0.35)"
-                                  : "0 4px 10px rgba(0, 0, 0, 0.6)",
-                                position: "relative",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                border: isBlocked
-                                  ? "1px solid #d4d4d4"
-                                  : "1px solid rgba(255, 255, 255, 0.8)",
-                              }}
-                            >
-                              {/* Bus Front Windshield & Windows */}
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  left: 3,
-                                  width: 5,
-                                  height: 16,
-                                  background: isBlocked ? "#525252" : "#1c1c1c",
-                                  borderRadius: 1,
-                                }}
-                              />
-                              {/* Warning Icon on Blocked Bus */}
+                            <div style={{
+                              width: "82%", height: 24, borderRadius: 4,
+                              background: busBg(isBlocked),
+                              boxShadow: busGlow(isBlocked),
+                              border: busBorder(isBlocked),
+                              position: "relative",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                              {/* windshield */}
+                              <div style={{
+                                position: "absolute", left: 3,
+                                width: 5, height: 16,
+                                background: isBlocked ? "rgba(0,0,0,0.5)" : "rgba(30,58,138,0.8)",
+                                borderRadius: 1,
+                              }} />
                               {isBlocked ? (
-                                <TriangleAlert size={13} style={{ color: "#ffffff", zIndex: 2 }} />
+                                <TriangleAlert size={12} style={{ color: "#fbbf24", filter: "drop-shadow(0 0 4px #fbbf24)" }} />
                               ) : (
-                                <span
-                                  style={{
-                                    fontSize: 8,
-                                    fontWeight: 800,
-                                    color: "#141414",
-                                    letterSpacing: "-0.03em",
-                                  }}
-                                >
-                                  {slot?.bus_number ?? ""}
-                                </span>
+                                <span style={{
+                                  fontSize: 8, fontWeight: 800,
+                                  color: "#1e3a8a", letterSpacing: "-0.03em",
+                                }}>{slot?.bus_number ?? ""}</span>
                               )}
                             </div>
                           ) : null}
 
-                          {/* Slot Identifier at bottom */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              bottom: 2,
-                              fontSize: 9,
-                              fontFamily: "monospace",
-                              fontWeight: 600,
-                              color: isBlocked ? "#d4d4d4" : "#737373",
-                            }}
-                          >
-                            {slotKey}
-                          </span>
+                          <span style={{
+                            position: "absolute", bottom: 2,
+                            fontSize: 9, fontFamily: "monospace", fontWeight: 600,
+                            color: isBlocked ? "#fbbf24"
+                              : hasBus ? "#60a5fa"
+                              : "rgba(74,222,128,0.45)",
+                          }}>{slotKey}</span>
                         </div>
                       );
                     })}
@@ -372,94 +320,52 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             </div>
           )}
 
-          {/* Bottom ENTRY & EXIT Gates with Security Cabins — widths from /api/parking/ground/ */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              paddingTop: 8,
-              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-            }}
-          >
-            {/* ENTRY Gate */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {/* Cabin */}
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  background: "linear-gradient(135deg, #2a2a2a 0%, #1c1c1c 100%)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
-                }}
-              >
-                <Building2 size={15} style={{ color: "#a3a3a3" }} />
+          {/* ── Gates ── */}
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+            paddingTop: 10, borderTop: "1px solid rgba(99,102,241,0.15)",
+          }}>
+            {/* ENTRY */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 6,
+                background: "linear-gradient(135deg, rgba(74,222,128,0.2) 0%, rgba(74,222,128,0.05) 100%)",
+                border: "1px solid rgba(74,222,128,0.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 0 12px rgba(74,222,128,0.2)",
+              }}>
+                <Building2 size={15} style={{ color: "#4ade80" }} />
               </div>
               <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    color: "#ffffff",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  <ArrowUp size={12} />
-                  <span>ENTRY</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em" }}>
+                  <ArrowUp size={12} style={{ color: "#4ade80" }} />
+                  <span style={{ color: "#4ade80", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY</span>
                 </div>
-                <div style={{ fontSize: 9, color: "#737373", fontFamily: "monospace" }}>
+                <div style={{ fontSize: 9, color: "#6b7280", fontFamily: "monospace" }}>
                   Gate A ({ground ? fmtMeters(ground.entrance_width_m) : "—"}m)
                 </div>
               </div>
             </div>
 
-            {/* EXIT Gate */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {/* EXIT */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    color: "#ffffff",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    letterSpacing: "0.05em",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <ArrowDown size={12} />
-                  <span>EXIT</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", justifyContent: "flex-end" }}>
+                  <ArrowDown size={12} style={{ color: "#f87171" }} />
+                  <span style={{ color: "#f87171", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>EXIT</span>
                 </div>
-                <div style={{ fontSize: 9, color: "#737373", fontFamily: "monospace" }}>
+                <div style={{ fontSize: 9, color: "#6b7280", fontFamily: "monospace" }}>
                   Gate B ({ground ? fmtMeters(ground.exit_width_m) : "—"}m)
                 </div>
               </div>
-              {/* Cabin */}
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  background: "linear-gradient(135deg, #2a2a2a 0%, #1c1c1c 100%)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
-                }}
-              >
-                <Building2 size={15} style={{ color: "#a3a3a3" }} />
+              <div style={{
+                width: 32, height: 32, borderRadius: 6,
+                background: "linear-gradient(135deg, rgba(248,113,113,0.2) 0%, rgba(248,113,113,0.05) 100%)",
+                border: "1px solid rgba(248,113,113,0.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 0 12px rgba(248,113,113,0.2)",
+              }}>
+                <Building2 size={15} style={{ color: "#f87171" }} />
               </div>
             </div>
           </div>
