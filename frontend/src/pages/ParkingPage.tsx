@@ -34,7 +34,7 @@ const ParkingPage: React.FC = () => {
         <Map size={20} strokeWidth={1.9} /> Parking Map
       </h2>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+      <div className="pk-filters" style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         {FILTERS.map(f => {
           const active = filter === f.label;
           return (
@@ -49,7 +49,7 @@ const ParkingPage: React.FC = () => {
             }}>{f.label}</button>
           );
         })}
-        <button onClick={load} style={{
+        <button onClick={load} className="pk-refresh" style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           background: "rgba(255,255,255,0.04)", color: "#9ca3af",
           border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9,
@@ -57,7 +57,7 @@ const ParkingPage: React.FC = () => {
         }}><RefreshCw size={13} /> Refresh</button>
       </div>
 
-      <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
+      <div className="pk-summary" style={{ display: "flex", gap: 20, marginBottom: 24 }}>
         <span style={{ color: "#9ca3af", fontSize: 14 }}>Showing {slots.length} slots</span>
         <span style={{ color: "#f472b6", fontSize: 14, fontWeight: 600 }}>● {occupied} occupied</span>
         <span style={{ color: "#fbbf24", fontSize: 14, fontWeight: 600 }}>● {blocked} blocked</span>
@@ -65,8 +65,8 @@ const ParkingPage: React.FC = () => {
 
       <ParkingMap2D slots={filter === "ALL" ? slots : slots} />
 
-      <div style={{ marginTop: 32, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", color: "#d1d5db", fontSize: 14 }}>
+      <div className="pk-tablewrap" style={{ marginTop: 32, overflowX: "auto" }}>
+        <table className="pk-table" style={{ width: "100%", borderCollapse: "collapse", color: "#d1d5db", fontSize: 14 }}>
           <thead>
             <tr style={{ background: "rgba(167,139,250,0.05)" }}>
               {["Slot","Row","#","Bus","Route","Departure","Status"].map(h => (
@@ -76,14 +76,14 @@ const ParkingPage: React.FC = () => {
           </thead>
           <tbody>
             {slots.map(slot => (
-              <tr key={slot.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <td style={{ padding: "10px 12px", fontWeight: "bold", color: "#a78bfa" }}>{slot.row}{slot.slot_number}</td>
-                <td style={{ padding: "10px 12px" }}>{slot.row}</td>
-                <td style={{ padding: "10px 12px" }}>{slot.slot_number}</td>
-                <td style={{ padding: "10px 12px", color: "#d1d5db" }}>{slot.bus_number ?? "—"}</td>
-                <td style={{ padding: "10px 12px", color: "#9ca3af", fontSize: 12 }}>{slot.bus_route ?? "—"}</td>
-                <td style={{ padding: "10px 12px" }}>{slot.bus_departure ?? "—"}</td>
-                <td style={{ padding: "10px 12px" }}>
+              <tr key={slot.id} className="pk-row" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <td className="c-slot" style={{ padding: "10px 12px", fontWeight: "bold", color: "#a78bfa" }}>{slot.row}{slot.slot_number}</td>
+                <td className="c-row" style={{ padding: "10px 12px" }}>{slot.row}</td>
+                <td className="c-num" style={{ padding: "10px 12px" }}>{slot.slot_number}</td>
+                <td className="c-bus" style={{ padding: "10px 12px", color: "#d1d5db" }}>{slot.bus_number ?? "—"}</td>
+                <td className="c-route" style={{ padding: "10px 12px", color: "#9ca3af", fontSize: 12 }}>{slot.bus_route ?? "—"}</td>
+                <td className="c-dep" style={{ padding: "10px 12px" }}>{slot.bus_departure ?? "—"}</td>
+                <td className="c-status" style={{ padding: "10px 12px" }}>
                   {!slot.is_occupied ? (
                     <span style={{ color: "#4ade80", display: "inline-flex", alignItems: "center", gap: 6 }}>
                       <Circle size={12} /> Free

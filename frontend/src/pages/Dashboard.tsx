@@ -80,6 +80,7 @@ export const Dashboard: React.FC = () => {
     <div style={{ maxWidth: 1480, margin: "0 auto" }}>
       {/* Greeting & Date/Time Bar */}
       <div
+        className="dash-head"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -89,6 +90,7 @@ export const Dashboard: React.FC = () => {
       >
         <div>
           <h1
+            className="dash-head__title"
             style={{
               fontSize: 22,
               fontWeight: 800,
@@ -108,6 +110,7 @@ export const Dashboard: React.FC = () => {
 
         {/* Date & Time Glass Pill */}
         <div
+          className="dash-clock"
           style={{
             display: "flex",
             alignItems: "center",
@@ -150,6 +153,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Main Grid: Left (Ground + Bottom Analytics) vs. Right (3 Cards) */}
       <div
+        className="dash-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 340px",
@@ -158,12 +162,13 @@ export const Dashboard: React.FC = () => {
         }}
       >
         {/* Left Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="dash-left" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Realistic Parking Ground */}
           <ParkingGroundRealistic />
 
           {/* Bottom Analytics (Slot Utilization + Route Distribution) */}
           <div
+            className="dash-analytics"
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
@@ -180,7 +185,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Right Column (Bus Information, Recent Events, Sensor Status) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="dash-side" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <BusInformationCard />
           <RecentEventsCard />
           <SensorStatusCard />

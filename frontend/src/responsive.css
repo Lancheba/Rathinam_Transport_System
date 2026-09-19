@@ -1,0 +1,453 @@
+/* ==========================================================================
+   Responsive layer
+   --------------------------------------------------------------------------
+   Most of the UI is styled with inline styles, and inline styles can't hold
+   media queries. Components therefore carry class names (app-*, tn__*, pg__*,
+   dash-*, …) and this file overrides the inline values where a smaller screen
+   needs something different. That is why many rules use !important.
+
+   Desktop is untouched: every override sits inside a max-width media query.
+
+   Breakpoints
+     1240px  dashboard main grid collapses to a single column
+     1100px  metric cards go 3 across
+      900px  "mobile shell": sidebar becomes a bottom tab bar and the page
+             scrolls normally (keep in sync with MOBILE_QUERY in
+             hooks/useMediaQuery.ts)
+      700px  dashboard analytics cards stack
+      640px  phones: single-column grids, cards instead of tables, compact chrome
+      360px  very small phones
+   ========================================================================== */
+
+:root {
+  --mnav-h: 64px; /* bottom tab bar height (excludes the safe-area inset) */
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Removes the double-tap-to-zoom delay on controls */
+button, a, [role="button"], label, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* ---- App shell (all sizes) ---------------------------------------------- */
+.app-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #080808;
+  overflow: hidden;
+}
+.app-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.app-main {
+  flex: 1;
+  min-width: 0; /* lets wide children (tables, maps) scroll instead of stretching the page */
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+/* Elements that only exist for small screens */
+.tn__search-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #a3a3a3;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.tn__menu-id {
+  display: none;
+  padding: 6px 12px 9px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tn__menu-name { font-size: 13px; font-weight: 700; color: #ffffff; }
+.tn__menu-role { margin-top: 1px; font-size: 11px; color: #a3a3a3; }
+
+/* Slot details strip shown under the parking map when a slot is tapped */
+.pg__info {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(96, 165, 250, 0.08);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+.pg__info-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+.pg__info-main strong { font-size: 15px; color: #ffffff; }
+.pg__info-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+.pg__info-sub { margin-top: 3px; font-size: 12px; color: #9ca3af; }
+
+/* Popovers that live inside the top bar: the bar has its own backdrop-filter, and a nested
+   backdrop-filter can't see the page behind the bar, so the glass card was see-through and
+   unblurred. A solid background keeps the text readable over page content. */
+.notif-panel.liquid-glass-card,
+.tn__menu.liquid-glass-card {
+  background: #141414;
+}
+
+/* Small screens and touch: 16px inputs stop iOS Safari zooming the page on focus */
+@media (max-width: 900px), (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ==========================================================================
+   <= 1240px  Small laptops and tablets in landscape
+   ========================================================================== */
+@media (max-width: 1240px) {
+  .dash-grid { grid-template-columns: minmax(0, 1fr) !important; }
+
+  /* The three side cards sit under the map: two across, last one full width */
+  .dash-side {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .dash-side > :last-child { grid-column: 1 / -1; }
+}
+
+/* ==========================================================================
+   <= 1100px
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* ==========================================================================
+   <= 900px  Mobile shell: bottom tab bar, natural page scroll
+   ========================================================================== */
+@media (max-width: 900px) {
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .app-body { display: block; }
+  .app-main {
+    overflow: visible;
+    padding: 14px 12px calc(var(--mnav-h) + env(safe-area-inset-bottom) + 20px);
+  }
+
+  /* ---- Top bar ---- */
+  .tn {
+    flex-wrap: wrap;
+    gap: 10px !important;
+    padding: calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left)) !important;
+  }
+  .tn__brand { flex: 1 1 0; min-width: 0; gap: 10px !important; }
+  .tn__logo { width: 40px !important; height: 40px !important; border-radius: 9px !important; }
+  .tn__logo-img { width: 36px !important; height: 36px !important; }
+  .tn__text { min-width: 0; }
+  .tn__title { font-size: 14px !important; }
+  .tn__actions { flex-shrink: 0; gap: 8px !important; }
+  .tn__icon-btn,
+  .tn__search-toggle { width: 38px !important; height: 38px !important; }
+  .tn__search-toggle { display: inline-flex; }
+
+  /* Search: collapsed until the magnifier is tapped, then a full-width second row */
+  .tn__search {
+    display: none;
+    order: 3;
+    flex: 1 1 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  .tn__search.is-open { display: block; }
+
+  /* User pill becomes a plain avatar; the name moves into its menu */
+  .tn__user { padding: 3px !important; gap: 0 !important; }
+  .tn__user-text,
+  .tn__user-chev { display: none !important; }
+  .tn__menu-id { display: block; }
+
+  /* Notifications: full-width dropdown under the bar instead of a 340px popover */
+  .tn__bell-wrap { position: static !important; }
+  .notif-panel {
+    position: absolute !important;
+    left: 10px !important;
+    right: 10px !important;
+    top: calc(100% + 6px) !important;
+    width: auto !important;
+    max-height: min(72vh, 480px) !important;
+  }
+}
+
+/* Phones held sideways: reclaim vertical space */
+@media (max-width: 900px) and (max-height: 480px) and (orientation: landscape) {
+  :root { --mnav-h: 46px; }
+  .tn { position: static !important; }
+  .mnav__label { display: none; }
+  .mnav__icon { height: 32px; }
+}
+
+/* ==========================================================================
+   <= 700px
+   ========================================================================== */
+@media (max-width: 700px) {
+  .dash-analytics { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ==========================================================================
+   <= 640px  Phones
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Blur is expensive on phone GPUs; a lighter one looks the same at this size */
+  .liquid-glass-card {
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  /* ---- Top bar ---- */
+  .tn__sub { display: none; }
+
+  /* ---- Dashboard ---- */
+  .dash-head {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+    margin-bottom: 14px !important;
+  }
+  .dash-head__title { font-size: 20px !important; }
+  .dash-head p { font-size: 12.5px !important; }
+  .dash-clock { padding: 6px 12px !important; }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+  .metric-card { padding: 12px !important; }
+  .metric-card__top { align-items: flex-start !important; gap: 8px !important; margin-bottom: 8px !important; }
+  .metric-card__icon { flex-shrink: 0; width: 28px !important; height: 28px !important; }
+  .metric-card__title { padding-top: 1px; font-size: 11.5px !important; line-height: 1.25; }
+  .metric-card__value { margin-bottom: 4px !important; font-size: 22px !important; }
+  .metric-card__sub { font-size: 10.5px !important; line-height: 1.3; white-space: normal !important; }
+
+  .dash-grid,
+  .dash-left,
+  .dash-analytics { gap: 14px !important; }
+  .dash-side { display: flex !important; flex-direction: column; gap: 14px; }
+
+  .card-head { flex-wrap: wrap; gap: 8px; }
+  .sensor-id { width: auto !important; flex-shrink: 0; }
+  .util-body { flex-wrap: wrap; }
+
+  /* ---- Parking ground (dashboard + landing) ----
+     32 slots can't be squeezed into 300px, so each slot keeps a tappable minimum
+     size and the grid scrolls sideways, with row letters pinned on the left. */
+  .pg { padding: 14px 12px !important; }
+  .pg__head { flex-direction: column; align-items: stretch !important; gap: 10px; margin-bottom: 6px !important; }
+  .pg__title { flex-wrap: wrap; }
+  .pg__tools { flex-wrap: wrap; justify-content: space-between; gap: 8px !important; }
+  .pg__wrap { padding: 10px 22px 4px 0 !important; }
+  .pg__ground { padding: 22px 10px 12px !important; border-radius: 14px !important; }
+  .pg__scroll {
+    margin: 0 -10px;
+    padding: 6px 10px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .pg__scroll::-webkit-scrollbar { display: none; }
+  .pg__rows { min-width: max-content; gap: 10px !important; }
+  .pg__slot { min-width: 46px; height: 52px !important; }
+  .pg__label {
+    position: sticky;
+    left: 10px;
+    z-index: 3;
+    background: #090911;
+  }
+  .pg__gates { flex-wrap: wrap; gap: 10px; }
+
+  /* ---- Parking Map page ---- */
+  .pk-filters {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+  .pk-filters button {
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px !important;
+  }
+  .pk-refresh { grid-column: 1 / -1; margin-left: 0 !important; }
+  .pk-summary { flex-wrap: wrap; gap: 6px 16px !important; margin-bottom: 16px !important; }
+  .pk-summary span { font-size: 13px !important; }
+
+  .pm2d__legend { gap: 10px 14px !important; margin-bottom: 12px !important; }
+  .pm2d__pills { width: 100%; margin-left: 0 !important; }
+  .pm2d__ground { padding: 14px 10px 12px !important; }
+  .pm2d__slot { width: 56px !important; height: 50px !important; margin: 0 2px !important; }
+  .pm2d__label {
+    position: sticky;
+    left: 4px;
+    z-index: 3;
+    width: 22px !important;
+    background: #0b0b15;
+  }
+  .pm2d { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+
+  /* Slot table becomes one card per slot: the 7 columns can't fit a phone,
+     and Row / # just repeat what the Slot column already says. */
+  .pk-tablewrap { margin-top: 20px !important; overflow: visible !important; }
+  .pk-table,
+  .pk-table tbody { display: block; width: 100%; }
+  .pk-table thead { display: none; }
+  .pk-table tr.pk-row {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "slot bus   status"
+      "slot route dep";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 2px;
+    margin-bottom: 8px;
+    padding: 11px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px;
+  }
+  .pk-table td { display: block; padding: 0 !important; border: 0; }
+  .pk-table .c-row,
+  .pk-table .c-num { display: none; }
+  .pk-table .c-slot { grid-area: slot; font-size: 18px; }
+  .pk-table .c-bus { grid-area: bus; font-size: 14px; font-weight: 700; color: #ffffff !important; }
+  .pk-table .c-status { grid-area: status; justify-self: end; font-size: 13px; white-space: nowrap; }
+  .pk-table .c-route { grid-area: route; min-width: 0; overflow-wrap: anywhere; }
+  .pk-table .c-dep {
+    grid-area: dep;
+    justify-self: end;
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+  }
+  .pk-table .c-dep::before { content: "Departs "; color: #6b7280; }
+
+  /* ---- Buses / Sensors ---- */
+  .bp-toolbar { flex-wrap: wrap; gap: 10px !important; margin-bottom: 14px !important; }
+  .bp-search { flex: 1 1 100% !important; }
+  .bp-count { margin-right: auto; }
+  .sp-head { flex-wrap: wrap; gap: 10px !important; margin-bottom: 14px !important; }
+  .icon-btn { width: 36px !important; height: 36px !important; border-radius: 8px !important; }
+
+  /* ---- Optimisation ---- */
+  .opt-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 18px !important;
+    text-align: center;
+    white-space: normal;
+  }
+  .opt-stats { gap: 10px !important; }
+  .opt-stats > .liquid-glass-card { flex: 1 1 100%; min-width: 0 !important; }
+  .opt-layouts { gap: 18px !important; }
+
+  /* ---- Reports ---- */
+  .rp-head { flex-direction: column; align-items: stretch !important; gap: 14px; margin-bottom: 16px !important; }
+  .rp-export { justify-content: center; padding: 12px 18px !important; }
+  .rp-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; margin-bottom: 16px !important; }
+
+  /* ---- Settings ---- */
+  .st-card { padding: 16px !important; }
+  .st-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .st-actions { flex-wrap: wrap; }
+  .st-save { width: 100%; justify-content: center; padding: 13px 20px !important; }
+
+  /* ---- Find My Bus ---- */
+  .bf { padding-top: 12px !important; }
+  .bf-chip { margin: 4px !important; padding: 8px 14px !important; }
+
+  /* ---- Landing page ---- */
+  .lp-nav { top: calc(8px + env(safe-area-inset-top)) !important; margin-bottom: 12px !important; padding: 0 10px !important; }
+  .lp-nav__bar { gap: 8px; padding: 8px 8px 8px 12px !important; }
+  .lp-nav__brand { flex: 1 1 0; min-width: 0; gap: 8px !important; }
+  .lp-nav__logo { flex-shrink: 0; width: 32px !important; height: 32px !important; border-radius: 9px !important; }
+  .lp-nav__title { font-size: 13px !important; line-height: 1.15; }
+  .lp-nav__sub { display: none; }
+  .lp-nav__actions { flex-shrink: 0; gap: 6px !important; }
+  .lp-nav__link { width: 38px; height: 38px; padding: 0 !important; justify-content: center; }
+  .lp-nav__link span { display: none; }
+  .lp-nav__cta { height: 38px; padding: 0 14px !important; }
+
+  .lp-hero { padding: 20px 16px 40px !important; }
+  .lp-hero__inner { margin-bottom: 32px !important; }
+  .lp-hero__pill {
+    padding: 7px 14px !important;
+    margin-bottom: 16px !important;
+    font-size: 11.5px !important;
+    line-height: 1.35;
+    text-align: left;
+    border-radius: 18px !important;
+  }
+  .lp-hero__title { margin-bottom: 14px !important; }
+  .lp-hero__lede { margin-bottom: 24px !important; }
+  .lp-hero__cta { flex-direction: column; align-items: stretch; gap: 10px !important; }
+  .lp-hero__cta a { justify-content: center; padding: 15px 20px !important; }
+  .lp-hero__stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px !important;
+    margin: 28px auto 0 !important;
+    padding: 16px 18px !important;
+    border-radius: 20px !important;
+  }
+  .lp-preview__title { font-size: 20px !important; }
+  .lp-footer {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    margin-top: 40px !important;
+    padding-top: 24px !important;
+  }
+  .lp-footer__links { flex-wrap: wrap; gap: 10px 18px !important; }
+}
+
+/* ==========================================================================
+   <= 360px  Very small phones
+   ========================================================================== */
+@media (max-width: 360px) {
+  .app-main { padding-left: 10px; padding-right: 10px; }
+  .tn__title { font-size: 13px !important; }
+  .metric-card__value { font-size: 20px !important; }
+  .lp-nav__cta svg { display: none; }
+}
+@media (max-width: 340px) {
+  .lp-nav__text { display: none; }
+}

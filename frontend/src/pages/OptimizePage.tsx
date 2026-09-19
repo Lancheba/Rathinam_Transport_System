@@ -12,14 +12,14 @@ const SlotGrid: React.FC<{ slots: OptimizationSlot[]; label: string; accent: str
   });
 
   return (
-    <div style={{ flex: 1, minWidth: 300 }}>
+    <div className="opt-grid" style={{ flex: 1, minWidth: "min(300px, 100%)" }}>
       <h4 style={{ color: accent, marginBottom: 12, textAlign: "center", fontWeight: 700 }}>{label}</h4>
-      <div className="liquid-glass-card" style={{ padding: 12, borderColor: `${accent}33` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: accent, fontSize: 11, marginBottom: 8 }}>
+      <div className="liquid-glass-card opt-grid__card" style={{ padding: 12, borderColor: `${accent}33`, overflowX: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: accent, fontSize: 11, marginBottom: 8, minWidth: "max-content" }}>
           <ArrowUp size={12} /> EXIT
         </div>
         {rows.map(row => (
-          <div key={row} style={{ display: "flex", gap: 4, marginBottom: 6, alignItems: "center" }}>
+          <div key={row} style={{ display: "flex", gap: 4, marginBottom: 6, alignItems: "center", minWidth: "max-content" }}>
             <span style={{ color: "#6b7280", width: 16, fontSize: 12 }}>{row}</span>
             {(slotsByRow[row] || []).sort((a, b) => a.slot_number - b.slot_number).map(s => (
               <div key={s.slot_id} title={`${s.bus_number}\nDeparts: ${s.departure_time}`} style={{
@@ -27,7 +27,7 @@ const SlotGrid: React.FC<{ slots: OptimizationSlot[]; label: string; accent: str
                 color: s.is_blocked ? "#fbbf24" : accent,
                 borderRadius: 4, padding: "4px 6px",
                 fontSize: 10, fontWeight: "bold", textAlign: "center",
-                minWidth: 44,
+                minWidth: 44, flexShrink: 0,
                 border: s.is_blocked ? "1px solid rgba(251,191,36,0.5)" : `1px solid ${accent}44`,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
               }}>
@@ -71,7 +71,7 @@ const OptimizePage: React.FC = () => {
         Rearranges buses by departure time — earliest buses go to slots closest to the exit. This eliminates blocking.
       </p>
 
-      <button onClick={handleRun} disabled={loading} style={{
+      <button onClick={handleRun} disabled={loading} className="opt-btn" style={{
         display: "inline-flex", alignItems: "center", gap: 8,
         background: loading ? "rgba(167,139,250,0.08)" : "rgba(167,139,250,0.18)",
         color: "#a78bfa",
@@ -97,7 +97,7 @@ const OptimizePage: React.FC = () => {
 
       {result && (
         <>
-          <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+          <div className="opt-stats" style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
             {[
               { label: "Blocked Before",    before: result.stats.blocked_before,    after: result.stats.blocked_after,      color: "#fbbf24" },
               { label: "Movements Needed",  before: "—",                             after: result.stats.movements_required,  color: "#22d3ee" },
@@ -118,13 +118,13 @@ const OptimizePage: React.FC = () => {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 24 }}>
+          <div className="opt-layouts" style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 24 }}>
             <SlotGrid slots={result.current}     label="Current Layout"   accent="#f472b6" />
             <SlotGrid slots={result.recommended} label="Optimised Layout" accent="#4ade80" />
           </div>
 
           {!applied ? (
-            <button onClick={handleApply} style={{
+            <button onClick={handleApply} className="opt-btn" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               background: "rgba(74,222,128,0.15)", color: "#4ade80",
               border: "1px solid rgba(74,222,128,0.4)", borderRadius: 10,

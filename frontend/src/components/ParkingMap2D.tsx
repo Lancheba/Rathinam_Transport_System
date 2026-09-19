@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowUp, TriangleAlert, Bus } from "lucide-react";
+import { TriangleAlert, Bus } from "lucide-react";
 import type { ParkingSlot } from "../types";
 
 interface Props {
@@ -62,10 +62,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
   }
 
   return (
-    <div style={{ fontFamily: '"JetBrains Mono", monospace', overflowX: "auto" }}>
+    <div className="pm2d" style={{ fontFamily: '"JetBrains Mono", monospace', overflowX: "auto" }}>
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 16, fontSize: 12, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="pm2d__legend" style={{ display: "flex", gap: 20, marginBottom: 16, fontSize: 12, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <span style={{
             width: 24, height: 14, borderRadius: 3,
@@ -95,7 +95,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         </span>
 
         {/* Mini stat pills */}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+        <div className="pm2d__pills" style={{ marginLeft: "auto", display: "flex", flexWrap: "wrap", gap: 8 }}>
           {[
             { label: "Free",     val: freeSlots,     color: "#4ade80", bg: "rgba(74,222,128,0.1)"  },
             { label: "Parked",   val: occupiedSlots, color: "#60a5fa", bg: "rgba(96,165,250,0.1)"  },
@@ -116,7 +116,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
       </div>
 
       {/* Ground */}
-      <div style={{
+      <div className="pm2d__ground" style={{
         border: "1px solid rgba(167,139,250,0.2)",
         borderRadius: 16,
         padding: "18px 20px",
@@ -155,10 +155,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         </div>
 
         {/* Rows */}
-        {rows.map((row, rowIdx) => (
-          <div key={row} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+        {rows.map((row) => (
+          <div key={row} className="pm2d__row" style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
             {/* Row label */}
-            <span style={{
+            <span className="pm2d__label" style={{
               width: 26, fontSize: 13, fontWeight: 800,
               color: "#a78bfa", textAlign: "center",
               textShadow: "0 0 8px rgba(167,139,250,0.5)",
@@ -170,7 +170,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
               const isHov = hovered === key;
 
               if (!slot) return (
-                <div key={num} style={{
+                <div key={num} className="pm2d__slot" style={{
                   width: 68, height: 48, margin: "0 3px",
                   background: "rgba(255,255,255,0.01)",
                   borderRadius: 5,
@@ -184,6 +184,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
               return (
                 <div
                   key={num}
+                  className="pm2d__slot"
                   onMouseEnter={() => setHovered(key)}
                   onMouseLeave={() => setHovered(null)}
                   title={

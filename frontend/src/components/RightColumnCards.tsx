@@ -17,7 +17,7 @@ export const BusInformationCard: React.FC = () => {
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div className="card-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <BusIcon size={17} style={{ color: "#60a5fa" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Bus Information</span>
@@ -82,7 +82,7 @@ export const RecentEventsCard: React.FC = () => {
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div className="card-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <Clock size={17} style={{ color: "#a78bfa" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Recent Events</span>
@@ -128,7 +128,7 @@ export const SensorStatusCard: React.FC = () => {
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div className="card-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <Radio size={17} style={{ color: "#22d3ee" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Sensor Status</span>
@@ -140,8 +140,8 @@ export const SensorStatusCard: React.FC = () => {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         {sensors.map(s => (
-          <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, width: 95 }}>
+          <div key={s.id} className="sensor-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+            <div className="sensor-id" style={{ display: "flex", alignItems: "center", gap: 8, width: 95 }}>
               <Radio size={12} style={{ color: s.online ? "#22d3ee" : "#6b7280" }} />
               <span style={{ fontWeight: 600, color: "#ffffff", fontFamily: "monospace" }}>{s.id}</span>
             </div>

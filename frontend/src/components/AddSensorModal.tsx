@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { Radio, X, TriangleAlert, LoaderCircle } from "lucide-react";
@@ -53,7 +53,8 @@ export const AddSensorModal: React.FC<Props> = ({ onClose, onCreated }) => {
     const opener = document.activeElement as HTMLElement | null;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    firstFieldRef.current?.focus();
+    // On touch screens, focusing pops the keyboard up over the form before it has been seen
+    if (window.matchMedia("(pointer: fine)").matches) firstFieldRef.current?.focus();
     return () => {
       document.body.style.overflow = prevOverflow;
       opener?.focus?.();

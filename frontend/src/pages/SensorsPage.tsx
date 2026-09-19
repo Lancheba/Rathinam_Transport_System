@@ -38,7 +38,7 @@ const SensorsPage: React.FC = () => {
       <h2 style={{ color: "#22d3ee", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
         <Radio size={20} strokeWidth={1.9} /> Sensor Monitoring
       </h2>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+      <div className="sp-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>
           Auto-refreshes every 10 seconds ·{" "}
           <span style={{ color: "#4ade80", fontWeight: 700 }}>{online}</span>
@@ -47,7 +47,7 @@ const SensorsPage: React.FC = () => {
         <AddSensorButton onCreated={handleCreated} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 14 }}>
         {sensors.map(sensor => (
           <div key={sensor.id} className="liquid-glass-card" style={{
             padding: 16,
@@ -73,7 +73,7 @@ const SensorsPage: React.FC = () => {
                   {sensor.is_active ? "ONLINE" : "OFFLINE"}
                 </span>
                 {canManageBuses && (
-                  <button type="button" onClick={() => handleDelete(sensor)} disabled={deletingId === sensor.id}
+                  <button type="button" className="icon-btn" onClick={() => handleDelete(sensor)} disabled={deletingId === sensor.id}
                     aria-label={`Remove sensor ${sensor.sensor_id}`}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -91,7 +91,7 @@ const SensorsPage: React.FC = () => {
               <div>Type: <strong style={{ color: "#22d3ee" }}>{sensor.sensor_type}</strong></div>
               <div>Location: <strong style={{ color: "#d1d5db" }}>{sensor.location}</strong></div>
               {sensor.last_reading && (
-                <div>Last reading: <code style={{ color: "#a78bfa", fontSize: 11 }}>{sensor.last_reading}</code></div>
+                <div>Last reading: <code style={{ color: "#a78bfa", fontSize: 11, overflowWrap: "anywhere" }}>{sensor.last_reading}</code></div>
               )}
               {sensor.last_seen && (
                 <div style={{ fontSize: 11, color: "#6b7280" }}>

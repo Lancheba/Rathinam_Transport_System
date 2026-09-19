@@ -15,7 +15,7 @@ export const SlotUtilizationCard: React.FC<{
         <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Slot Utilization</span>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around" }}>
+      <div className="util-body" style={{ display: "flex", alignItems: "center", justifyContent: "space-around", gap: 16 }}>
         {/* SVG Donut */}
         <div style={{ position: "relative", width: 110, height: 110 }}>
           <svg viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
@@ -48,7 +48,7 @@ export const SlotUtilizationCard: React.FC<{
             { color: "#4ade80", label: "Free",     val: free     },
             { color: "#6b7280", label: "Total",    val: total    },
           ].map(item => (
-            <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+            <div key={item.label} className="util-legend-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: item.color, boxShadow: `0 0 6px ${item.color}` }} />
                 <span style={{ fontSize: 12, color: "#9ca3af" }}>{item.label}</span>

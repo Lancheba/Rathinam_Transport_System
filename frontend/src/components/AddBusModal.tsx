@@ -79,7 +79,8 @@ export const AddBusModal: React.FC<Props> = ({ onClose, onCreated }) => {
     const opener = document.activeElement as HTMLElement | null;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    firstFieldRef.current?.focus();
+    // On touch screens, focusing pops the keyboard up over the form before it has been seen
+    if (window.matchMedia("(pointer: fine)").matches) firstFieldRef.current?.focus();
     return () => {
       document.body.style.overflow = prevOverflow;
       opener?.focus?.();

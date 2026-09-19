@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Bell,
   ParkingSquare,
@@ -79,15 +80,20 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
 
   return (
     <>
-      {/* backdrop — click outside to close */}
-      <div
-        onClick={onClose}
-        style={{ position: "fixed", inset: 0, zIndex: 55 }}
-      />
+      {/* backdrop: click/tap outside to close.
+          Rendered through a portal because the top bar's backdrop-filter traps position:fixed
+          children inside the bar, so in place it only covered the header. z-index 45 keeps it
+          under the bar (50) so the bar's own buttons stay usable. */}
+      {createPortal(
+        <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 45 }} />,
+        document.body
+      )}
 
       {/* panel */}
       <div
-        className="liquid-glass-card"
+        className="liquid-glass-card notif-panel"
+        role="dialog"
+        aria-label="Notifications"
         style={{
           position: "absolute",
           right: 0,
@@ -136,6 +142,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
               onClick={fetchEvents}
               disabled={loading}
               title="Refresh"
+              aria-label="Refresh notifications"
               style={{
                 background: "none",
                 border: "none",
@@ -153,6 +160,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
             </button>
             <button
               onClick={onClose}
+              aria-label="Close notifications"
               style={{
                 background: "none",
                 border: "none",

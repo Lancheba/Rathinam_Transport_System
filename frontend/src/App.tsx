@@ -1,8 +1,10 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
+import { MobileNav } from "./components/MobileNav";
+import { useIsMobile } from "./hooks/useMediaQuery";
 import Dashboard from "./pages/Dashboard";
 import ParkingPage from "./pages/ParkingPage";
 import BusesPage from "./pages/BusesPage";
@@ -19,6 +21,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const { roleLabel } = useAuth();
+  const isMobile = useIsMobile();
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
@@ -28,18 +31,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        position: "relative",
-        background: "#080808",
-        overflow: "hidden",
-        padding: 0,
-        margin: 0,
-      }}
-    >
+    <div className="app-shell">
       {/* Background Liquid Glass Fluid Waveforms — Strictly fixed, never in-flow */}
       <div className="liquid-bg-waves" />
       <svg
@@ -84,20 +76,13 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         roleTitle={roleLabel ?? "Administrator"}
       />
 
-      {/* Body with Sidebar and Main Content */}
-      <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative", zIndex: 1, margin: 0, padding: 0 }}>
-        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />
-        <main
-          style={{
-            flex: 1,
-            padding: "20px 24px",
-            overflowY: "auto",
-            margin: 0,
-          }}
-        >
-          {children}
-        </main>
+      {/* Body: sidebar + content on desktop, content + bottom tab bar on phones/tablets */}
+      <div className="app-body">
+        {!isMobile && <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)} />}
+        <main className="app-main">{children}</main>
       </div>
+
+      {isMobile && <MobileNav />}
     </div>
   );
 };

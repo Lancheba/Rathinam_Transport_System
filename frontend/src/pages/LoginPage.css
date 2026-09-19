@@ -493,7 +493,7 @@
 
   .lp__card { padding: 26px 20px 24px; border-radius: 30px; }
   .lp__field-icon { left: 16px; width: 20px; height: 20px; }
-  .lp__field input { padding-left: 50px; font-size: 15px; }
+  .lp__field input { padding-left: 50px; font-size: 16px; }
   .lp__row { font-size: 13.5px; }
   .lp__features li { font-size: 9.5px; }
   .lp__features svg { width: 24px; height: 24px; }

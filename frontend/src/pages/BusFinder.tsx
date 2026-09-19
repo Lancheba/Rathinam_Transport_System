@@ -25,7 +25,7 @@ const BusFinder: React.FC = () => {
   const slot = result?.parking_slot_info;
 
   return (
-    <div style={{ maxWidth: 500, margin: "0 auto", paddingTop: 40 }}>
+    <div className="bf" style={{ maxWidth: 500, margin: "0 auto", paddingTop: 40 }}>
       <h2 style={{ color: "#f5f5f5", textAlign: "center", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
         <Search size={20} strokeWidth={1.9} /> Find My Bus
       </h2>
@@ -33,20 +33,22 @@ const BusFinder: React.FC = () => {
         Enter your bus number to find its parking location
       </p>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      <div className="bf-search" style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         <input
+          aria-label="Bus number"
+          autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="search"
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleSearch()}
           placeholder="e.g. B04"
           style={{
-            flex: 1, padding: "12px 16px", borderRadius: 10,
+            flex: 1, minWidth: 0, padding: "12px 16px", borderRadius: 10,
             border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)",
             backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
             color: "#f5f5f5", fontSize: 16, outline: "none",
           }}
         />
-        <button onClick={handleSearch} disabled={loading} style={{
+        <button onClick={handleSearch} disabled={loading} className="bf-go" style={{
           background: "rgba(255,255,255,0.18)", color: "#fff", border: "1px solid rgba(255,255,255,0.28)",
           borderRadius: 10, padding: "12px 24px", fontWeight: "bold",
           fontSize: 15, cursor: "pointer",
@@ -112,7 +114,7 @@ const BusFinder: React.FC = () => {
         <div style={{ marginTop: 32 }}>
           <div style={{ color: "#737373", textAlign: "center", fontSize: 13 }}>
             Quick search: {["B01", "B02", "B03", "B04"].map(b => (
-              <button key={b} onClick={() => { setQuery(b); }} style={{
+              <button key={b} className="bf-chip" onClick={() => { setQuery(b); }} style={{
                 background: "rgba(255,255,255,0.06)", color: "#a3a3a3", border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 6, padding: "4px 10px", margin: "0 4px", cursor: "pointer"
               }}>{b}</button>

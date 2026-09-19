@@ -4,7 +4,7 @@ import { Download, BarChart3, TrendingUp, TrendingDown } from "lucide-react";
 export const ReportsPage: React.FC = () => {
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div className="rp-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#60a5fa", display: "flex", alignItems: "center", gap: 10 }}>
             <BarChart3 size={19} strokeWidth={1.9} /> Parking Analytics &amp; Reports
@@ -13,13 +13,13 @@ export const ReportsPage: React.FC = () => {
             Historical movement analysis, slot turnover, and blocked-bus trends.
           </p>
         </div>
-        <button className="liquid-pill liquid-pill-active"
+        <button className="liquid-pill liquid-pill-active rp-export"
           style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px", fontSize: 13, cursor: "pointer", border: "none" }}>
           <Download size={15} /> <span>Export CSV Report</span>
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="rp-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         <div className="liquid-glass-card" style={{ padding: "18px 20px", borderColor: "rgba(96,165,250,0.25)" }}>
           <div style={{ color: "#9ca3af", fontSize: 12 }}>Avg. Parking Duration</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "#60a5fa", marginTop: 6 }}>4h 22m</div>

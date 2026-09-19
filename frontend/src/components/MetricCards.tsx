@@ -107,6 +107,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
   return (
     <div
+      className="metric-grid"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(6, 1fr)",
@@ -119,7 +120,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         return (
           <div
             key={i}
-            className="liquid-glass-card"
+            className="liquid-glass-card metric-card"
             style={{
               padding: "16px 18px",
               borderColor: c.accentBorder,
@@ -129,8 +130,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             }}
           >
             {/* Top row */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div className="metric-card__top" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div
+                className="metric-card__icon"
                 style={{
                   width: 32, height: 32, borderRadius: "50%",
                   background: c.iconBg,
@@ -142,11 +144,12 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               >
                 <Icon size={16} strokeWidth={2} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af" }}>{c.title}</span>
+              <span className="metric-card__title" style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af" }}>{c.title}</span>
             </div>
 
             {/* Value */}
             <div
+              className="metric-card__value"
               style={{
                 fontSize: 26, fontWeight: 800,
                 color: c.valueColor,
@@ -159,6 +162,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
             {/* Sub */}
             <div
+              className="metric-card__sub"
               style={{
                 fontSize: 11, color: c.subColor, fontWeight: 600,
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",

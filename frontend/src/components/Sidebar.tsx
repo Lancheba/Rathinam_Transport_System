@@ -1,26 +1,7 @@
-﻿import React from "react";
-import {
-  Home,
-  Map,
-  Bus,
-  Cpu,
-  BarChart3,
-  Radio,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink } from "react-router-dom";
-
-const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: Home },
-  { to: "/dashboard/parking", label: "Parking Map", icon: Map },
-  { to: "/dashboard/buses", label: "Bus Information", icon: Bus },
-  { to: "/dashboard/optimize", label: "Optimisation", icon: Cpu },
-  { to: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-  { to: "/dashboard/sensors", label: "Sensor Monitoring", icon: Radio },
-  { to: "/dashboard/settings", label: "Settings", icon: Settings },
-];
+import { navItems } from "./navItems";
 
 interface SidebarProps {
   collapsed: boolean;

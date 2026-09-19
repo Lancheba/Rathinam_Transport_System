@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { MapPin, TriangleAlert, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Building2, Lightbulb } from "lucide-react";
 import { getGround, getSlots } from "../api/endpoints";
 import type { ParkingGround, ParkingSlot } from "../types";
+import { useIsMobile } from "../hooks/useMediaQuery";
 
 interface ParkingGroundRealisticProps {
   onSlotClick?: (slotId: string, busNumber?: string) => void;
@@ -63,6 +64,10 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hovered, setHovered] = useState<string | null>(null);
+  // Touch screens have no hover tooltips, so a tapped slot's details are shown in a strip under the map
+  const isMobile = useIsMobile();
+  const [picked, setPicked] = useState<string | null>(null);
+  const pickedKey = isMobile ? picked : null;
 
   const load = useCallback(async () => {
     try {
@@ -94,6 +99,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   });
   const rows = Array.from(rowSet).sort();
   const slotNumbers = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
+  const pickedSlot = pickedKey ? slotMap[pickedKey] : undefined;
 
   /* live mini-stats */
   const freeCount     = slots.filter(s => !s.is_occupied).length;
@@ -101,16 +107,16 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const blockedCount  = slots.filter(s => s.is_blocked).length;
 
   return (
-    <div className="liquid-glass-card" style={{ padding: "20px 22px" }}>
+    <div className="liquid-glass-card pg" style={{ padding: "20px 22px" }}>
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="pg__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div className="pg__title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <MapPin size={18} style={{ color: "#a78bfa" }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Parking Ground Overview</span>
           {error && <span style={{ fontSize: 11, color: "#f87171", fontWeight: 600 }}>{error}</span>}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="pg__tools" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* Live stat pills */}
           {!loading && rows.length > 0 && (
             <div style={{ display: "flex", gap: 6 }}>
@@ -132,7 +138,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
           )}
 
           {/* 2D / 3D toggle */}
-          <div style={{
+          <div className="pg__toggle" style={{
             display: "flex", background: "rgba(255,255,255,0.05)",
             borderRadius: 9999, padding: 3,
             border: "1px solid rgba(255,255,255,0.08)",
@@ -154,7 +160,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
       </div>
 
       {/* ── Dimension wrapper ── */}
-      <div style={{ position: "relative", padding: "18px 28px 8px 12px" }}>
+      <div className="pg__wrap" style={{ position: "relative", padding: "18px 28px 8px 12px" }}>
 
         {/* Top dimension line */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, fontSize: 11, fontFamily: "monospace" }}>
@@ -181,7 +187,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
         </div>
 
         {/* ── The Ground ── */}
-        <div style={{
+        <div className="pg__ground" style={{
           background: "radial-gradient(ellipse at 50% 20%, #0f1120 0%, #080810 60%, #040408 100%)",
           borderRadius: 16,
           border: "1px solid rgba(99,102,241,0.2)",
@@ -227,31 +233,40 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
               No parking slots are configured on the server yet.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
+            <div className="pg__scroll" style={{ marginBottom: 28 }}>
+            <div
+              className="pg__rows"
+              style={{ display: "flex", flexDirection: "column", gap: 14, ["--pg-cols" as string]: slotNumbers.length }}
+            >
               {rows.map((row) => (
-                <div key={row} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={row} className="pg__row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {/* Row label */}
-                  <div style={{
+                  <div className="pg__label" style={{
                     width: 24, fontSize: 13, fontWeight: 800,
                     color: "#a78bfa", textAlign: "center",
                     textShadow: "0 0 10px rgba(167,139,250,0.6)",
                     fontFamily: "monospace",
                   }}>{row}</div>
 
-                  <div style={{ display: "flex", flex: 1, gap: 6 }}>
+                  <div className="pg__slots" style={{ display: "flex", flex: 1, gap: 6 }}>
                     {slotNumbers.map((num) => {
                       const slotKey = `${row}${num}`;
                       const slot = slotMap[slotKey];
                       const hasBus    = !!slot?.is_occupied;
                       const isBlocked = !!slot?.is_blocked;
-                      const isSelected = selectedSlot === slotKey;
+                      const isSelected = selectedSlot === slotKey || pickedKey === slotKey;
                       const exists = !!slot;
                       const isHov = hovered === slotKey;
 
                       return (
                         <div
                           key={num}
-                          onClick={() => exists && onSlotClick?.(slotKey, slot?.bus_number ?? undefined)}
+                          className="pg__slot"
+                          onClick={() => {
+                            if (!exists) return;
+                            if (isMobile) setPicked((cur) => (cur === slotKey ? null : slotKey));
+                            onSlotClick?.(slotKey, slot?.bus_number ?? undefined);
+                          }}
                           onMouseEnter={() => exists && setHovered(slotKey)}
                           onMouseLeave={() => setHovered(null)}
                           title={
@@ -271,6 +286,9 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                                 : "0 0 10px rgba(74,222,128,0.2)")
                               : slotGlow(hasBus, isBlocked, isSelected),
                             cursor: exists ? "pointer" : "default",
+                            // blocked/occupied styling hides the blue "selected" look, so mark the tapped slot explicitly
+                            outline: pickedKey === slotKey ? "2px solid rgba(255,255,255,0.9)" : undefined,
+                            outlineOffset: pickedKey === slotKey ? 2 : undefined,
                             display: "flex", flexDirection: "column",
                             alignItems: "center", justifyContent: "center",
                             transition: "all 0.15s ease",
@@ -318,10 +336,11 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                 </div>
               ))}
             </div>
+            </div>
           )}
 
           {/* ── Gates ── */}
-          <div style={{
+          <div className="pg__gates" style={{
             display: "flex", justifyContent: "space-between", alignItems: "flex-end",
             paddingTop: 10, borderTop: "1px solid rgba(99,102,241,0.15)",
           }}>
@@ -371,6 +390,31 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Tap-to-inspect: replaces the hover tooltip on touch screens */}
+      {pickedKey && (
+        <div className="pg__info" role="status" aria-live="polite">
+          {pickedSlot?.is_occupied ? (
+            <>
+              <div className="pg__info-main">
+                <strong>{pickedSlot.bus_number ?? "Unknown bus"}</strong>
+                <span>Row {pickedSlot.row}, Slot {pickedSlot.slot_number}</span>
+                {pickedSlot.is_blocked && (
+                  <span className="pg__info-flag"><TriangleAlert size={12} /> Blocked</span>
+                )}
+              </div>
+              <div className="pg__info-sub">
+                {pickedSlot.bus_route ?? "No route"} · Departs {pickedSlot.bus_departure?.slice(0, 5) ?? "—"}
+              </div>
+            </>
+          ) : (
+            <div className="pg__info-main">
+              <strong>{pickedKey}</strong>
+              <span>Free slot</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

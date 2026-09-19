@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   Bus,
@@ -51,6 +51,7 @@ export const LandingPage: React.FC = () => {
 
       {/* Floating Glass Navigation */}
       <header
+        className="lp-nav"
         style={{
           position: "sticky",
           top: 14,
@@ -61,7 +62,7 @@ export const LandingPage: React.FC = () => {
         }}
       >
         <div
-          className="liquid-glass-card"
+          className="liquid-glass-card lp-nav__bar"
           style={{
             display: "flex",
             alignItems: "center",
@@ -71,8 +72,9 @@ export const LandingPage: React.FC = () => {
             background: "rgba(14, 14, 14, 0.75)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="lp-nav__brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div
+              className="lp-nav__logo"
               style={{
                 width: 36,
                 height: 36,
@@ -87,18 +89,20 @@ export const LandingPage: React.FC = () => {
             >
               <Bus size={20} strokeWidth={2.2} />
             </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em" }}>
+            <div className="lp-nav__text">
+              <div className="lp-nav__title" style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em" }}>
                 Smart Bus Parking
               </div>
-              <div style={{ fontSize: 10, color: "#a3a3a3" }}>Rathinam College of Engineering</div>
+              <div className="lp-nav__sub" style={{ fontSize: 10, color: "#a3a3a3" }}>Rathinam College of Engineering</div>
             </div>
           </div>
 
           {/* Nav buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="lp-nav__actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Link
               to="/dashboard/find"
+              className="lp-nav__link"
+              aria-label="Find Bus"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -120,6 +124,8 @@ export const LandingPage: React.FC = () => {
 
             <Link
               to="/login"
+              className="lp-nav__link"
+              aria-label="Login"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -141,7 +147,7 @@ export const LandingPage: React.FC = () => {
 
             <Link
               to="/dashboard"
-              className="liquid-pill-active"
+              className="liquid-pill-active lp-nav__cta"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -162,10 +168,11 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* Hero Section */}
-      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 60px 24px", position: "relative", zIndex: 1 }}>
-        <div style={{ textAlign: "center", maxWidth: 880, margin: "0 auto 48px auto" }}>
+      <section className="lp-hero" style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 60px 24px", position: "relative", zIndex: 1 }}>
+        <div className="lp-hero__inner" style={{ textAlign: "center", maxWidth: 880, margin: "0 auto 48px auto" }}>
           {/* Pill Tag */}
           <div
+            className="lp-hero__pill"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -186,6 +193,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <h1
+            className="lp-hero__title"
             style={{
               fontSize: "clamp(32px, 5vw, 54px)",
               fontWeight: 900,
@@ -209,6 +217,7 @@ export const LandingPage: React.FC = () => {
           </h1>
 
           <p
+            className="lp-hero__lede"
             style={{
               fontSize: "clamp(15px, 2vw, 17px)",
               color: "#a3a3a3",
@@ -222,7 +231,7 @@ export const LandingPage: React.FC = () => {
           </p>
 
           {/* Action Buttons */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+          <div className="lp-hero__cta" style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
             <Link
               to="/dashboard"
               style={{
@@ -280,6 +289,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Quick Stats Pills */}
           <div
+            className="lp-hero__stats"
             style={{
               display: "flex",
               justifyContent: "center",
@@ -322,7 +332,7 @@ export const LandingPage: React.FC = () => {
             <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#c4c4c4", fontWeight: 700 }}>
               Live Digital Twin Preview
             </span>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
+            <h2 className="lp-preview__title" style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
               Interactive 2D/3D Parking Ground
             </h2>
           </div>
@@ -382,6 +392,7 @@ export const LandingPage: React.FC = () => {
 
         {/* Footer */}
         <footer
+          className="lp-footer"
           style={{
             marginTop: 80,
             paddingTop: 32,
@@ -398,7 +409,7 @@ export const LandingPage: React.FC = () => {
           <div>
             &copy; {new Date().getFullYear()} Rathinam College of Engineering &bull; Smart Bus Parking &amp; Retrieval System
           </div>
-          <div style={{ display: "flex", gap: 20 }}>
+          <div className="lp-footer__links" style={{ display: "flex", gap: 20 }}>
             <Link to="/dashboard" style={{ color: "#a3a3a3", textDecoration: "none" }}>Dashboard</Link>
             <Link to="/dashboard/find" style={{ color: "#a3a3a3", textDecoration: "none" }}>Find Bus</Link>
             <Link to="/login" style={{ color: "#a3a3a3", textDecoration: "none" }}>Staff Portal</Link>

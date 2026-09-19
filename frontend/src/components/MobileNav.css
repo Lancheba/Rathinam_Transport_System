@@ -1,0 +1,144 @@
+/* Bottom tab bar + "More" sheet (shown below 900px, see App.tsx) */
+
+.mnav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: calc(var(--mnav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(10, 10, 10, 0.9);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.mnav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #a3a3a3;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+
+.mnav__icon {
+  width: 46px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.mnav__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mnav__item:active .mnav__icon { background: rgba(255, 255, 255, 0.08); }
+
+.mnav__item.is-active { color: #ffffff; }
+.mnav__item.is-active .mnav__icon {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.mnav__item:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -4px;
+  border-radius: 14px;
+}
+
+/* ---- "More" sheet: sits directly above the tab bar ---- */
+.msheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom));
+  z-index: 55;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(5, 5, 5, 0.62);
+  animation: msheet-fade 0.16s ease-out;
+}
+
+.msheet__panel {
+  width: 100%;
+  padding: 8px 14px 16px;
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  outline: none;
+  animation: msheet-rise 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.msheet__grip {
+  width: 36px;
+  height: 4px;
+  margin: 4px auto 12px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.msheet__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.msheet__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #d4d4d4;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  -webkit-tap-highlight-color: transparent;
+}
+.msheet__item:active { background: rgba(255, 255, 255, 0.1); }
+.msheet__item.is-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+.msheet__item:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+.msheet__item svg { flex-shrink: 0; }
+
+@keyframes msheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes msheet-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .msheet, .msheet__panel { animation: none; }
+  .mnav__icon, .mnav__item { transition: none; }
+}

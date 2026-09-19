@@ -56,7 +56,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div className="liquid-glass-card" style={{ padding: "20px 24px", borderColor: "rgba(129,140,248,0.25)" }}>
+        <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(129,140,248,0.25)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <Sliders size={18} style={{ color: "#818cf8" }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Ground Dimensions</span>
@@ -68,25 +68,25 @@ export const SettingsPage: React.FC = () => {
             <p style={{ fontSize: 13, color: "#f87171" }}>No parking ground record found on the server.</p>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="st-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: "#9ca3af" }}>Ground Length (meters)</label>
-                  <input type="number" step="0.01" min="0" value={length}
+                  <label htmlFor="st-length" style={{ fontSize: 12, color: "#9ca3af" }}>Ground Length (meters)</label>
+                  <input id="st-length" type="number" inputMode="decimal" step="0.01" min="0" value={length}
                     onChange={e => setLength(e.target.value)} style={inputStyle}
                     onFocus={e  => (e.currentTarget.style.borderColor = "rgba(129,140,248,0.6)")}
                     onBlur={e   => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)")} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: "#9ca3af" }}>Ground Width (meters)</label>
-                  <input type="number" step="0.01" min="0" value={width}
+                  <label htmlFor="st-width" style={{ fontSize: 12, color: "#9ca3af" }}>Ground Width (meters)</label>
+                  <input id="st-width" type="number" inputMode="decimal" step="0.01" min="0" value={width}
                     onChange={e => setWidth(e.target.value)} style={inputStyle}
                     onFocus={e  => (e.currentTarget.style.borderColor = "rgba(129,140,248,0.6)")}
                     onBlur={e   => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)")} />
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
-                <button onClick={handleSave} disabled={!hasChanges || saving} style={{
+              <div className="st-actions" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
+                <button className="st-save" onClick={handleSave} disabled={!hasChanges || saving} style={{
                   display: "flex", alignItems: "center", gap: 8,
                   padding: "9px 20px", borderRadius: 9999, border: "none",
                   fontSize: 13, fontWeight: 700, transition: "all 0.2s",
@@ -111,7 +111,7 @@ export const SettingsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="liquid-glass-card" style={{ padding: "20px 24px", borderColor: "rgba(34,211,238,0.2)" }}>
+        <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(34,211,238,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <Wifi size={18} style={{ color: "#22d3ee" }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>ESP32 Gateway &amp; IoT</span>

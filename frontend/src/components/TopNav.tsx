@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Search, Bell, ChevronDown, LogOut, Lock } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Search, Bell, ChevronDown, LogOut, Lock, X } from "lucide-react";
 import rathinamLogo from "../assets/rathinam_logo.jpg";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { NotificationPanel } from "./NotificationPanel";
 
@@ -21,10 +21,39 @@ export const TopNav: React.FC<TopNavProps> = ({
   const { isLoggedIn, username, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  // Phones show the search field only when asked for it, to keep the bar to one row
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  // Going to another page (tab bar, sidebar, links) dismisses any open popovers.
+  // Adjusting state during render is React's recommended way to reset state when a value changes.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setNotifOpen(false);
+    setDropdownOpen(false);
+  }
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  // Tap/click anywhere outside the user menu closes it (there is no other way to dismiss it on touch)
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!userMenuRef.current?.contains(e.target as Node)) setDropdownOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [dropdownOpen]);
 
   return (
     <header
+      className="tn"
       style={{
         display: "flex",
         alignItems: "center",
@@ -41,8 +70,9 @@ export const TopNav: React.FC<TopNavProps> = ({
       }}
     >
       {/* Brand */}
-      <Link to="/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12 }}>
+      <Link to="/dashboard" className="tn__brand" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12 }}>
         <div
+          className="tn__logo"
           style={{
             width: 46,
             height: 46,
@@ -57,13 +87,13 @@ export const TopNav: React.FC<TopNavProps> = ({
             flexShrink: 0,
           }}
         >
-          <img src={rathinamLogo} alt="Rathinam" style={{ width: 42, height: 42, objectFit: "contain" }} />
+          <img src={rathinamLogo} alt="Rathinam" className="tn__logo-img" style={{ width: 42, height: 42, objectFit: "contain" }} />
         </div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+        <div className="tn__text">
+          <div className="tn__title" style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
             Rathinam Smart Bus Parking
           </div>
-          <div style={{ fontSize: 10, color: "#a3a3a3", fontWeight: 400, marginTop: 2 }}>
+          <div className="tn__sub" style={{ fontSize: 10, color: "#a3a3a3", fontWeight: 400, marginTop: 2 }}>
             College Bus Parking &amp; Retrieval System
           </div>
         </div>
@@ -71,6 +101,7 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Search Bar */}
       <div
+        className={`tn__search${searchOpen ? " is-open" : ""}`}
         style={{
           flex: 1,
           maxWidth: 460,
@@ -90,7 +121,11 @@ export const TopNav: React.FC<TopNavProps> = ({
           }}
         />
         <input
+          ref={searchInputRef}
           type="text"
+          enterKeyHint="search"
+          autoComplete="off"
+          aria-label="Search bus number, slot or RFID"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search bus number, slot, RFID..."
@@ -123,10 +158,23 @@ export const TopNav: React.FC<TopNavProps> = ({
       </div>
 
       {/* Right Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div className="tn__actions" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        {/* Search toggle: phones only (hidden by CSS on larger screens) */}
+        <button
+          type="button"
+          className="tn__icon-btn tn__search-toggle"
+          onClick={() => { setNotifOpen(false); setSearchOpen((v) => !v); }}
+          aria-label={searchOpen ? "Close search" : "Search"}
+          aria-expanded={searchOpen}
+        >
+          {searchOpen ? <X size={16} /> : <Search size={16} />}
+        </button>
+
         {/* Notification Bell */}
-        <div style={{ position: "relative" }}>
+        <div className="tn__bell-wrap" style={{ position: "relative" }}>
           <button
+            className="tn__icon-btn"
+            aria-label="Notifications"
             onClick={() => setNotifOpen((v) => !v)}
             style={{
               width: 36,
@@ -177,9 +225,22 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
 
         {/* User Pill with Dropdown */}
-        <div style={{ position: "relative" }}>
+        <div ref={userMenuRef} style={{ position: "relative" }}>
           <div
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="tn__user"
+            role="button"
+            tabIndex={0}
+            aria-haspopup="menu"
+            aria-expanded={dropdownOpen}
+            aria-label="Account menu"
+            onClick={() => { setNotifOpen(false); setDropdownOpen(!dropdownOpen); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setNotifOpen(false);
+                setDropdownOpen((v) => !v);
+              }
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -207,19 +268,20 @@ export const TopNav: React.FC<TopNavProps> = ({
             >
               {(username || adminName)[0]?.toUpperCase()}
             </div>
-            <div style={{ textAlign: "left", lineHeight: 1.2 }}>
+            <div className="tn__user-text" style={{ textAlign: "left", lineHeight: 1.2 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#ffffff" }}>
                 {isLoggedIn ? username : adminName}
               </div>
               <div style={{ fontSize: 9, color: "#a3a3a3" }}>{roleTitle}</div>
             </div>
-            <ChevronDown size={13} style={{ color: "#a3a3a3", marginLeft: 2 }} />
+            <ChevronDown className="tn__user-chev" size={13} style={{ color: "#a3a3a3", marginLeft: 2 }} />
           </div>
 
           {/* Dropdown Menu */}
           {dropdownOpen && (
             <div
-              className="liquid-glass-card"
+              className="liquid-glass-card tn__menu"
+              role="menu"
               style={{
                 position: "absolute",
                 right: 0,
@@ -232,6 +294,11 @@ export const TopNav: React.FC<TopNavProps> = ({
                 boxShadow: "0 10px 30px rgba(0,0,0,0.7)",
               }}
             >
+              {/* The name is hidden in the bar on phones, so show who is signed in here */}
+              <div className="tn__menu-id">
+                <div className="tn__menu-name">{isLoggedIn ? username : adminName}</div>
+                <div className="tn__menu-role">{roleTitle}</div>
+              </div>
               {isLoggedIn ? (
                 <button
                   onClick={() => {

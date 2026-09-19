@@ -60,8 +60,11 @@ const BusesPage: React.FC = () => {
       <h2 style={{ color: "#60a5fa", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
         <BusIcon size={20} strokeWidth={1.9} /> Bus Management
       </h2>
-      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+      <div className="bp-toolbar" style={{ display: "flex", gap: 12, marginBottom: 20 }}>
         <input
+          className="bp-search"
+          type="text" enterKeyHint="search" autoComplete="off"
+          aria-label="Search bus number or route"
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search bus number or route..."
           style={{
@@ -71,7 +74,7 @@ const BusesPage: React.FC = () => {
             color: "#f0f4ff", fontSize: 14, outline: "none",
           }}
         />
-        <span style={{ color: "#9ca3af", alignSelf: "center", fontSize: 13 }}>{filtered.length} buses</span>
+        <span className="bp-count" style={{ color: "#9ca3af", alignSelf: "center", fontSize: 13 }}>{filtered.length} buses</span>
         <AddBusButton onCreated={handleCreated} />
       </div>
 
@@ -97,7 +100,7 @@ const BusesPage: React.FC = () => {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))", gap: 16 }}>
         {filtered.map(bus => {
           const slot = bus.parking_slot_info;
           const borderColor = slot?.is_blocked ? "rgba(251,191,36,0.4)" : "rgba(96,165,250,0.2)";
@@ -121,7 +124,7 @@ const BusesPage: React.FC = () => {
                     padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
                   }}>{bus.is_active ? "ACTIVE" : "INACTIVE"}</span>
                   {canManageBuses && (
-                    <button type="button" onClick={() => handleDelete(bus)} disabled={deletingId === bus.id}
+                    <button type="button" className="icon-btn" onClick={() => handleDelete(bus)} disabled={deletingId === bus.id}
                       aria-label={`Remove bus ${bus.bus_number}`}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "center",
