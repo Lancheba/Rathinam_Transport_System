@@ -7,7 +7,7 @@
 .lp {
   --ink: #f5f5f5;
   --ink-soft: #d4d4d4;
-  --ink-dim: #b0b0b0;
+  --ink-dim: #a3a3a3;
   --line: rgba(255, 255, 255, 0.3);
   --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
@@ -100,7 +100,7 @@
   font-weight: 500;
   font-size: clamp(22px, 2.2vw, 32px);
   line-height: 1.02;
-  color: #efefef;
+  color: #f0f0f0;
 }
 .lp__tagline span { display: block; white-space: nowrap; }
 .lp__tagline span + span { padding-left: 0.5em; }
@@ -109,7 +109,7 @@
   width: 4.1em;
   height: 0.42em;
   margin: 0.05em 0 0 0.9em;
-  color: #e8e8e8;
+  color: #e5e5e5;
 }
 
 /* brand */
@@ -148,7 +148,7 @@
   margin-top: clamp(12px, 2.2dvh, 24px);
   padding: clamp(22px, 3.6dvh, 36px) clamp(22px, 4.2vw, 52px) clamp(20px, 3.4dvh, 32px);
   border-radius: clamp(28px, 4.4dvh, 42px);
-  background: linear-gradient(158deg, rgba(78, 78, 78, 0.36) 0%, rgba(30, 30, 30, 0.56) 34%, rgba(12, 12, 12, 0.72) 100%);
+  background: linear-gradient(158deg, rgba(80, 80, 80, 0.36) 0%, rgba(30, 30, 30, 0.56) 34%, rgba(12, 12, 12, 0.72) 100%);
   -webkit-backdrop-filter: blur(26px) saturate(130%);
   backdrop-filter: blur(26px) saturate(130%);
   box-shadow:
@@ -216,7 +216,7 @@
   width: 22px;
   height: 22px;
   transform: translateY(-50%);
-  color: #ececec;
+  color: #eaeaea;
   pointer-events: none;
 }
 .lp__field input {
@@ -251,7 +251,7 @@
   background: none;
   border: 0;
   border-radius: 50%;
-  color: #ececec;
+  color: #eaeaea;
   cursor: pointer;
 }
 .lp__eye svg { width: 22px; height: 22px; }
@@ -269,7 +269,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  color: #e8e8e8;
+  color: #e5e5e5;
   cursor: pointer;
   user-select: none;
 }
@@ -287,7 +287,7 @@
   transition: background 0.15s, color 0.15s;
 }
 .lp__box svg { width: 15px; height: 15px; }
-.lp__remember input:checked + .lp__box { background: #ececec; color: #111; border-color: #ececec; }
+.lp__remember input:checked + .lp__box { background: #eaeaea; color: #141414; border-color: #eaeaea; }
 .lp__remember input:focus-visible + .lp__box { outline: 2px solid #fff; outline-offset: 3px; }
 .lp__forgot {
   background: none;
@@ -303,7 +303,7 @@
   text-align: center;
   font-size: 13.5px;
   line-height: 1.35;
-  color: #ffb4b4;
+  color: #d4d4d4;
 }
 
 /* login button */
@@ -321,7 +321,7 @@
   cursor: pointer;
   color: #161616;
   font: 700 18px / 1 var(--font);
-  background: radial-gradient(90% 130% at 50% 0%, #f4f4f4 0%, #d0d0d0 42%, #a2a2a2 100%);
+  background: radial-gradient(90% 130% at 50% 0%, #f5f5f5 0%, #d0d0d0 42%, #a3a3a3 100%);
   box-shadow:
     0 0 32px rgba(255, 255, 255, 0.26),
     0 10px 26px rgba(0, 0, 0, 0.45),
@@ -355,7 +355,7 @@
   gap: 18px;
   margin-top: clamp(14px, 2.6dvh, 24px);
   font-size: 14px;
-  color: #d8d8d8;
+  color: #d4d4d4;
   white-space: nowrap;
 }
 .lp__divider::before,
@@ -381,14 +381,14 @@
   border-radius: 50%;
   color: #fff;
   cursor: pointer;
-  background: radial-gradient(circle at 50% 30%, #333 0%, #171717 100%);
+  background: radial-gradient(circle at 50% 30%, #525252 0%, #171717 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.26);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
 .lp__social:hover {
   border-color: rgba(255, 255, 255, 0.55);
-  background: radial-gradient(circle at 50% 30%, #414141 0%, #1e1e1e 100%);
+  background: radial-gradient(circle at 50% 30%, #5c5c5c 0%, #1e1e1e 100%);
   transform: translateY(-2px);
 }
 .lp__social-icon { width: 24px; height: 24px; }
@@ -398,7 +398,7 @@
   margin-top: clamp(14px, 2.4dvh, 22px);
   text-align: center;
   font-size: 14.5px;
-  color: #d8d8d8;
+  color: #d4d4d4;
 }
 .lp__signup a {
   display: inline-flex;
@@ -428,7 +428,7 @@
   align-items: center;
   gap: 7px;
   text-align: center;
-  color: #8a8a8a;
+  color: #8f8f8f;
   font-size: 12px;
   line-height: 1.25;
 }
@@ -441,7 +441,7 @@
   width: 1px;
   background: rgba(255, 255, 255, 0.2);
 }
-.lp__features svg { width: 26px; height: 26px; color: #9a9a9a; }
+.lp__features svg { width: 26px; height: 26px; color: #a3a3a3; }
 
 /* -- Shared -------------------------------------------------- */
 .lp__sr {

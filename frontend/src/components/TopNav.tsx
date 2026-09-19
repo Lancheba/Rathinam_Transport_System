@@ -30,7 +30,7 @@ export const TopNav: React.FC<TopNavProps> = ({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "12px 28px",
-        background: "rgba(10, 13, 20, 0.85)",
+        background: "rgba(10, 10, 10, 0.85)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
         borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
@@ -63,7 +63,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
             Rathinam Smart Bus Parking
           </div>
-          <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginTop: 2 }}>
+          <div style={{ fontSize: 10, color: "#a3a3a3", fontWeight: 400, marginTop: 2 }}>
             College Bus Parking &amp; Retrieval System
           </div>
         </div>
@@ -85,7 +85,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             left: 16,
             top: "50%",
             transform: "translateY(-50%)",
-            color: "#94a3b8",
+            color: "#a3a3a3",
             pointerEvents: "none",
           }}
         />
@@ -112,7 +112,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           onFocus={(e) => {
             e.target.style.background = "rgba(255, 255, 255, 0.08)";
             e.target.style.borderColor = "rgba(255, 255, 255, 0.28)";
-            e.target.style.boxShadow = "0 0 16px rgba(56, 189, 248, 0.15), inset 0 1px 3px rgba(0, 0, 0, 0.4)";
+            e.target.style.boxShadow = "0 0 16px rgba(255, 255, 255, 0.15), inset 0 1px 3px rgba(0, 0, 0, 0.4)";
           }}
           onBlur={(e) => {
             e.target.style.background = "rgba(255, 255, 255, 0.05)";
@@ -133,15 +133,15 @@ export const TopNav: React.FC<TopNavProps> = ({
               height: 36,
               borderRadius: "50%",
               background: notifOpen
-                ? "rgba(56, 189, 248, 0.15)"
+                ? "rgba(255, 255, 255, 0.15)"
                 : "rgba(255, 255, 255, 0.05)",
               border: notifOpen
-                ? "1px solid rgba(56, 189, 248, 0.4)"
+                ? "1px solid rgba(255, 255, 255, 0.4)"
                 : "1px solid rgba(255, 255, 255, 0.1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: notifOpen ? "#38bdf8" : "#94a3b8",
+              color: notifOpen ? "#c4c4c4" : "#a3a3a3",
               cursor: "pointer",
               position: "relative",
               transition: "all 0.2s ease",
@@ -154,7 +154,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             }}
             onMouseLeave={(e) => {
               if (!notifOpen) {
-                e.currentTarget.style.color = "#94a3b8";
+                e.currentTarget.style.color = "#a3a3a3";
                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
               }
             }}
@@ -168,8 +168,8 @@ export const TopNav: React.FC<TopNavProps> = ({
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: "#ef4444",
-                boxShadow: "0 0 8px #ef4444",
+                background: "#b3b3b3",
+                boxShadow: "0 0 8px #b3b3b3",
               }}
             />
           </button>
@@ -196,11 +196,11 @@ export const TopNav: React.FC<TopNavProps> = ({
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)",
+                background: "linear-gradient(135deg, #e5e5e5 0%, #a3a3a3 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#0f172a",
+                color: "#141414",
                 fontWeight: 700,
                 fontSize: 13,
               }}
@@ -211,9 +211,9 @@ export const TopNav: React.FC<TopNavProps> = ({
               <div style={{ fontSize: 12, fontWeight: 700, color: "#ffffff" }}>
                 {isLoggedIn ? username : adminName}
               </div>
-              <div style={{ fontSize: 9, color: "#94a3b8" }}>{roleTitle}</div>
+              <div style={{ fontSize: 9, color: "#a3a3a3" }}>{roleTitle}</div>
             </div>
-            <ChevronDown size={13} style={{ color: "#94a3b8", marginLeft: 2 }} />
+            <ChevronDown size={13} style={{ color: "#a3a3a3", marginLeft: 2 }} />
           </div>
 
           {/* Dropdown Menu */}
@@ -248,13 +248,13 @@ export const TopNav: React.FC<TopNavProps> = ({
                     background: "transparent",
                     border: "none",
                     borderRadius: 8,
-                    color: "#f43f5e",
+                    color: "#b3b3b3",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
                     textAlign: "left",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(244, 63, 94, 0.1)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <LogOut size={14} />

@@ -26,12 +26,12 @@ function relativeTime(ts: string): string {
 type EventIconFC = React.FC<{ size: number }>;
 
 const EVENT_META: Record<string, { icon: EventIconFC; bg: string; color: string }> = {
-  PARKED:   { icon: ParkingSquare,  bg: "rgba(16,185,129,0.18)",  color: "#10b981" },
-  ENTRY:    { icon: LogIn,          bg: "rgba(56,189,248,0.18)",  color: "#38bdf8" },
-  DETECTED: { icon: Radio,          bg: "rgba(56,189,248,0.18)",  color: "#38bdf8" },
-  MOVED:    { icon: ArrowRightLeft, bg: "rgba(168,85,247,0.18)",  color: "#c084fc" },
-  RFID:     { icon: CreditCard,     bg: "rgba(148,163,184,0.18)", color: "#cbd5e1" },
-  EXIT:     { icon: AlertTriangle,  bg: "rgba(244,63,94,0.18)",   color: "#f43f5e" },
+  PARKED:   { icon: ParkingSquare,  bg: "rgba(255,255,255,0.18)",  color: "#a3a3a3" },
+  ENTRY:    { icon: LogIn,          bg: "rgba(255,255,255,0.18)",  color: "#c4c4c4" },
+  DETECTED: { icon: Radio,          bg: "rgba(255,255,255,0.18)",  color: "#c4c4c4" },
+  MOVED:    { icon: ArrowRightLeft, bg: "rgba(255,255,255,0.18)",  color: "#d4d4d4" },
+  RFID:     { icon: CreditCard,     bg: "rgba(255,255,255,0.18)", color: "#d4d4d4" },
+  EXIT:     { icon: AlertTriangle,  bg: "rgba(255,255,255,0.18)",   color: "#b3b3b3" },
 };
 
 function getMetaForEvent(ev: ParkingEvent) {
@@ -121,8 +121,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
-                  color: "#0f172a",
-                  background: "#38bdf8",
+                  color: "#141414",
+                  background: "#c4c4c4",
                   borderRadius: 9999,
                   padding: "1px 6px",
                 }}
@@ -140,7 +140,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                color: "#94a3b8",
+                color: "#a3a3a3",
                 display: "flex",
                 alignItems: "center",
                 padding: 4,
@@ -157,7 +157,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                color: "#94a3b8",
+                color: "#a3a3a3",
                 display: "flex",
                 alignItems: "center",
                 padding: 4,
@@ -170,7 +170,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
 
         {/* last refresh */}
         {lastRefresh && (
-          <div style={{ fontSize: 10, color: "#475569", padding: "6px 16px 0", flexShrink: 0 }}>
+          <div style={{ fontSize: 10, color: "#6b6b6b", padding: "6px 16px 0", flexShrink: 0 }}>
             Last updated{" "}
             {lastRefresh.toLocaleTimeString("en-US", {
               hour: "numeric",
@@ -183,11 +183,11 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
         {/* list */}
         <div style={{ overflowY: "auto", flex: 1, padding: "10px 12px 12px" }}>
           {loading && events.length === 0 ? (
-            <div style={{ color: "#64748b", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
+            <div style={{ color: "#737373", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
               Loading events…
             </div>
           ) : events.length === 0 ? (
-            <div style={{ color: "#64748b", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
+            <div style={{ color: "#737373", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
               No events yet.
             </div>
           ) : (
@@ -230,7 +230,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
                         style={{
                           fontSize: 12,
                           fontWeight: 600,
-                          color: "#e2e8f0",
+                          color: "#e5e5e5",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -238,9 +238,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
                       >
                         {ev.message || `${ev.bus_number ?? "Bus"} — ${ev.event_type}`}
                       </div>
-                      <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
+                      <div style={{ fontSize: 10, color: "#737373", marginTop: 2 }}>
                         {ev.bus_number && (
-                          <span style={{ color: "#94a3b8", fontWeight: 600, marginRight: 5 }}>
+                          <span style={{ color: "#a3a3a3", fontWeight: 600, marginRight: 5 }}>
                             {ev.bus_number}
                           </span>
                         )}

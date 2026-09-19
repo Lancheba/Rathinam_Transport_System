@@ -40,7 +40,7 @@ export const BusInformationCard: React.FC = () => {
             to="/dashboard/buses"
             style={{
               fontSize: 11,
-              color: "#94a3b8",
+              color: "#a3a3a3",
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
@@ -48,9 +48,9 @@ export const BusInformationCard: React.FC = () => {
               fontWeight: 500,
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#a3a3a3")}
           >
-            View All →
+            View All <ChevronRight size={12} />
           </Link>
         </div>
       </div>
@@ -58,7 +58,7 @@ export const BusInformationCard: React.FC = () => {
       {/* Table */}
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ color: "#64748b", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", textAlign: "left" }}>
+          <tr style={{ color: "#737373", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", textAlign: "left" }}>
             <th style={{ paddingBottom: 8, fontWeight: 600 }}>Bus No.</th>
             <th style={{ paddingBottom: 8, fontWeight: 600 }}>Route</th>
             <th style={{ paddingBottom: 8, fontWeight: 600 }}>Slot</th>
@@ -77,12 +77,12 @@ export const BusInformationCard: React.FC = () => {
             >
               <td style={{ padding: "10px 0", fontWeight: 700, color: "#ffffff" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <BusIcon size={13} style={{ color: "#94a3b8" }} />
+                  <BusIcon size={13} style={{ color: "#a3a3a3" }} />
                   <span>{b.num}</span>
                 </div>
               </td>
-              <td style={{ padding: "10px 0", color: "#cbd5e1" }}>{b.route}</td>
-              <td style={{ padding: "10px 0", fontFamily: "monospace", color: "#94a3b8" }}>{b.slot}</td>
+              <td style={{ padding: "10px 0", color: "#d4d4d4" }}>{b.route}</td>
+              <td style={{ padding: "10px 0", fontFamily: "monospace", color: "#a3a3a3" }}>{b.slot}</td>
               <td style={{ padding: "10px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span
@@ -90,14 +90,14 @@ export const BusInformationCard: React.FC = () => {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      background: b.blocked ? "#f43f5e" : "#10b981",
-                      boxShadow: b.blocked ? "0 0 8px #f43f5e" : "0 0 8px #10b981",
+                      background: b.blocked ? "#b3b3b3" : "#a3a3a3",
+                      boxShadow: b.blocked ? "0 0 8px #b3b3b3" : "0 0 8px #a3a3a3",
                     }}
                   />
-                  <span style={{ color: b.blocked ? "#f43f5e" : "#10b981", fontWeight: 600 }}>{b.status}</span>
+                  <span style={{ color: b.blocked ? "#b3b3b3" : "#a3a3a3", fontWeight: 600 }}>{b.status}</span>
                 </div>
               </td>
-              <td style={{ padding: "10px 0", color: "#64748b", textAlign: "right" }}>
+              <td style={{ padding: "10px 0", color: "#737373", textAlign: "right" }}>
                 <ChevronRight size={14} />
               </td>
             </tr>
@@ -112,36 +112,36 @@ export const RecentEventsCard: React.FC = () => {
   const events = [
     {
       icon: ParkingSquare,
-      badgeBg: "rgba(16, 185, 129, 0.18)",
-      badgeColor: "#10b981",
+      badgeBg: "rgba(255, 255, 255, 0.18)",
+      badgeColor: "#a3a3a3",
       text: "B04 parked at Row B - Slot 6",
       time: "12:15 PM",
     },
     {
       icon: Radio,
-      badgeBg: "rgba(56, 189, 248, 0.18)",
-      badgeColor: "#38bdf8",
+      badgeBg: "rgba(255, 255, 255, 0.18)",
+      badgeColor: "#c4c4c4",
       text: "B03 detected at Row B - Slot 3",
       time: "12:10 PM",
     },
     {
       icon: ArrowRightLeft,
-      badgeBg: "rgba(168, 85, 247, 0.18)",
-      badgeColor: "#c084fc",
+      badgeBg: "rgba(255, 255, 255, 0.18)",
+      badgeColor: "#d4d4d4",
       text: "B02 moved to Row C - Slot 2",
       time: "11:56 AM",
     },
     {
       icon: CreditCard,
-      badgeBg: "rgba(148, 163, 184, 0.18)",
-      badgeColor: "#cbd5e1",
+      badgeBg: "rgba(255, 255, 255, 0.18)",
+      badgeColor: "#d4d4d4",
       text: "B01 entry detected (RFID-001)",
       time: "11:42 AM",
     },
     {
       icon: AlertTriangle,
-      badgeBg: "rgba(244, 63, 94, 0.18)",
-      badgeColor: "#f43f5e",
+      badgeBg: "rgba(255, 255, 255, 0.18)",
+      badgeColor: "#b3b3b3",
       text: "B05 blocked by B02",
       time: "11:30 AM",
     },
@@ -154,7 +154,7 @@ export const RecentEventsCard: React.FC = () => {
           <Clock size={17} style={{ color: "#ffffff" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Recent Events</span>
         </div>
-        <span style={{ fontSize: 11, color: "#94a3b8", cursor: "pointer" }}>View All →</span>
+        <span style={{ fontSize: 11, color: "#a3a3a3", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 2 }}>View All <ChevronRight size={12} /></span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -178,9 +178,9 @@ export const RecentEventsCard: React.FC = () => {
                 >
                   <Icon size={14} />
                 </div>
-                <span style={{ fontSize: 12, color: "#e2e8f0", fontWeight: 500 }}>{ev.text}</span>
+                <span style={{ fontSize: 12, color: "#e5e5e5", fontWeight: 500 }}>{ev.text}</span>
               </div>
-              <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace", flexShrink: 0 }}>
+              <span style={{ fontSize: 11, color: "#737373", fontFamily: "monospace", flexShrink: 0 }}>
                 {ev.time}
               </span>
             </div>
@@ -207,7 +207,7 @@ export const SensorStatusCard: React.FC = () => {
           <Radio size={17} style={{ color: "#ffffff" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>Sensor Status</span>
         </div>
-        <span style={{ fontSize: 11, color: "#94a3b8", cursor: "pointer" }}>View All →</span>
+        <span style={{ fontSize: 11, color: "#a3a3a3", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 2 }}>View All <ChevronRight size={12} /></span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -222,21 +222,21 @@ export const SensorStatusCard: React.FC = () => {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, width: 95 }}>
-              <Radio size={12} style={{ color: "#94a3b8" }} />
+              <Radio size={12} style={{ color: "#a3a3a3" }} />
               <span style={{ fontWeight: 600, color: "#ffffff", fontFamily: "monospace" }}>{s.id}</span>
             </div>
-            <span style={{ color: "#94a3b8", flex: 1, textAlign: "left", paddingLeft: 10 }}>{s.loc}</span>
+            <span style={{ color: "#a3a3a3", flex: 1, textAlign: "left", paddingLeft: 10 }}>{s.loc}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span
                 style={{
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: s.online ? "#10b981" : "#f43f5e",
-                  boxShadow: s.online ? "0 0 8px #10b981" : "0 0 8px #f43f5e",
+                  background: s.online ? "#a3a3a3" : "#b3b3b3",
+                  boxShadow: s.online ? "0 0 8px #a3a3a3" : "0 0 8px #b3b3b3",
                 }}
               />
-              <span style={{ color: s.online ? "#10b981" : "#f43f5e", fontWeight: 600, fontSize: 11 }}>
+              <span style={{ color: s.online ? "#a3a3a3" : "#b3b3b3", fontWeight: 600, fontSize: 11 }}>
                 {s.online ? "Online" : "Offline"}
               </span>
             </div>

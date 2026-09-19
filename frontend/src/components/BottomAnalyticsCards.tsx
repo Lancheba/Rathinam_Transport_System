@@ -48,7 +48,7 @@ export const SlotUtilizationCard: React.FC<{
             <defs>
               <linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="100%" stopColor="#cbd5e1" />
+                <stop offset="100%" stopColor="#d4d4d4" />
               </linearGradient>
             </defs>
           </svg>
@@ -66,7 +66,7 @@ export const SlotUtilizationCard: React.FC<{
             }}
           >
             <span style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{pct}%</span>
-            <span style={{ fontSize: 10, color: "#94a3b8" }}>Occupied</span>
+            <span style={{ fontSize: 10, color: "#a3a3a3" }}>Occupied</span>
           </div>
         </div>
 
@@ -75,7 +75,7 @@ export const SlotUtilizationCard: React.FC<{
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ffffff" }} />
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>Occupied</span>
+              <span style={{ fontSize: 12, color: "#a3a3a3" }}>Occupied</span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
               {occupied}
@@ -85,7 +85,7 @@ export const SlotUtilizationCard: React.FC<{
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(255, 255, 255, 0.4)" }} />
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>Free</span>
+              <span style={{ fontSize: 12, color: "#a3a3a3" }}>Free</span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
               {free}
@@ -95,7 +95,7 @@ export const SlotUtilizationCard: React.FC<{
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(255, 255, 255, 0.15)" }} />
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>Total</span>
+              <span style={{ fontSize: 12, color: "#a3a3a3" }}>Total</span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
               {total}
@@ -133,7 +133,7 @@ export const BusRouteDistributionCard: React.FC = () => {
             flexDirection: "column",
             justifyContent: "space-between",
             height: "100%",
-            color: "#64748b",
+            color: "#737373",
             fontSize: 10,
             fontFamily: "monospace",
             paddingRight: 6,
@@ -174,7 +174,7 @@ export const BusRouteDistributionCard: React.FC = () => {
                 }}
               >
                 {/* Value on top */}
-                <span style={{ fontSize: 10, color: "#cbd5e1", marginBottom: 4, fontFamily: "monospace" }}>
+                <span style={{ fontSize: 10, color: "#d4d4d4", marginBottom: 4, fontFamily: "monospace" }}>
                   {r.count}
                 </span>
 
@@ -184,7 +184,7 @@ export const BusRouteDistributionCard: React.FC = () => {
                     width: "100%",
                     height: `${heightPct}%`,
                     borderRadius: "4px 4px 0 0",
-                    background: "linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(203, 213, 225, 0.5) 100%)",
+                    background: "linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(212, 212, 212, 0.5) 100%)",
                     boxShadow: "0 0 12px rgba(255, 255, 255, 0.35)",
                     transition: "height 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
@@ -198,7 +198,7 @@ export const BusRouteDistributionCard: React.FC = () => {
       {/* X Axis Labels */}
       <div style={{ display: "flex", justifyContent: "space-around", paddingLeft: 28, marginTop: 6 }}>
         {routes.map((r, i) => (
-          <span key={i} style={{ fontSize: 10, color: "#94a3b8" }}>
+          <span key={i} style={{ fontSize: 10, color: "#a3a3a3" }}>
             {r.name}
           </span>
         ))}

@@ -100,9 +100,8 @@ export const Dashboard: React.FC = () => {
             }}
           >
             <span>{greeting}, Admin</span>
-            <span>👋</span>
           </h1>
-          <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: "#a3a3a3", marginTop: 4 }}>
             Here's what's happening at the college bus parking ground today.
           </p>
         </div>
@@ -122,7 +121,7 @@ export const Dashboard: React.FC = () => {
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
           }}
         >
-          <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>
+          <span style={{ fontSize: 12, color: "#a3a3a3", fontWeight: 500 }}>
             {currentDate || "Sep 26, 2025"}
           </span>
           <div style={{ width: 1, height: 14, background: "rgba(255, 255, 255, 0.15)" }} />
@@ -130,7 +129,7 @@ export const Dashboard: React.FC = () => {
             <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
               {currentTime || "12:28 PM"}
             </span>
-            <Clock size={14} style={{ color: "#94a3b8" }} />
+            <Clock size={14} style={{ color: "#a3a3a3" }} />
           </div>
         </div>
       </div>
@@ -144,7 +143,7 @@ export const Dashboard: React.FC = () => {
         freeSlots={summary.free}
         totalSlots={summary.total_slots}
         avgRetrievalTime="2.5 min"
-        retrievalImprovement="↓ 45% (vs. last hour)"
+        retrievalImprovement="45% faster (vs. last hour)"
         activeSensors={5}
         offlineSensors={1}
       />

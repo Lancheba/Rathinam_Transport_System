@@ -34,7 +34,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        background: "#07090e",
+        background: "#080808",
         overflow: "hidden",
         padding: 0,
         margin: 0,
@@ -65,7 +65,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         />
         <path
           d="M-50 250 C 400 100, 800 450, 1200 180 C 1400 50, 1550 220, 1650 300"
-          stroke="rgba(56, 189, 248, 0.08)"
+          stroke="rgba(255, 255, 255, 0.08)"
           strokeWidth="1.5"
         />
         <path

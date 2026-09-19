@@ -16,6 +16,13 @@ def run_optimization():
     Does NOT write to the database — the result is used for display only
     until staff clicks "Apply".
     """
+    # Self-heal: a slot marked occupied with no bus attached is a leftover
+    # from a bus that was deleted while still parked. Free it up first so
+    # it never crashes the layout below.
+    ParkingSlot.objects.filter(is_occupied=True, bus__isnull=True).update(
+        is_occupied=False, is_blocked=False
+    )
+
     occupied_slots = (
         ParkingSlot.objects
         .filter(is_occupied=True)

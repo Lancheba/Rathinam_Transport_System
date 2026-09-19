@@ -67,8 +67,10 @@ export const SettingsPage: React.FC = () => {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#ffffff" }}>⚙️ System Settings</h2>
-        <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: 10 }}>
+          <Sliders size={19} strokeWidth={1.9} /> System Settings
+        </h2>
+        <p style={{ fontSize: 13, color: "#a3a3a3", marginTop: 4 }}>
           Ground dimensions, sensor configurations, and role permissions.
         </p>
       </div>
@@ -76,21 +78,21 @@ export const SettingsPage: React.FC = () => {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div className="liquid-glass-card" style={{ padding: "20px 24px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <Sliders size={18} style={{ color: "#38bdf8" }} />
+            <Sliders size={18} style={{ color: "#c4c4c4" }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Ground Dimensions</span>
           </div>
 
           {loading ? (
-            <p style={{ fontSize: 13, color: "#94a3b8" }}>Loading current dimensions…</p>
+            <p style={{ fontSize: 13, color: "#a3a3a3" }}>Loading current dimensions…</p>
           ) : !ground ? (
-            <p style={{ fontSize: 13, color: "#f87171" }}>
+            <p style={{ fontSize: 13, color: "#c4c4c4" }}>
               No parking ground record found on the server.
             </p>
           ) : (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: "#94a3b8" }}>Ground Length (meters)</label>
+                  <label style={{ fontSize: 12, color: "#a3a3a3" }}>Ground Length (meters)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -98,12 +100,12 @@ export const SettingsPage: React.FC = () => {
                     value={length}
                     onChange={(e) => setLength(e.target.value)}
                     style={inputStyle}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.5)")}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.5)")}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: "#94a3b8" }}>Ground Width (meters)</label>
+                  <label style={{ fontSize: 12, color: "#a3a3a3" }}>Ground Width (meters)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -111,7 +113,7 @@ export const SettingsPage: React.FC = () => {
                     value={width}
                     onChange={(e) => setWidth(e.target.value)}
                     style={inputStyle}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.5)")}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.5)")}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
                   />
                 </div>
@@ -132,9 +134,9 @@ export const SettingsPage: React.FC = () => {
                     fontWeight: 700,
                     cursor: hasChanges && !saving ? "pointer" : "not-allowed",
                     background: hasChanges && !saving
-                      ? "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)"
+                      ? "linear-gradient(135deg, #c4c4c4 0%, #c4c4c4 100%)"
                       : "rgba(255,255,255,0.08)",
-                    color: hasChanges && !saving ? "#04121b" : "#64748b",
+                    color: hasChanges && !saving ? "#0e0e0e" : "#737373",
                     transition: "all 0.2s",
                   }}
                 >
@@ -149,14 +151,14 @@ export const SettingsPage: React.FC = () => {
                 </button>
 
                 {saved && (
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#34d399" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#d4d4d4" }}>
                     <Check size={14} />
                     Saved
                   </span>
                 )}
 
                 {error && (
-                  <span style={{ fontSize: 12, color: "#f87171" }}>{error}</span>
+                  <span style={{ fontSize: 12, color: "#c4c4c4" }}>{error}</span>
                 )}
               </div>
               <style>{`@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }`}</style>
@@ -166,10 +168,10 @@ export const SettingsPage: React.FC = () => {
 
         <div className="liquid-glass-card" style={{ padding: "20px 24px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <Wifi size={18} style={{ color: "#10b981" }} />
+            <Wifi size={18} style={{ color: "#a3a3a3" }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>ESP32 Gateway &amp; IoT</span>
           </div>
-          <p style={{ fontSize: 13, color: "#94a3b8" }}>
+          <p style={{ fontSize: 13, color: "#a3a3a3" }}>
             RFID readers listen on <code>POST /api/sensors/rfid/</code> and ultrasonic arrays on <code>POST /api/sensors/occupancy/</code>.
           </p>
         </div>

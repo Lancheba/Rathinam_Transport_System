@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin, TriangleAlert, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Building2, Lightbulb } from "lucide-react";
 import { getGround, getSlots } from "../api/endpoints";
 import type { ParkingGround, ParkingSlot } from "../types";
 
@@ -77,7 +77,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             Parking Ground Overview
           </span>
           {error && (
-            <span style={{ fontSize: 11, color: "#f87171", fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: "#c4c4c4", fontWeight: 600 }}>
               {error}
             </span>
           )}
@@ -103,7 +103,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
               fontWeight: 600,
               cursor: "pointer",
               background: viewMode === "2D" ? "rgba(255, 255, 255, 0.2)" : "transparent",
-              color: viewMode === "2D" ? "#ffffff" : "#94a3b8",
+              color: viewMode === "2D" ? "#ffffff" : "#a3a3a3",
               boxShadow: viewMode === "2D" ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
               transition: "all 0.2s ease",
             }}
@@ -120,7 +120,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
               fontWeight: 600,
               cursor: "pointer",
               background: viewMode === "3D" ? "rgba(255, 255, 255, 0.2)" : "transparent",
-              color: viewMode === "3D" ? "#ffffff" : "#94a3b8",
+              color: viewMode === "3D" ? "#ffffff" : "#a3a3a3",
               boxShadow: viewMode === "3D" ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
               transition: "all 0.2s ease",
             }}
@@ -140,18 +140,18 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             justifyContent: "center",
             gap: 10,
             marginBottom: 8,
-            color: "#94a3b8",
+            color: "#a3a3a3",
             fontSize: 11,
             fontFamily: "monospace",
           }}
         >
-          <span style={{ opacity: 0.5 }}>←</span>
+          <ArrowLeft size={12} style={{ opacity: 0.5 }} />
           <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.15)" }} />
-          <span style={{ fontWeight: 600, color: "#cbd5e1" }}>
+          <span style={{ fontWeight: 600, color: "#d4d4d4" }}>
             {ground ? `${fmtMeters(ground.length_m)} m` : loading ? "…" : "— m"}
           </span>
           <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.15)" }} />
-          <span style={{ opacity: 0.5 }}>→</span>
+          <ArrowRight size={12} style={{ opacity: 0.5 }} />
         </div>
 
         {/* Right Width Dimension Line */}
@@ -165,22 +165,22 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             flexDirection: "column",
             alignItems: "center",
             gap: 6,
-            color: "#94a3b8",
+            color: "#a3a3a3",
             fontSize: 11,
             fontFamily: "monospace",
           }}
         >
-          <span style={{ opacity: 0.5 }}>↑</span>
-          <span style={{ fontWeight: 600, color: "#cbd5e1", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+          <ArrowUp size={12} style={{ opacity: 0.5 }} />
+          <span style={{ fontWeight: 600, color: "#d4d4d4", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
             {ground ? `${fmtMeters(ground.width_m)} m` : loading ? "…" : "— m"}
           </span>
-          <span style={{ opacity: 0.5 }}>↓</span>
+          <ArrowDown size={12} style={{ opacity: 0.5 }} />
         </div>
 
         {/* The Realistic Ground Area */}
         <div
           style={{
-            background: "radial-gradient(ellipse at 50% 40%, #171c26 0%, #0c1018 70%, #07090f 100%)",
+            background: "radial-gradient(ellipse at 50% 40%, #191919 0%, #0e0e0e 70%, #080808 100%)",
             borderRadius: 16,
             border: "1px solid rgba(255, 255, 255, 0.12)",
             boxShadow: "inset 0 0 60px rgba(0, 0, 0, 0.85), 0 12px 36px rgba(0, 0, 0, 0.6)",
@@ -219,15 +219,15 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
           />
 
           {/* Lamp Post Visuals at corners */}
-          <div style={{ position: "absolute", top: 8, left: 14, color: "#94a3b8", fontSize: 10 }}>💡</div>
-          <div style={{ position: "absolute", top: 8, right: 14, color: "#94a3b8", fontSize: 10 }}>💡</div>
+          <Lightbulb size={13} style={{ position: "absolute", top: 8, left: 14, color: "#a3a3a3" }} />
+          <Lightbulb size={13} style={{ position: "absolute", top: 8, right: 14, color: "#a3a3a3" }} />
 
           {loading ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#64748b", fontSize: 13 }}>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "#737373", fontSize: 13 }}>
               Loading live slot data…
             </div>
           ) : rows.length === 0 ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#64748b", fontSize: 13 }}>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "#737373", fontSize: 13 }}>
               No parking slots are configured on the server yet.
             </div>
           ) : (
@@ -277,19 +277,19 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                             position: "relative",
                             opacity: exists ? 1 : 0.35,
                             border: isBlocked
-                              ? "1.5px solid #f43f5e"
+                              ? "1.5px solid #b3b3b3"
                               : isSelected
-                              ? "1.5px solid #38bdf8"
+                              ? "1.5px solid #c4c4c4"
                               : "1px dashed rgba(255, 255, 255, 0.16)",
                             background: isBlocked
-                              ? "radial-gradient(circle, rgba(244, 63, 94, 0.28) 0%, rgba(244, 63, 94, 0.06) 100%)"
+                              ? "radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 100%)"
                               : hasBus
                               ? "rgba(255, 255, 255, 0.04)"
                               : "rgba(0, 0, 0, 0.2)",
                             boxShadow: isBlocked
-                              ? "0 0 20px rgba(244, 63, 94, 0.45), inset 0 0 12px rgba(244, 63, 94, 0.3)"
+                              ? "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 12px rgba(255, 255, 255, 0.18)"
                               : isSelected
-                              ? "0 0 16px rgba(56, 189, 248, 0.4)"
+                              ? "0 0 16px rgba(255, 255, 255, 0.35)"
                               : "none",
                             cursor: exists ? "pointer" : "default",
                             display: "flex",
@@ -307,17 +307,17 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                                 height: 24,
                                 borderRadius: 4,
                                 background: isBlocked
-                                  ? "linear-gradient(180deg, #e11d48 0%, #be123c 100%)"
-                                  : "linear-gradient(180deg, #f8fafc 0%, #cbd5e1 50%, #94a3b8 100%)",
+                                  ? "linear-gradient(180deg, #8f8f8f 0%, #737373 100%)"
+                                  : "linear-gradient(180deg, #f5f5f5 0%, #d4d4d4 50%, #a3a3a3 100%)",
                                 boxShadow: isBlocked
-                                  ? "0 4px 12px rgba(244, 63, 94, 0.6)"
+                                  ? "0 4px 12px rgba(255, 255, 255, 0.35)"
                                   : "0 4px 10px rgba(0, 0, 0, 0.6)",
                                 position: "relative",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 border: isBlocked
-                                  ? "1px solid #fda4af"
+                                  ? "1px solid #d4d4d4"
                                   : "1px solid rgba(255, 255, 255, 0.8)",
                               }}
                             >
@@ -328,19 +328,19 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                                   left: 3,
                                   width: 5,
                                   height: 16,
-                                  background: isBlocked ? "#881337" : "#1e293b",
+                                  background: isBlocked ? "#525252" : "#1c1c1c",
                                   borderRadius: 1,
                                 }}
                               />
                               {/* Warning Icon on Blocked Bus */}
                               {isBlocked ? (
-                                <AlertTriangle size={13} style={{ color: "#ffffff", zIndex: 2 }} />
+                                <TriangleAlert size={13} style={{ color: "#ffffff", zIndex: 2 }} />
                               ) : (
                                 <span
                                   style={{
                                     fontSize: 8,
                                     fontWeight: 800,
-                                    color: "#0f172a",
+                                    color: "#141414",
                                     letterSpacing: "-0.03em",
                                   }}
                                 >
@@ -358,7 +358,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                               fontSize: 9,
                               fontFamily: "monospace",
                               fontWeight: 600,
-                              color: isBlocked ? "#fca5a5" : "#64748b",
+                              color: isBlocked ? "#d4d4d4" : "#737373",
                             }}
                           >
                             {slotKey}
@@ -390,7 +390,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 6,
-                  background: "linear-gradient(135deg, #334155 0%, #1e293b 100%)",
+                  background: "linear-gradient(135deg, #2a2a2a 0%, #1c1c1c 100%)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
                   display: "flex",
                   alignItems: "center",
@@ -399,7 +399,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
                 }}
               >
-                🏢
+                <Building2 size={15} style={{ color: "#a3a3a3" }} />
               </div>
               <div>
                 <div
@@ -413,10 +413,10 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                     letterSpacing: "0.05em",
                   }}
                 >
-                  <span>↑</span>
+                  <ArrowUp size={12} />
                   <span>ENTRY</span>
                 </div>
-                <div style={{ fontSize: 9, color: "#64748b", fontFamily: "monospace" }}>
+                <div style={{ fontSize: 9, color: "#737373", fontFamily: "monospace" }}>
                   Gate A ({ground ? fmtMeters(ground.entrance_width_m) : "—"}m)
                 </div>
               </div>
@@ -437,10 +437,10 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                     justifyContent: "flex-end",
                   }}
                 >
-                  <span>↓</span>
+                  <ArrowDown size={12} />
                   <span>EXIT</span>
                 </div>
-                <div style={{ fontSize: 9, color: "#64748b", fontFamily: "monospace" }}>
+                <div style={{ fontSize: 9, color: "#737373", fontFamily: "monospace" }}>
                   Gate B ({ground ? fmtMeters(ground.exit_width_m) : "—"}m)
                 </div>
               </div>
@@ -450,7 +450,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 6,
-                  background: "linear-gradient(135deg, #334155 0%, #1e293b 100%)",
+                  background: "linear-gradient(135deg, #2a2a2a 0%, #1c1c1c 100%)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
                   display: "flex",
                   alignItems: "center",
@@ -459,7 +459,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
                 }}
               >
-                🏢
+                <Building2 size={15} style={{ color: "#a3a3a3" }} />
               </div>
             </div>
           </div>

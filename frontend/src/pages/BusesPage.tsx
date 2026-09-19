@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CircleCheck, X, Trash2 } from "lucide-react";
+import { CircleCheck, X, Trash2, Bus as BusIcon, Route as RouteIcon, Clock, Radio, MapPin, TriangleAlert } from "lucide-react";
 import { getBuses, deleteBus } from "../api/endpoints";
 import { AddBusButton } from "../components/AddBusButton";
 import { useAuth } from "../context/AuthContext";
@@ -59,18 +59,20 @@ const BusesPage: React.FC = () => {
 
   return (
     <div>
-      <h2 style={{ color: "#f9fafb", marginBottom: 16 }}>🚌 Bus Management</h2>
+      <h2 style={{ color: "#f5f5f5", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+        <BusIcon size={20} strokeWidth={1.9} /> Bus Management
+      </h2>
       <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search bus number or route..."
           style={{
             flex: 1, padding: "10px 14px", borderRadius: 8,
-            border: "1px solid #374151", background: "#1f2937",
-            color: "#f9fafb", fontSize: 14
+            border: "1px solid #2a2a2a", background: "#232323",
+            color: "#f5f5f5", fontSize: 14
           }}
         />
-        <span style={{ color: "#9ca3af", alignSelf: "center", fontSize: 13 }}>
+        <span style={{ color: "#a3a3a3", alignSelf: "center", fontSize: 13 }}>
           {filtered.length} buses
         </span>
         <AddBusButton onCreated={handleCreated} />
@@ -80,8 +82,8 @@ const BusesPage: React.FC = () => {
         <div role="status" style={{
           display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
           padding: "10px 14px", borderRadius: 8, fontSize: 13,
-          color: "#6ee7b7", background: "rgba(16, 185, 129, 0.12)",
-          border: "1px solid rgba(16, 185, 129, 0.35)"
+          color: "#e5e5e5", background: "rgba(255, 255, 255, 0.12)",
+          border: "1px solid rgba(255, 255, 255, 0.35)"
         }}>
           <CircleCheck size={16} />
           <span style={{ flex: 1 }}>{notice}</span>
@@ -95,7 +97,7 @@ const BusesPage: React.FC = () => {
       )}
 
       {filtered.length === 0 && (
-        <div style={{ color: "#9ca3af", fontSize: 14, padding: "32px 0", textAlign: "center" }}>
+        <div style={{ color: "#a3a3a3", fontSize: 14, padding: "32px 0", textAlign: "center" }}>
           {buses.length === 0 ? "No buses yet." : "No buses match your search."}
         </div>
       )}
@@ -105,15 +107,17 @@ const BusesPage: React.FC = () => {
           const slot = bus.parking_slot_info;
           return (
             <div key={bus.id} style={{
-              background: "#1f2937", borderRadius: 10, padding: 18,
-              border: `1px solid ${slot?.is_blocked ? "#dc2626" : "#374151"}`
+              background: "#232323", borderRadius: 10, padding: 18,
+              border: `1px solid ${slot?.is_blocked ? "#8f8f8f" : "#2a2a2a"}`
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <span style={{ fontSize: 20, fontWeight: "bold", color: "#f9fafb" }}>🚌 {bus.bus_number}</span>
+                <span style={{ fontSize: 20, fontWeight: "bold", color: "#f5f5f5", display: "flex", alignItems: "center", gap: 8 }}>
+                  <BusIcon size={18} strokeWidth={1.9} /> {bus.bus_number}
+                </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{
-                    background: bus.is_active ? "#14532d" : "#374151",
-                    color: bus.is_active ? "#86efac" : "#9ca3af",
+                    background: bus.is_active ? "#1c1c1c" : "#2a2a2a",
+                    color: bus.is_active ? "#e5e5e5" : "#a3a3a3",
                     padding: "2px 8px", borderRadius: 4, fontSize: 11
                   }}>{bus.is_active ? "ACTIVE" : "INACTIVE"}</span>
                   {canManageBuses && (
@@ -126,8 +130,8 @@ const BusesPage: React.FC = () => {
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "center",
                         width: 26, height: 26, borderRadius: 6,
-                        border: "1px solid #374151", background: "transparent",
-                        color: "#f87171", cursor: deletingId === bus.id ? "default" : "pointer",
+                        border: "1px solid #2a2a2a", background: "transparent",
+                        color: "#c4c4c4", cursor: deletingId === bus.id ? "default" : "pointer",
                         opacity: deletingId === bus.id ? 0.5 : 1,
                       }}
                     >
@@ -136,17 +140,28 @@ const BusesPage: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.7 }}>
-                <div>🛣️ {bus.route}</div>
-                <div>⏰ Departs: <strong style={{ color: "#d1d5db" }}>{bus.departure_time}</strong></div>
-                <div>📡 RFID: <code style={{ color: "#818cf8", fontSize: 11 }}>{bus.rfid_uid}</code></div>
+              <div style={{ color: "#a3a3a3", fontSize: 13, lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}><RouteIcon size={13} /> {bus.route}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <Clock size={13} /> Departs: <strong style={{ color: "#d4d4d4" }}>{bus.departure_time}</strong>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <Radio size={13} /> RFID: <code style={{ color: "#d4d4d4", fontSize: 11 }}>{bus.rfid_uid}</code>
+                </div>
                 {slot ? (
-                  <div style={{ marginTop: 8 }}>
-                    📍 <strong style={{ color: "#3b82f6" }}>Row {slot.row}, Slot {slot.slot_number}</strong>
-                    {slot.is_blocked && <span style={{ color: "#ef4444", marginLeft: 8 }}>⚠ BLOCKED</span>}
+                  <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 7 }}>
+                    <MapPin size={13} />
+                    <strong style={{ color: "#c4c4c4" }}>Row {slot.row}, Slot {slot.slot_number}</strong>
+                    {slot.is_blocked && (
+                      <span style={{ color: "#f5f5f5", marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+                        <TriangleAlert size={12} /> BLOCKED
+                      </span>
+                    )}
                   </div>
                 ) : (
-                  <div style={{ marginTop: 8, color: "#6b7280" }}>📍 Not parked</div>
+                  <div style={{ marginTop: 4, color: "#737373", display: "flex", alignItems: "center", gap: 7 }}>
+                    <MapPin size={13} /> Not parked
+                  </div>
                 )}
               </div>
             </div>

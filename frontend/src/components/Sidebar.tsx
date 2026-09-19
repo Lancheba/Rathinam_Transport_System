@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     <aside
       style={{
         width: collapsed ? 72 : 230,
-        background: "rgba(10, 13, 20, 0.6)",
+        background: "rgba(10, 10, 10, 0.6)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
         borderRight: "1px solid rgba(255, 255, 255, 0.08)",
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           borderRadius: 8,
           border: "1px solid rgba(255, 255, 255, 0.12)",
           background: "rgba(255, 255, 255, 0.06)",
-          color: "#94a3b8",
+          color: "#a3a3a3",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -93,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                 textDecoration: "none",
                 fontSize: 13,
                 fontWeight: isActive ? 600 : 500,
-                color: isActive ? "#ffffff" : "#94a3b8",
+                color: isActive ? "#ffffff" : "#a3a3a3",
                 background: isActive
                   ? "linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 100%)"
                   : "transparent",
@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               }}
               onMouseLeave={(e) => {
                 if (!e.currentTarget.classList.contains("active")) {
-                  e.currentTarget.style.color = "#94a3b8";
+                  e.currentTarget.style.color = "#a3a3a3";
                   e.currentTarget.style.background = "transparent";
                 }
               }}
@@ -140,12 +140,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             <defs>
               <linearGradient id="liquidGrad" x1="0%" y1="100%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#ffffff" stopOpacity="0.02" />
-                <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.3" />
+                <stop offset="50%" stopColor="#c4c4c4" stopOpacity="0.3" />
                 <stop offset="100%" stopColor="#ffffff" stopOpacity="0.65" />
               </linearGradient>
               <linearGradient id="liquidGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#818cf8" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="#d4d4d4" stopOpacity="0.1" />
               </linearGradient>
             </defs>
             <path
@@ -172,14 +172,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           <div
             style={{
               fontSize: 11,
-              color: "#94a3b8",
+              color: "#a3a3a3",
               fontStyle: "italic",
               lineHeight: 1.4,
               paddingLeft: 4,
             }}
           >
             Smarter Parking<br />
-            <span style={{ color: "#cbd5e1" }}>for a Smoother Journey</span>
+            <span style={{ color: "#d4d4d4" }}>for a Smoother Journey</span>
           </div>
         </div>
       )}

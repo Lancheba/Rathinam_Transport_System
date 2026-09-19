@@ -22,7 +22,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   freeSlots = 28,
   totalSlots = 32,
   avgRetrievalTime = "2.5 min",
-  retrievalImprovement = "↓ 45% (vs. last hour)",
+  retrievalImprovement = "45% faster (vs. last hour)",
   activeSensors = 5,
   offlineSensors = 1,
 }) => {
@@ -36,33 +36,33 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       sub: `Active: ${activeBuses} | Inactive: ${totalBuses - activeBuses}`,
       icon: Bus,
       badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: "#94a3b8",
+      subColor: "#a3a3a3",
     },
     {
       title: "Blocked Buses",
       value: blockedBuses,
       sub: "● Needs attention",
       icon: AlertTriangle,
-      badgeBg: "rgba(244, 63, 94, 0.12)",
+      badgeBg: "rgba(255, 255, 255, 0.1)",
       valueColor: blockedBuses > 0 ? "#ffffff" : "#ffffff",
-      subColor: blockedBuses > 0 ? "#f43f5e" : "#94a3b8",
-      glowBorder: blockedBuses > 0 ? "rgba(244, 63, 94, 0.2)" : undefined,
+      subColor: blockedBuses > 0 ? "#b3b3b3" : "#a3a3a3",
+      glowBorder: blockedBuses > 0 ? "rgba(255, 255, 255, 0.28)" : undefined,
     },
     {
       title: "Occupied Slots",
       value: occupiedSlots,
       sub: `● ${occupiedPct}% of ${totalSlots}`,
       icon: ParkingCircle,
-      badgeBg: "rgba(56, 189, 248, 0.1)",
-      subColor: "#94a3b8",
+      badgeBg: "rgba(255, 255, 255, 0.08)",
+      subColor: "#a3a3a3",
     },
     {
       title: "Free Slots",
       value: freeSlots,
       sub: `● ${freePct}% of ${totalSlots}`,
       icon: Car,
-      badgeBg: "rgba(16, 185, 129, 0.1)",
-      subColor: "#94a3b8",
+      badgeBg: "rgba(255, 255, 255, 0.1)",
+      subColor: "#a3a3a3",
     },
     {
       title: "Avg. Retrieval Time",
@@ -70,7 +70,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       sub: retrievalImprovement,
       icon: Clock,
       badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: "#10b981",
+      subColor: "#a3a3a3",
     },
     {
       title: "Active Sensors",
@@ -78,7 +78,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       sub: `● ${offlineSensors} Offline`,
       icon: Radio,
       badgeBg: "rgba(255, 255, 255, 0.08)",
-      subColor: offlineSensors > 0 ? "#f43f5e" : "#10b981",
+      subColor: offlineSensors > 0 ? "#b3b3b3" : "#a3a3a3",
     },
   ];
 
@@ -119,7 +119,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               >
                 <Icon size={16} strokeWidth={2} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>{c.title}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#a3a3a3" }}>{c.title}</span>
             </div>
 
             {/* Middle: Big Value */}

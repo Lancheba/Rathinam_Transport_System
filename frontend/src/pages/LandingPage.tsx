@@ -12,6 +12,7 @@ import {
   Clock,
   CheckCircle2,
   Lock,
+  ExternalLink,
 } from "lucide-react";
 import { ParkingGroundRealistic } from "../components/ParkingGroundRealistic";
 
@@ -43,7 +44,7 @@ export const LandingPage: React.FC = () => {
         />
         <path
           d="M-50 250 C 400 100, 800 450, 1200 180 C 1400 50, 1550 220, 1650 300"
-          stroke="rgba(56, 189, 248, 0.1)"
+          stroke="rgba(255, 255, 255, 0.1)"
           strokeWidth="1.5"
         />
       </svg>
@@ -67,7 +68,7 @@ export const LandingPage: React.FC = () => {
             justifyContent: "space-between",
             padding: "12px 24px",
             borderRadius: 9999,
-            background: "rgba(12, 16, 26, 0.75)",
+            background: "rgba(14, 14, 14, 0.75)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -90,7 +91,7 @@ export const LandingPage: React.FC = () => {
               <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em" }}>
                 Smart Bus Parking
               </div>
-              <div style={{ fontSize: 10, color: "#94a3b8" }}>Rathinam College of Engineering</div>
+              <div style={{ fontSize: 10, color: "#a3a3a3" }}>Rathinam College of Engineering</div>
             </div>
           </div>
 
@@ -106,7 +107,7 @@ export const LandingPage: React.FC = () => {
                 borderRadius: 9999,
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#cbd5e1",
+                color: "#d4d4d4",
                 textDecoration: "none",
                 background: "rgba(255, 255, 255, 0.05)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -127,7 +128,7 @@ export const LandingPage: React.FC = () => {
                 borderRadius: 9999,
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#cbd5e1",
+                color: "#d4d4d4",
                 textDecoration: "none",
                 background: "rgba(255, 255, 255, 0.05)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -171,13 +172,13 @@ export const LandingPage: React.FC = () => {
               gap: 8,
               padding: "6px 18px",
               borderRadius: 9999,
-              background: "rgba(56, 189, 248, 0.1)",
-              border: "1px solid rgba(56, 189, 248, 0.25)",
-              color: "#38bdf8",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
+              color: "#c4c4c4",
               fontSize: 12,
               fontWeight: 600,
               marginBottom: 20,
-              boxShadow: "0 0 20px rgba(56, 189, 248, 0.15)",
+              boxShadow: "0 0 20px rgba(255, 255, 255, 0.15)",
             }}
           >
             <Sparkles size={14} />
@@ -198,7 +199,7 @@ export const LandingPage: React.FC = () => {
             Eliminating College Bus Gridlocks with{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #ffffff 0%, #93c5fd 50%, #38bdf8 100%)",
+                background: "linear-gradient(135deg, #ffffff 0%, #e5e5e5 50%, #c4c4c4 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -210,7 +211,7 @@ export const LandingPage: React.FC = () => {
           <p
             style={{
               fontSize: "clamp(15px, 2vw, 17px)",
-              color: "#94a3b8",
+              color: "#a3a3a3",
               lineHeight: 1.6,
               maxWidth: 720,
               margin: "0 auto 36px auto",
@@ -230,8 +231,8 @@ export const LandingPage: React.FC = () => {
                 gap: 10,
                 padding: "14px 32px",
                 borderRadius: 9999,
-                background: "linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%)",
-                color: "#090d16",
+                background: "linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%)",
+                color: "#0e0e0e",
                 fontWeight: 800,
                 fontSize: 14,
                 textDecoration: "none",
@@ -287,7 +288,7 @@ export const LandingPage: React.FC = () => {
               marginTop: 48,
               padding: "16px 28px",
               borderRadius: 9999,
-              background: "rgba(14, 18, 28, 0.5)",
+              background: "rgba(16, 16, 16, 0.5)",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               backdropFilter: "blur(16px)",
               maxWidth: 820,
@@ -295,20 +296,20 @@ export const LandingPage: React.FC = () => {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <CheckCircle2 size={16} style={{ color: "#10b981" }} />
-              <span style={{ fontSize: 13, color: "#e2e8f0" }}>
+              <CheckCircle2 size={16} style={{ color: "#a3a3a3" }} />
+              <span style={{ fontSize: 13, color: "#e5e5e5" }}>
                 <strong style={{ color: "#fff" }}>32</strong> Ground Slots (60m &times; 35m)
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Clock size={16} style={{ color: "#38bdf8" }} />
-              <span style={{ fontSize: 13, color: "#e2e8f0" }}>
+              <Clock size={16} style={{ color: "#c4c4c4" }} />
+              <span style={{ fontSize: 13, color: "#e5e5e5" }}>
                 <strong style={{ color: "#fff" }}>2.5 min</strong> Avg. Retrieval Time
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Shield size={16} style={{ color: "#f59e0b" }} />
-              <span style={{ fontSize: 13, color: "#e2e8f0" }}>
+              <Shield size={16} style={{ color: "#c4c4c4" }} />
+              <span style={{ fontSize: 13, color: "#e5e5e5" }}>
                 <strong style={{ color: "#fff" }}>0</strong> Blocked Buses with AI
               </span>
             </div>
@@ -318,7 +319,7 @@ export const LandingPage: React.FC = () => {
         {/* Live Ground Preview Card */}
         <div style={{ marginBottom: 60 }}>
           <div style={{ textAlign: "center", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 700 }}>
+            <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "#c4c4c4", fontWeight: 700 }}>
               Live Digital Twin Preview
             </span>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
@@ -331,49 +332,49 @@ export const LandingPage: React.FC = () => {
         {/* Core Pillars Feature Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
           <div className="liquid-glass-card" style={{ padding: "26px 24px" }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255, 255, 255, 0.15)", color: "#c4c4c4", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <Radio size={22} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", marginBottom: 8 }}>
               Automated IoT Detection
             </h3>
-            <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "#a3a3a3", lineHeight: 1.6 }}>
               RC522 RFID readers log vehicle entrance and exit timestamps instantly while ultrasonic sensors maintain live slot occupancy.
             </p>
           </div>
 
           <div className="liquid-glass-card" style={{ padding: "26px 24px" }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(168, 85, 247, 0.15)", color: "#c084fc", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255, 255, 255, 0.15)", color: "#d4d4d4", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <Cpu size={22} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", marginBottom: 8 }}>
               Departure Optimization Engine
             </h3>
-            <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "#a3a3a3", lineHeight: 1.6 }}>
               Eliminates the morning blocked-bus bottleneck by rearranging parking allocations according to scheduled route departure times.
             </p>
           </div>
 
           <div className="liquid-glass-card" style={{ padding: "26px 24px" }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(16, 185, 129, 0.15)", color: "#34d399", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255, 255, 255, 0.15)", color: "#d4d4d4", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <Search size={22} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", marginBottom: 8 }}>
               Student Mobile Bus Locator
             </h3>
-            <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "#a3a3a3", lineHeight: 1.6 }}>
               Quick, frictionless search where students enter their bus number to see row, slot number, departure time, and walking instructions.
             </p>
           </div>
 
           <div className="liquid-glass-card" style={{ padding: "26px 24px" }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(244, 63, 94, 0.15)", color: "#fb7185", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255, 255, 255, 0.15)", color: "#c4c4c4", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <MapPin size={22} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", marginBottom: 8 }}>
               Real-time Conflict Alerts
             </h3>
-            <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "#a3a3a3", lineHeight: 1.6 }}>
               Instantly notifies campus transport coordinators when a parked bus is blocked by an earlier vehicle, giving automated relocation steps.
             </p>
           </div>
@@ -390,7 +391,7 @@ export const LandingPage: React.FC = () => {
             alignItems: "center",
             flexWrap: "wrap",
             gap: 16,
-            color: "#64748b",
+            color: "#737373",
             fontSize: 12,
           }}
         >
@@ -398,10 +399,10 @@ export const LandingPage: React.FC = () => {
             &copy; {new Date().getFullYear()} Rathinam College of Engineering &bull; Smart Bus Parking &amp; Retrieval System
           </div>
           <div style={{ display: "flex", gap: 20 }}>
-            <Link to="/dashboard" style={{ color: "#94a3b8", textDecoration: "none" }}>Dashboard</Link>
-            <Link to="/dashboard/find" style={{ color: "#94a3b8", textDecoration: "none" }}>Find Bus</Link>
-            <Link to="/login" style={{ color: "#94a3b8", textDecoration: "none" }}>Staff Portal</Link>
-            <a href="http://localhost:8000/api/docs/" target="_blank" rel="noreferrer" style={{ color: "#94a3b8", textDecoration: "none" }}>API Docs ↗</a>
+            <Link to="/dashboard" style={{ color: "#a3a3a3", textDecoration: "none" }}>Dashboard</Link>
+            <Link to="/dashboard/find" style={{ color: "#a3a3a3", textDecoration: "none" }}>Find Bus</Link>
+            <Link to="/login" style={{ color: "#a3a3a3", textDecoration: "none" }}>Staff Portal</Link>
+            <a href="http://localhost:8000/api/docs/" target="_blank" rel="noreferrer" style={{ color: "#a3a3a3", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>API Docs <ExternalLink size={12} /></a>
           </div>
         </footer>
       </section>
