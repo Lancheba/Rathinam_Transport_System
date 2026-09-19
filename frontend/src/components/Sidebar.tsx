@@ -11,13 +11,13 @@ import {
 import { NavLink } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: Home },
-  { to: "/parking", label: "Parking Map", icon: Map },
-  { to: "/buses", label: "Bus Information", icon: Bus },
-  { to: "/optimize", label: "Optimisation", icon: Cpu },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/sensors", label: "Sensor Monitoring", icon: Radio },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/dashboard/parking", label: "Parking Map", icon: Map },
+  { to: "/dashboard/buses", label: "Bus Information", icon: Bus },
+  { to: "/dashboard/optimize", label: "Optimisation", icon: Cpu },
+  { to: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+  { to: "/dashboard/sensors", label: "Sensor Monitoring", icon: Radio },
+  { to: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -46,7 +46,7 @@ export const Sidebar: React.FC = () => {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === "/"}
+              end={item.to === "/dashboard"}
               style={({ isActive }) => ({
                 display: "flex",
                 alignItems: "center",

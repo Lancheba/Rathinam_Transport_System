@@ -97,7 +97,7 @@ export const LandingPage: React.FC = () => {
           {/* Nav buttons */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Link
-              to="/find"
+              to="/dashboard/find"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -139,7 +139,7 @@ export const LandingPage: React.FC = () => {
             </Link>
 
             <Link
-              to="/"
+              to="/dashboard"
               className="liquid-pill-active"
               style={{
                 display: "flex",
@@ -223,7 +223,7 @@ export const LandingPage: React.FC = () => {
           {/* Action Buttons */}
           <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
             <Link
-              to="/"
+              to="/dashboard"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -247,7 +247,7 @@ export const LandingPage: React.FC = () => {
             </Link>
 
             <Link
-              to="/find"
+              to="/dashboard/find"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -398,8 +398,8 @@ export const LandingPage: React.FC = () => {
             &copy; {new Date().getFullYear()} Rathinam College of Engineering &bull; Smart Bus Parking &amp; Retrieval System
           </div>
           <div style={{ display: "flex", gap: 20 }}>
-            <Link to="/" style={{ color: "#94a3b8", textDecoration: "none" }}>Dashboard</Link>
-            <Link to="/find" style={{ color: "#94a3b8", textDecoration: "none" }}>Find Bus</Link>
+            <Link to="/dashboard" style={{ color: "#94a3b8", textDecoration: "none" }}>Dashboard</Link>
+            <Link to="/dashboard/find" style={{ color: "#94a3b8", textDecoration: "none" }}>Find Bus</Link>
             <Link to="/login" style={{ color: "#94a3b8", textDecoration: "none" }}>Staff Portal</Link>
             <a href="http://localhost:8000/api/docs/" target="_blank" rel="noreferrer" style={{ color: "#94a3b8", textDecoration: "none" }}>API Docs ↗</a>
           </div>

@@ -21,7 +21,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const handleSearch = (q: string) => {
     setSearchQuery(q);
     if (q.trim().length > 1) {
-      navigate(`/find?q=${encodeURIComponent(q.trim())}`);
+      navigate(`/dashboard/find?q=${encodeURIComponent(q.trim())}`);
     }
   };
 
@@ -105,23 +105,23 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           {/* Standalone Landing & Login routes */}
-          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* App Dashboard and Inner Pages with Sidebar & TopNav */}
           <Route
-            path="/*"
+            path="/dashboard/*"
             element={
               <MainLayout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/parking" element={<ParkingPage />} />
-                  <Route path="/buses" element={<BusesPage />} />
-                  <Route path="/optimize" element={<OptimizePage />} />
-                  <Route path="/sensors" element={<SensorsPage />} />
-                  <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/find" element={<BusFinder />} />
+                  <Route path="" element={<Dashboard />} />
+                  <Route path="parking" element={<ParkingPage />} />
+                  <Route path="buses" element={<BusesPage />} />
+                  <Route path="optimize" element={<OptimizePage />} />
+                  <Route path="sensors" element={<SensorsPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="find" element={<BusFinder />} />
                 </Routes>
               </MainLayout>
             }

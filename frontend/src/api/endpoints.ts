@@ -14,6 +14,8 @@ export const deleteBus = (id: number) => api.delete(`/buses/${id}/`);
 
 // Parking
 export const getGround = () => api.get<ParkingGround[]>("/parking/ground/").then(r => r.data);
+export const updateGround = (id: number, data: Partial<ParkingGround>) =>
+  api.patch<ParkingGround>(`/parking/ground/${id}/`, data).then(r => r.data);
 export const getSlots = (params?: Record<string, string>) =>
   api.get<ParkingSlot[]>("/parking/slots/", { params }).then(r => r.data);
 export const getParkingSummary = () => api.get<ParkingSummary>("/parking/summary/").then(r => r.data);

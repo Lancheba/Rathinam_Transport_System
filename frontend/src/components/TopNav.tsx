@@ -1,5 +1,5 @@
 ﻿import React, { useState } from "react";
-import { Bus, Search, Bell, ChevronDown, Globe, LogOut, Lock } from "lucide-react";
+import { Bus, Search, Bell, ChevronDown, LogOut, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -38,7 +38,7 @@ export const TopNav: React.FC<TopNavProps> = ({
       }}
     >
       {/* Brand */}
-      <Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
+      <Link to="/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
         <div
           style={{
             width: 42,
@@ -120,30 +120,6 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Right Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        {/* Landing Link */}
-        <Link
-          to="/landing"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "6px 14px",
-            borderRadius: 9999,
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            color: "#cbd5e1",
-            fontSize: 12,
-            fontWeight: 600,
-            textDecoration: "none",
-            transition: "all 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)")}
-        >
-          <Globe size={13} style={{ color: "#38bdf8" }} />
-          <span>Landing</span>
-        </Link>
-
         {/* Notification Bell */}
         <button
           style={{

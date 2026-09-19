@@ -5,10 +5,11 @@ from .models import ParkingGround, ParkingSlot
 from .serializers import ParkingGroundSerializer, ParkingSlotSerializer
 
 
-class ParkingGroundViewSet(viewsets.ReadOnlyModelViewSet):
+class ParkingGroundViewSet(viewsets.ModelViewSet):
     queryset = ParkingGround.objects.all()
     serializer_class = ParkingGroundSerializer
     permission_classes = [permissions.AllowAny]
+    http_method_names = ["get", "post", "put", "patch", "head", "options"]
 
 
 class ParkingSlotViewSet(viewsets.ReadOnlyModelViewSet):

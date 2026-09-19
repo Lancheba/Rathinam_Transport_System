@@ -25,7 +25,7 @@ export const LoginPage: React.FC = () => {
     setError("");
     try {
       await login(username.trim(), password.trim());
-      navigate("/");
+      navigate("/dashboard");
     } catch {
       setError("Invalid credentials. Please verify your username and password.");
     } finally {
@@ -196,7 +196,7 @@ export const LoginPage: React.FC = () => {
             type="button"
             onClick={() => {
               setRole("STUDENT");
-              navigate("/find");
+              navigate("/dashboard/find");
             }}
             style={{
               flex: 1,
@@ -418,7 +418,7 @@ export const LoginPage: React.FC = () => {
         {/* Student Bus Finder Link */}
         <div style={{ textAlign: "center", marginTop: 24 }}>
           <Link
-            to="/find"
+            to="/dashboard/find"
             style={{
               fontSize: 12,
               color: "#38bdf8",
