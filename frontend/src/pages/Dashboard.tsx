@@ -18,7 +18,7 @@ export const Dashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [greeting, setGreeting] = useState("Good Afternoon");
-  const { username, roleLabel } = useAuth();
+  const { username } = useAuth();
 
   // Live state from API with fallback to demo match
   const [summary, setSummary] = useState({
