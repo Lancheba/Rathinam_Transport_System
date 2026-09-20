@@ -281,7 +281,7 @@ export const AddBusModal: React.FC<Props> = ({ onClose, onCreated }) => {
                 onChange={(e) => set("departure_time", e.target.value)}
               />
               {err("departure_time") ?? (
-                <div className="abm__hint">Optimisation parks earlier departures closest to the exit.</div>
+                <div className="abm__hint">Optimisation parks earlier departures nearest the lane gate (slot 1).</div>
               )}
             </div>
 

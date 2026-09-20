@@ -290,8 +290,9 @@ button, a, [role="button"], label, input, select, textarea {
     position: sticky;
     left: 10px;
     z-index: 3;
-    background: var(--canvas-solid);
+    width: 38px !important;
   }
+  .pg__gate-text { display: none !important; }
   .pg__gates { flex-wrap: wrap; gap: 10px; }
 
   /* ---- Parking Map page ---- */
@@ -318,8 +319,7 @@ button, a, [role="button"], label, input, select, textarea {
     position: sticky;
     left: 4px;
     z-index: 3;
-    width: 22px !important;
-    background: var(--canvas-solid);
+    width: 28px !important;
   }
   .pm2d { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 
@@ -394,51 +394,7 @@ button, a, [role="button"], label, input, select, textarea {
   .bf { padding-top: 12px !important; }
   .bf-chip { margin: 4px !important; padding: 8px 14px !important; }
 
-  /* ---- Landing page ---- */
-  .lp-nav { top: calc(8px + env(safe-area-inset-top)) !important; margin-bottom: 12px !important; padding: 0 10px !important; }
-  .lp-nav__bar { gap: 8px; padding: 8px 8px 8px 12px !important; }
-  .lp-nav__brand { flex: 1 1 0; min-width: 0; gap: 8px !important; }
-  .lp-nav__logo { flex-shrink: 0; width: 32px !important; height: 32px !important; border-radius: 9px !important; }
-  .lp-nav__title { font-size: 13px !important; line-height: 1.15; }
-  .lp-nav__sub { display: none; }
-  .lp-nav__actions { flex-shrink: 0; gap: 6px !important; }
-  .lp-nav__link { width: 38px; height: 38px; padding: 0 !important; justify-content: center; }
-  .lp-nav__link span { display: none; }
-  .theme-toggle--pill { width: 38px; height: 38px; padding: 0 !important; }
-  .theme-toggle--pill span { display: none; }
-  .lp-nav__cta { height: 38px; padding: 0 14px !important; }
-
-  .lp-hero { padding: 20px 16px 40px !important; }
-  .lp-hero__inner { margin-bottom: 32px !important; }
-  .lp-hero__pill {
-    padding: 7px 14px !important;
-    margin-bottom: 16px !important;
-    font-size: 11.5px !important;
-    line-height: 1.35;
-    text-align: left;
-    border-radius: 18px !important;
-  }
-  .lp-hero__title { margin-bottom: 14px !important; }
-  .lp-hero__lede { margin-bottom: 24px !important; }
-  .lp-hero__cta { flex-direction: column; align-items: stretch; gap: 10px !important; }
-  .lp-hero__cta a { justify-content: center; padding: 15px 20px !important; }
-  .lp-hero__stats {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px !important;
-    margin: 28px auto 0 !important;
-    padding: 16px 18px !important;
-    border-radius: 20px !important;
-  }
-  .lp-preview__title { font-size: 20px !important; }
-  .lp-footer {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 14px !important;
-    margin-top: 40px !important;
-    padding-top: 24px !important;
-  }
-  .lp-footer__links { flex-wrap: wrap; gap: 10px 18px !important; }
+  /* Landing page mobile rules live in pages/LandingPage.css */
 }
 
 /* ==========================================================================
@@ -448,8 +404,4 @@ button, a, [role="button"], label, input, select, textarea {
   .app-main { padding-left: 10px; padding-right: 10px; }
   .tn__title { font-size: 13px !important; }
   .metric-card__value { font-size: 20px !important; }
-  .lp-nav__cta svg { display: none; }
-}
-@media (max-width: 340px) {
-  .lp-nav__text { display: none; }
 }

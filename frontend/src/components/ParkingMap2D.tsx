@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TriangleAlert, Bus } from "lucide-react";
+import { TriangleAlert, Bus, ArrowLeftRight } from "lucide-react";
 import type { ParkingSlot } from "../types";
 import { alpha } from "../utils/color";
 
@@ -150,7 +150,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
             color: "var(--accent-violet)", padding: "4px 14px", borderRadius: 9999,
             background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)",
           }}>
-            ↑ EXIT / ENTRY
+            ⇄ LANE GATES {rows.join(" · ")} — ENTRY / EXIT
           </span>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(167,139,250,0.4))" }} />
         </div>
@@ -158,12 +158,20 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
         {/* Rows */}
         {rows.map((row) => (
           <div key={row} className="pm2d__row" style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-            {/* Row label */}
-            <span className="pm2d__label" style={{
-              width: 26, fontSize: 13, fontWeight: 800,
-              color: "var(--accent-violet)", textAlign: "center",
-              textShadow: "0 0 8px rgba(167,139,250,0.5)",
-            }}>{row}</span>
+            {/* Lane gate: the row is open at its left end (slot 1), where buses drive in and out */}
+            <span className="pm2d__label" title={`Gate ${row} — buses enter and leave this lane here`} style={{
+              width: 34, height: 48, flexShrink: 0,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+              borderRadius: 6,
+              backgroundColor: "var(--canvas-solid)",
+              backgroundImage: "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)",
+              borderLeft: "3px solid var(--accent-green)",
+              fontSize: 13, fontWeight: 800, lineHeight: 1,
+              color: "var(--accent-violet)", textShadow: "0 0 8px rgba(167,139,250,0.5)",
+            }}>
+              {row}
+              <ArrowLeftRight size={10} style={{ color: "var(--accent-green)" }} />
+            </span>
 
             {slotNums.map((num) => {
               const key = `${row}${num}`;
@@ -233,7 +241,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
           textAlign: "center", marginTop: 8, fontSize: 10,
           color: "var(--text-dim)", letterSpacing: "0.05em",
         }}>
-          Slots 1–{maxSlotNum} &nbsp;·&nbsp; 1 = closest to exit
+          Slots 1–{maxSlotNum} &nbsp;·&nbsp; Slot 1 = at the lane gate (open end)
         </div>
       </div>
     </div>

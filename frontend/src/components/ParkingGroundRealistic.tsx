@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { MapPin, TriangleAlert, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Building2, Lightbulb } from "lucide-react";
+import { MapPin, TriangleAlert, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftRight, Building2, Lightbulb } from "lucide-react";
 import { getGround, getSlots } from "../api/endpoints";
 import type { ParkingGround, ParkingSlot } from "../types";
 import { useIsMobile } from "../hooks/useMediaQuery";
@@ -241,13 +241,30 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             >
               {rows.map((row) => (
                 <div key={row} className="pg__row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {/* Row label */}
-                  <div className="pg__label" style={{
-                    width: 24, fontSize: 13, fontWeight: 800,
-                    color: "var(--accent-violet)", textAlign: "center",
-                    textShadow: "0 0 10px rgba(167,139,250,0.6)",
+                  {/* Lane gate: every row is a lane that is open at its left end (Slot 1).
+                      Buses drive in and back out through that opening. */}
+                  <div className="pg__label" title={`Gate ${row} — buses enter and leave this lane here`} style={{
+                    width: 56, height: 48, flexShrink: 0,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+                    borderRadius: 8,
+                    backgroundColor: "var(--canvas-solid)",
+                    backgroundImage: "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)",
+                    border: "1px solid rgba(74,222,128,0.35)",
+                    borderLeft: "3px solid var(--accent-green)",
+                    boxShadow: "0 0 12px rgba(74,222,128,0.14)",
                     fontFamily: "monospace",
-                  }}>{row}</div>
+                  }}>
+                    <span style={{
+                      fontSize: 14, fontWeight: 800, lineHeight: 1,
+                      color: "var(--accent-violet)", textShadow: "0 0 10px rgba(167,139,250,0.6)",
+                    }}>{row}</span>
+                    <span className="pg__gate-text" style={{
+                      display: "flex", alignItems: "center", gap: 2,
+                      fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", color: "var(--accent-green)",
+                    }}>
+                      <ArrowLeftRight size={9} /> IN/OUT
+                    </span>
+                  </div>
 
                   <div className="pg__slots" style={{ display: "flex", flex: 1, gap: 6 }}>
                     {slotNumbers.map((num) => {
@@ -340,15 +357,14 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             </div>
           )}
 
-          {/* ── Gates ── */}
+          {/* ── Lane gates note ── */}
           <div className="pg__gates" style={{
-            display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
             paddingTop: 10, borderTop: "1px solid rgba(99,102,241,0.15)",
           }}>
-            {/* ENTRY */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
-                width: 32, height: 32, borderRadius: 6,
+                width: 32, height: 32, borderRadius: 6, flexShrink: 0,
                 background: "linear-gradient(135deg, rgba(74,222,128,0.2) 0%, rgba(74,222,128,0.05) 100%)",
                 border: "1px solid rgba(74,222,128,0.4)",
                 display: "flex", alignItems: "center", justifyContent: "center",
@@ -358,35 +374,17 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
               </div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em" }}>
-                  <ArrowUp size={12} style={{ color: "var(--accent-green)" }} />
-                  <span style={{ color: "var(--accent-green)", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY</span>
+                  <ArrowLeftRight size={12} style={{ color: "var(--accent-green)" }} />
+                  <span style={{ color: "var(--accent-green)", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY / EXIT</span>
                 </div>
                 <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
-                  Gate A ({ground ? fmtMeters(ground.entrance_width_m) : "—"}m)
+                  Gates {rows.length ? rows.join(" · ") : "A · B · C · D"} — open end of each lane
                 </div>
               </div>
             </div>
 
-            {/* EXIT */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", justifyContent: "flex-end" }}>
-                  <ArrowDown size={12} style={{ color: "var(--accent-red)" }} />
-                  <span style={{ color: "var(--accent-red)", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>EXIT</span>
-                </div>
-                <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
-                  Gate B ({ground ? fmtMeters(ground.exit_width_m) : "—"}m)
-                </div>
-              </div>
-              <div style={{
-                width: 32, height: 32, borderRadius: 6,
-                background: "linear-gradient(135deg, rgba(248,113,113,0.2) 0%, rgba(248,113,113,0.05) 100%)",
-                border: "1px solid rgba(248,113,113,0.4)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 0 12px rgba(248,113,113,0.2)",
-              }}>
-                <Building2 size={15} style={{ color: "var(--accent-red)" }} />
-              </div>
+            <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace", textAlign: "right" }}>
+              Slot 1 = at the gate
             </div>
           </div>
         </div>
