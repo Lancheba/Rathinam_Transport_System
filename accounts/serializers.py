@@ -1,26 +1,23 @@
 ﻿from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile
 from .permissions import can_manage_buses
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
-    role = serializers.ChoiceField(choices=UserProfile.ROLES, default="STUDENT")
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "role"]
+        fields = ["username", "email", "password"]
 
     def create(self, validated_data):
-        role = validated_data.pop("role", "STUDENT")
+        # Public sign-up always creates a STUDENT (the profile default).
+        # Admin and transport-staff roles are granted only from the admin site.
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data.get("email", ""),
             password=validated_data["password"],
         )
-        user.profile.role = role
-        user.profile.save()
         return user
 
 
