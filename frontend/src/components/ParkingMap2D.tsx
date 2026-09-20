@@ -3,6 +3,7 @@ import { TriangleAlert, Bus, ArrowLeftRight } from "lucide-react";
 import type { ParkingSlot } from "../types";
 import { alpha } from "../utils/color";
 import { useGateRows } from "../hooks/useGateRows";
+import { isBusParkable, hasBusException, busExceptionRangeLabel } from "../utils/busSlots";
 
 interface Props {
   slots: ParkingSlot[];
@@ -54,6 +55,8 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
   const GATE_ROWS = useGateRows(rows);
   const gateRows = rows.filter((r) => GATE_ROWS.has(r));
   const nonGateRows = rows.filter((r) => !GATE_ROWS.has(r));
+  const fullyReservedRows = nonGateRows.filter((r) => !hasBusException(r));
+  const partialBusRows = nonGateRows.filter((r) => hasBusException(r));
 
   const totalSlots   = slots.length;
   const occupiedSlots = slots.filter(s => s.is_occupied && !s.is_blocked).length;
@@ -170,7 +173,13 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
                 buses drive in and out through those lanes. Other rows have no gate. */}
             <span
               className="pm2d__label"
-              title={isGate ? `Gate ${row} — buses enter and leave this lane here` : `Row ${row} — no direct entry/exit`}
+              title={
+                isGate
+                  ? `Gate ${row} — buses enter and leave this lane here`
+                  : hasBusException(row)
+                  ? `Row ${row} — no direct entry/exit, but slots ${busExceptionRangeLabel(row)} allow bus parking`
+                  : `Row ${row} — no direct entry/exit`
+              }
               style={{
               width: 34, height: 48, flexShrink: 0, marginRight: 24,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
@@ -205,8 +214,9 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
                 }} />
               );
 
-              // Empty slots in rows with no bus gate are the bike & car area: no bus parks here
-              const reserved = !isGate && !slot.is_occupied;
+              // Empty slots in rows with no bus gate are the bike & car area — unless
+              // this slot falls inside that row's extra bus-parking range.
+              const reserved = !isBusParkable(row, num, isGate) && !slot.is_occupied;
               const base: React.CSSProperties = reserved
                 ? {
                     background: "repeating-linear-gradient(45deg, rgba(251,191,36,0.16) 0 6px, rgba(251,191,36,0.03) 6px 12px)",
@@ -270,7 +280,12 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
           color: "var(--text-dim)", letterSpacing: "0.05em",
         }}>
           Slots 1–{maxSlotNum} &nbsp;·&nbsp; Slot 1 = at the lane gate (open end)
-          {nonGateRows.length > 0 && <> &nbsp;·&nbsp; Rows {nonGateRows.join("/")} are for bikes &amp; cars — no bus parking</>}
+          {fullyReservedRows.length > 0 && <> &nbsp;·&nbsp; Rows {fullyReservedRows.join("/")} are for bikes &amp; cars — no bus parking</>}
+          {partialBusRows.map((r) => (
+            <React.Fragment key={r}>
+              {" "}&nbsp;·&nbsp; Row {r}: slots {busExceptionRangeLabel(r)} open for bus parking, rest bikes &amp; cars only
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>

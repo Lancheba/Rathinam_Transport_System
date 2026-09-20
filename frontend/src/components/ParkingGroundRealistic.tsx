@@ -5,6 +5,7 @@ import { useGateRows } from "../hooks/useGateRows";
 import type { ParkingGround, ParkingSlot } from "../types";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { alpha } from "../utils/color";
+import { isBusParkable, hasBusException, busExceptionRangeLabel } from "../utils/busSlots";
 
 interface ParkingGroundRealisticProps {
   onSlotClick?: (slotId: string, busNumber?: string) => void;
@@ -107,6 +108,8 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const GATE_ROWS = useGateRows(rows);
   const gateRows = rows.filter((r) => GATE_ROWS.has(r));
   const nonGateRows = rows.filter((r) => !GATE_ROWS.has(r));
+  const fullyReservedRows = nonGateRows.filter((r) => !hasBusException(r));
+  const partialBusRows = nonGateRows.filter((r) => hasBusException(r));
 
   /* live mini-stats */
   const freeCount     = slots.filter(s => !s.is_occupied).length;
@@ -254,7 +257,13 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                       Rows without a gate are accessed internally. */}
                   <div
                     className="pg__label"
-                    title={isGate ? `Gate ${row} — buses enter and leave this lane here` : `Row ${row} — no direct entry/exit`}
+                    title={
+                      isGate
+                        ? `Gate ${row} — buses enter and leave this lane here`
+                        : hasBusException(row)
+                        ? `Row ${row} — no direct entry/exit, but slots ${busExceptionRangeLabel(row)} allow bus parking`
+                        : `Row ${row} — no direct entry/exit`
+                    }
                     style={{
                     width: 56, height: 48, flexShrink: 0, marginRight: 36,
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
@@ -295,8 +304,9 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                       const isSelected = selectedSlot === slotKey || pickedKey === slotKey;
                       const exists = !!slot;
                       const isHov = hovered === slotKey;
-                      // Empty slots in rows with no bus gate are the bike & car area: no bus parks here
-                      const reserved = exists && !isGate && !hasBus;
+                      // Empty slots in rows with no bus gate are the bike & car area — unless
+                      // this slot falls inside that row's extra bus-parking range.
+                      const reserved = exists && !isBusParkable(row, num, isGate) && !hasBus;
 
                       return (
                         <div
@@ -403,7 +413,9 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   <span style={{ color: "var(--accent-green)", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY / EXIT</span>
                 </div>
                 <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
-                  Gates {gateRows.join(" · ")} — open end of the lane{nonGateRows.length > 0 && ` · rows ${nonGateRows.join("/")} are for bikes & cars — no bus parking`}
+                  Gates {gateRows.join(" · ")} — open end of the lane
+                  {fullyReservedRows.length > 0 && ` · rows ${fullyReservedRows.join("/")} are for bikes & cars — no bus parking`}
+                  {partialBusRows.map((r) => ` · row ${r}: slots ${busExceptionRangeLabel(r)} open for bus parking, rest bikes & cars only`).join("")}
                 </div>
               </div>
             </div>
