@@ -1,6 +1,7 @@
 ﻿from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes
+from accounts.permissions import CanManageBuses
 from rest_framework.response import Response
 from .models import Sensor, ParkingEvent
 from .serializers import SensorSerializer, ParkingEventSerializer, RFIDEventSerializer, OccupancyEventSerializer
@@ -15,7 +16,8 @@ class SensorViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        # create / update / partial_update / destroy require ADMIN or STAFF
+        return [CanManageBuses()]
 
 
 class ParkingEventViewSet(viewsets.ReadOnlyModelViewSet):

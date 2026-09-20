@@ -16,6 +16,7 @@ import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
+import SignUpPage from "./pages/SignUpPage";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,6 +98,7 @@ export const App: React.FC = () => {
           {/* Standalone Landing & Login routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
 
           {/* App Dashboard and Inner Pages with Sidebar & TopNav */}
           <Route

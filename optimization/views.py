@@ -1,6 +1,7 @@
 ﻿import json
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions, status
+from accounts.permissions import CanManageBuses
 from rest_framework.response import Response
 from .engine import run_optimization, apply_optimization
 from .models import OptimizationResult
@@ -30,7 +31,7 @@ def run_optimization_view(request):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([CanManageBuses])
 def apply_optimization_view(request):
     """Apply a previously computed optimisation result to the database."""
     result_id = request.data.get("result_id")

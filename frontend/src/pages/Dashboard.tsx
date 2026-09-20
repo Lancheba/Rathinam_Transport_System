@@ -12,11 +12,13 @@ import {
   BusRouteDistributionCard,
 } from "../components/BottomAnalyticsCards";
 import { getParkingSummary } from "../api/endpoints";
+import { useAuth } from "../context/AuthContext";
 
 export const Dashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [greeting, setGreeting] = useState("Good Afternoon");
+  const { username, roleLabel } = useAuth();
 
   // Live state from API with fallback to demo match
   const [summary, setSummary] = useState({
@@ -101,7 +103,7 @@ export const Dashboard: React.FC = () => {
               letterSpacing: "-0.02em",
             }}
           >
-            <span>{greeting}, Admin</span>
+            <span>{greeting}, {username ?? "User"}</span>
           </h1>
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
             Here's what's happening at the college bus parking ground today.

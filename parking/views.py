@@ -1,15 +1,22 @@
-﻿from rest_framework import viewsets, permissions, generics
+from rest_framework import viewsets, permissions, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import ParkingGround, ParkingSlot
 from .serializers import ParkingGroundSerializer, ParkingSlotSerializer
+from accounts.permissions import CanManageBuses
 
 
 class ParkingGroundViewSet(viewsets.ModelViewSet):
     queryset = ParkingGround.objects.all()
     serializer_class = ParkingGroundSerializer
-    permission_classes = [permissions.AllowAny]
     http_method_names = ["get", "post", "put", "patch", "head", "options"]
+
+    def get_permissions(self):
+        # Safe read methods: anyone can view parking ground info
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        # Writes (POST, PUT, PATCH): only ADMIN or STAFF
+        return [CanManageBuses()]
 
 
 class ParkingSlotViewSet(viewsets.ReadOnlyModelViewSet):

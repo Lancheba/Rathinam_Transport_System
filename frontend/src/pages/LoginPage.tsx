@@ -1,209 +1,176 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Users,
-  Bus,
-  MapPin,
-  Clock,
-  ShieldCheck,
-  Check,
-} from "lucide-react";
-import "@fontsource/plus-jakarta-sans/400.css";
-import "@fontsource/plus-jakarta-sans/500.css";
-import "@fontsource/plus-jakarta-sans/600.css";
-import "@fontsource/plus-jakarta-sans/700.css";
-import "@fontsource/caveat/500.css";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Users, Bus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import logoMark from "../assets/logo_mark.png";
-import logoWord from "../assets/logo_word.png";
-import scene from "../assets/login_scene.jpg";
-import blobTl from "../assets/blob_tl.png";
-import blobBl from "../assets/blob_bl.png";
-import blobBr from "../assets/blob_br.png";
-import "./LoginPage.css";
-
-const FEATURES = [
-  { icon: Bus, lines: ["Real-Time", "Bus Availability"] },
-  { icon: MapPin, lines: ["Easy", "Navigation"] },
-  { icon: Clock, lines: ["Save Time", "& Effort"] },
-  { icon: ShieldCheck, lines: ["Safe & Organized", "Parking"] },
-];
+import "./AuthPage.css";
 
 const MicrosoftIcon: React.FC = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="lp__social-icon">
-    <rect x="2.5" y="2.5" width="9" height="9" rx="1.6" fill="currentColor" />
-    <rect x="12.5" y="2.5" width="9" height="9" rx="1.6" fill="currentColor" />
-    <rect x="2.5" y="12.5" width="9" height="9" rx="1.6" fill="currentColor" />
-    <rect x="12.5" y="12.5" width="9" height="9" rx="1.6" fill="currentColor" />
+  <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+    <rect x="2.5" y="2.5" width="9" height="9" rx="1.5" fill="currentColor" />
+    <rect x="12.5" y="2.5" width="9" height="9" rx="1.5" fill="currentColor" />
+    <rect x="2.5" y="12.5" width="9" height="9" rx="1.5" fill="currentColor" />
+    <rect x="12.5" y="12.5" width="9" height="9" rx="1.5" fill="currentColor" />
   </svg>
 );
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [username, setUsername]       = useState("");
+  const [password, setPassword]       = useState("");
+  const [showPass, setShowPass]       = useState(false);
+  const [remember, setRemember]       = useState(false);
+  const [error, setError]             = useState("");
+  const [loading, setLoading]         = useState(false);
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setError("Enter your email or register number and password.");
+      setError("Please fill in all fields.");
       return;
     }
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       await login(username.trim(), password.trim());
       navigate("/dashboard");
     } catch {
-      setError("Incorrect email, register number or password.");
-    } finally {
-      setLoading(false);
-    }
+      setError("Incorrect username or password.");
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="lp">
-      <div className="lp__scene" style={{ backgroundImage: `url(${scene})` }} aria-hidden="true" />
-      <img className="lp__blob lp__blob--tl" src={blobTl} alt="" aria-hidden="true" />
-      <img className="lp__blob lp__blob--bl" src={blobBl} alt="" aria-hidden="true" />
-      <img className="lp__blob lp__blob--br" src={blobBr} alt="" aria-hidden="true" />
+    <div className="auth-root">
+      {/* Animated background */}
+      <div className="auth-bg">
+        <div className="auth-bg__orb auth-bg__orb--1" />
+        <div className="auth-bg__orb auth-bg__orb--2" />
+        <div className="auth-bg__orb auth-bg__orb--3" />
+        <div className="auth-bg__grid" />
+      </div>
 
-      <main className="lp__page">
-        {/* Top-left campus label */}
-        <div className="lp__corner" aria-hidden="true">
-          <span>Rathinam</span>
-          <span>Campus</span>
-          <i />
-          <span>Parking</span>
-          <span>System</span>
-          <i />
+      <div className="auth-wrap">
+        {/* Left panel */}
+        <div className="auth-left">
+          <div className="auth-left__inner">
+            <div className="auth-brand">
+              <img src={logoMark} alt="Rathinam" className="auth-brand__logo" />
+              <div>
+                <h2 className="auth-brand__name">RATHINAM</h2>
+                <p className="auth-brand__sub">Smart Parking System</p>
+              </div>
+            </div>
+            <h1 className="auth-left__title">
+              Park Smarter,<br />
+              <span>Move Faster.</span>
+            </h1>
+            <p className="auth-left__desc">
+              Real-time bus parking management for Rathinam Campus. Know exactly where every bus is, every moment.
+            </p>
+            <div className="auth-features">
+              {[
+                { icon: "🚌", label: "Real-time Bus Tracking" },
+                { icon: "🅿️", label: "Smart Slot Allocation" },
+                { icon: "📡", label: "IoT Sensor Integration" },
+                { icon: "🔒", label: "Role-based Access" },
+              ].map(f => (
+                <div key={f.label} className="auth-feature">
+                  <span className="auth-feature__icon">{f.icon}</span>
+                  <span>{f.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="auth-left__badge">
+              <Bus size={14} />
+              <span>Rathinam College of Arts & Science</span>
+            </div>
+          </div>
         </div>
 
-        {/* Top-right script tagline */}
-        <p className="lp__tagline" aria-hidden="true">
-          <span>Park Smart</span>
-          <span>Move Forward</span>
-          <svg viewBox="0 0 120 14" preserveAspectRatio="none">
-            <path d="M2 11 C 30 9, 80 6, 118 3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </p>
-
-        {/* Brand */}
-        <header className="lp__brand">
-          <img className="lp__logo-mark" src={logoMark} alt="" />
-          <img className="lp__logo-word" src={logoWord} alt="Rathinam" />
-          <p className="lp__product">Smart Parking System</p>
-        </header>
-
-        {/* Glass login card */}
-        <section className="lp__card" aria-labelledby="lp-title">
-          <h1 id="lp-title" className="lp__title">Welcome Back</h1>
-          <p className="lp__subtitle">Login to your account</p>
-
-          <form className="lp__form" onSubmit={handleLogin} noValidate>
-            <label className="lp__field lp__field--user">
-              <span className="lp__sr">Email or register number</span>
-              <Mail className="lp__field-icon" strokeWidth={1.6} aria-hidden="true" />
-              <input
-                type="text"
-                name="username"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Email / Register Number"
-              />
-            </label>
-
-            <label className="lp__field lp__field--pass">
-              <span className="lp__sr">Password</span>
-              <Lock className="lp__field-icon" strokeWidth={1.6} aria-hidden="true" />
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-              />
-              <button
-                type="button"
-                className="lp__eye"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? <Eye strokeWidth={1.6} /> : <EyeOff strokeWidth={1.6} />}
-              </button>
-            </label>
-
-            <div className="lp__row">
-              <label className="lp__remember">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span className="lp__box" aria-hidden="true">
-                  <Check strokeWidth={3} />
-                </span>
-                <span>Remember me</span>
-              </label>
-              <button type="button" className="lp__forgot">Forgot password?</button>
+        {/* Right panel – form */}
+        <div className="auth-right">
+          <div className="auth-card">
+            <div className="auth-card__header">
+              <h2 className="auth-card__title">Welcome Back</h2>
+              <p className="auth-card__sub">Login to your account</p>
             </div>
 
-            {error && (
-              <p className="lp__error" role="alert">{error}</p>
-            )}
+            <form className="auth-form" onSubmit={handleSubmit} noValidate>
+              <div className="auth-field">
+                <label htmlFor="lp-user">Email / Register Number</label>
+                <div className="auth-field__wrap">
+                  <Mail size={16} className="auth-field__icon" />
+                  <input
+                    id="lp-user" type="text"
+                    autoComplete="username"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    placeholder="Enter email or register number"
+                  />
+                </div>
+              </div>
 
-            <button type="submit" className="lp__submit" disabled={loading}>
-              <span>{loading ? "Logging in..." : "Login"}</span>
-              <ArrowRight strokeWidth={2} aria-hidden="true" />
-            </button>
-          </form>
+              <div className="auth-field">
+                <label htmlFor="lp-pass">Password</label>
+                <div className="auth-field__wrap">
+                  <Lock size={16} className="auth-field__icon" />
+                  <input
+                    id="lp-pass"
+                    type={showPass ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                  />
+                  <button type="button" className="auth-field__eye"
+                    onClick={() => setShowPass(v => !v)}
+                    aria-label={showPass ? "Hide" : "Show"}>
+                    {showPass ? <Eye size={16}/> : <EyeOff size={16}/>}
+                  </button>
+                </div>
+              </div>
 
-          <div className="lp__divider"><span>or continue with</span></div>
+              <div className="auth-row">
+                <label className="auth-check">
+                  <input type="checkbox" checked={remember}
+                    onChange={e => setRemember(e.target.checked)} />
+                  <span className="auth-check__box" />
+                  <span>Remember me</span>
+                </label>
+                <button type="button" className="auth-link--yellow">Forgot password?</button>
+              </div>
 
-          <div className="lp__socials">
-            <button type="button" className="lp__social" aria-label="Continue with Google">
-              <span className="lp__g" aria-hidden="true">G</span>
-            </button>
-            <button type="button" className="lp__social" aria-label="Continue with Microsoft">
-              <MicrosoftIcon />
-            </button>
-            <button type="button" className="lp__social" aria-label="Continue with campus single sign-on">
-              <Users strokeWidth={1.8} className="lp__social-icon" aria-hidden="true" />
-            </button>
+              {error && <p className="auth-error" role="alert">{error}</p>}
+
+              <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
+                {loading ? "Logging in…" : "Login"}
+                {!loading && <ArrowRight size={16} />}
+              </button>
+            </form>
+
+            <div className="auth-divider"><span>or continue with</span></div>
+
+            <div className="auth-socials">
+              <button type="button" className="auth-social" aria-label="Google">
+                <span className="auth-social__g">G</span>
+              </button>
+              <button type="button" className="auth-social" aria-label="Microsoft">
+                <MicrosoftIcon />
+              </button>
+              <button type="button" className="auth-social" aria-label="Campus SSO">
+                <Users size={18} />
+              </button>
+            </div>
+
+            <p className="auth-switch">
+              Don't have an account?{" "}
+              <Link to="/signup" className="auth-link--yellow">
+                Sign Up <ArrowRight size={13} />
+              </Link>
+            </p>
           </div>
-
-          <p className="lp__signup">
-            Don't have an account?{" "}
-            <Link to="/dashboard/find">
-              Sign Up <ArrowRight strokeWidth={2} aria-hidden="true" />
-            </Link>
-          </p>
-        </section>
-
-        {/* Feature strip */}
-        <ul className="lp__features">
-          {FEATURES.map(({ icon: Icon, lines }) => (
-            <li key={lines.join(" ")}>
-              <Icon strokeWidth={1.4} aria-hidden="true" />
-              <span>{lines[0]}<br />{lines[1]}</span>
-            </li>
-          ))}
-        </ul>
-      </main>
+        </div>
+      </div>
     </div>
   );
 };

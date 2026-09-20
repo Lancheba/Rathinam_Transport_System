@@ -3,6 +3,7 @@ import { Sliders, Wifi, Check, Loader2, Palette, Sun, Moon, Monitor } from "luci
 import { getGround, updateGround } from "../api/endpoints";
 import type { ParkingGround } from "../types";
 import { useTheme, type ThemePreference } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; hint: string; Icon: React.ElementType }[] = [
   { value: "light",  label: "Light",  hint: "Bright surfaces",        Icon: Sun },
@@ -28,6 +29,7 @@ export const SettingsPage: React.FC = () => {
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState("");
   const { preference, setPreference } = useTheme();
+  const { canManageBuses } = useAuth();
 
   useEffect(() => {
     getGround()
@@ -118,6 +120,7 @@ export const SettingsPage: React.FC = () => {
                   <label htmlFor="st-length" style={{ fontSize: 12, color: "var(--text-muted)" }}>Ground Length (meters)</label>
                   <input id="st-length" type="number" inputMode="decimal" step="0.01" min="0" value={length}
                     onChange={e => setLength(e.target.value)} style={inputStyle}
+                    disabled={!canManageBuses}
                     onFocus={e  => (e.currentTarget.style.borderColor = "rgba(129,140,248,0.6)")}
                     onBlur={e   => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)")} />
                 </div>
@@ -125,13 +128,19 @@ export const SettingsPage: React.FC = () => {
                   <label htmlFor="st-width" style={{ fontSize: 12, color: "var(--text-muted)" }}>Ground Width (meters)</label>
                   <input id="st-width" type="number" inputMode="decimal" step="0.01" min="0" value={width}
                     onChange={e => setWidth(e.target.value)} style={inputStyle}
+                    disabled={!canManageBuses}
                     onFocus={e  => (e.currentTarget.style.borderColor = "rgba(129,140,248,0.6)")}
                     onBlur={e   => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)")} />
                 </div>
               </div>
 
+              {!canManageBuses && (
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12 }}>
+                  Only admins and transport staff can change ground dimensions.
+                </p>
+              )}
               <div className="st-actions" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
-                <button className="st-save" onClick={handleSave} disabled={!hasChanges || saving} style={{
+                <button className="st-save" onClick={handleSave} disabled={!hasChanges || saving || !canManageBuses} style={{
                   display: "flex", alignItems: "center", gap: 8,
                   padding: "9px 20px", borderRadius: 9999, border: "none",
                   fontSize: 13, fontWeight: 700, transition: "all 0.2s",
