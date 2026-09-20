@@ -6,7 +6,7 @@ slots closest to the exit (lowest slot_number in each row).
 This minimises blocking — a bus leaving early will never be blocked by
 one that leaves later.
 """
-from parking.models import ParkingSlot
+from parking.models import ParkingSlot, recompute_blocked_slots
 from buses.models import Bus
 
 
@@ -102,16 +102,30 @@ def run_optimization():
                 "bus_id": bus.pk,
                 "bus_number": bus.bus_number,
                 "departure_time": str(bus.departure_time),
-                "is_blocked": False,  # After optimisation no bus is blocked
+                "is_blocked": False,  # filled in below, once every row's contents are known
             })
             bus_index += 1
+
+    # A slot is blocked if another slot in the SAME ROW of the recommended
+    # layout has a lower slot_number (sits between it and the gate). Filling
+    # a row front-to-back in departure order minimises how long each bus
+    # sits blocked, but any row holding 2+ buses still has blocked buses —
+    # this must be computed, never assumed to be zero.
+    blocked_after = 0
+    for item in recommended_layout:
+        item["is_blocked"] = any(
+            other["row"] == item["row"] and other["slot_number"] < item["slot_number"]
+            for other in recommended_layout
+        )
+        if item["is_blocked"]:
+            blocked_after += 1
 
     return {
         "current": current_layout,
         "recommended": recommended_layout,
         "stats": {
             "blocked_before": blocked_before,
-            "blocked_after": 0,
+            "blocked_after": blocked_after,
             "movements_required": movements,
             "buses_optimised": len(buses),
         },
@@ -133,7 +147,10 @@ def apply_optimization(recommended_layout):
             bus = Bus.objects.get(pk=item["bus_id"])
             slot.bus = bus
             slot.is_occupied = True
-            slot.is_blocked = False
             slot.save()
         except Exception:
             pass
+
+    # Recompute is_blocked from the actual saved layout — never assume a
+    # row with several buses in it has nobody blocked.
+    recompute_blocked_slots()

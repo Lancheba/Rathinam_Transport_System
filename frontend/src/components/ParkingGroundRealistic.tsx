@@ -102,6 +102,10 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const slotNumbers = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
   const pickedSlot = pickedKey ? slotMap[pickedKey] : undefined;
 
+  // Only rows A and D have a lane gate — that's where buses actually enter/exit.
+  const GATE_ROWS = new Set(["A", "D"]);
+  const gateRows = rows.filter((r) => GATE_ROWS.has(r));
+
   /* live mini-stats */
   const freeCount     = slots.filter(s => !s.is_occupied).length;
   const parkedCount   = slots.filter(s => s.is_occupied && !s.is_blocked).length;
@@ -239,31 +243,45 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
               className="pg__rows"
               style={{ display: "flex", flexDirection: "column", gap: 14, ["--pg-cols" as string]: slotNumbers.length }}
             >
-              {rows.map((row) => (
+              {rows.map((row) => {
+                const isGate = GATE_ROWS.has(row);
+                return (
                 <div key={row} className="pg__row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {/* Lane gate: every row is a lane that is open at its left end (Slot 1).
-                      Buses drive in and back out through that opening. */}
-                  <div className="pg__label" title={`Gate ${row} — buses enter and leave this lane here`} style={{
+                  {/* Lane gate: only rows A and D are open at their left end (Slot 1) —
+                      buses only drive in and back out through those two openings.
+                      Rows B and C are accessed internally, not directly from outside. */}
+                  <div
+                    className="pg__label"
+                    title={isGate ? `Gate ${row} — buses enter and leave this lane here` : `Row ${row} — no direct entry/exit`}
+                    style={{
                     width: 56, height: 48, flexShrink: 0,
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
                     borderRadius: 8,
                     backgroundColor: "var(--canvas-solid)",
-                    backgroundImage: "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)",
-                    border: "1px solid rgba(74,222,128,0.35)",
-                    borderLeft: "3px solid var(--accent-green)",
-                    boxShadow: "0 0 12px rgba(74,222,128,0.14)",
+                    backgroundImage: isGate
+                      ? "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)"
+                      : "none",
+                    border: isGate ? "1px solid rgba(74,222,128,0.35)" : "1px solid rgb(var(--ov) / 0.08)",
+                    borderLeft: isGate ? "3px solid var(--accent-green)" : "3px solid rgb(var(--ov) / 0.15)",
+                    boxShadow: isGate ? "0 0 12px rgba(74,222,128,0.14)" : "none",
                     fontFamily: "monospace",
                   }}>
                     <span style={{
                       fontSize: 14, fontWeight: 800, lineHeight: 1,
                       color: "var(--accent-violet)", textShadow: "0 0 10px rgba(167,139,250,0.6)",
                     }}>{row}</span>
-                    <span className="pg__gate-text" style={{
-                      display: "flex", alignItems: "center", gap: 2,
-                      fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", color: "var(--accent-green)",
-                    }}>
-                      <ArrowLeftRight size={9} /> IN/OUT
-                    </span>
+                    {isGate ? (
+                      <span className="pg__gate-text" style={{
+                        display: "flex", alignItems: "center", gap: 2,
+                        fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", color: "var(--accent-green)",
+                      }}>
+                        <ArrowLeftRight size={9} /> IN/OUT
+                      </span>
+                    ) : (
+                      <span style={{
+                        fontSize: 7, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-dim)",
+                      }}>NO GATE</span>
+                    )}
                   </div>
 
                   <div className="pg__slots" style={{ display: "flex", flex: 1, gap: 6 }}>
@@ -352,7 +370,8 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                     })}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             </div>
           )}
@@ -378,7 +397,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   <span style={{ color: "var(--accent-green)", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY / EXIT</span>
                 </div>
                 <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
-                  Gates {rows.length ? rows.join(" · ") : "A · B · C · D"} — open end of each lane
+                  Gates {gateRows.length ? gateRows.join(" · ") : "A · D"} — open end of the lane · rows B/C have no direct gate
                 </div>
               </div>
             </div>

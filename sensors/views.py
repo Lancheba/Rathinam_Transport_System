@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from .models import Sensor, ParkingEvent
 from .serializers import SensorSerializer, ParkingEventSerializer, RFIDEventSerializer, OccupancyEventSerializer
 from buses.models import Bus
-from parking.models import ParkingSlot
+from parking.models import ParkingSlot, recompute_blocked_slots
 
 
 class SensorViewSet(viewsets.ModelViewSet):
@@ -78,11 +78,11 @@ def rfid_event(request):
             slot.is_occupied = True
             slot.save()
             # Recompute blocked status: slots behind this one in same row
-            _recompute_blocked()
+            recompute_blocked_slots()
 
     elif event_type == "EXIT":
         ParkingSlot.objects.filter(bus=bus).update(is_occupied=False, bus=None, is_blocked=False)
-        _recompute_blocked()
+        recompute_blocked_slots()
 
     ParkingEvent.objects.create(
         bus=bus,
@@ -127,24 +127,11 @@ def occupancy_event(request):
                 slot.bus = None
                 slot.is_blocked = False
             slot.save()
-            _recompute_blocked()
+            recompute_blocked_slots()
         except ParkingSlot.DoesNotExist:
             pass
 
     return Response({"status": "ok", "sensor": sensor_id_str, "occupied": is_occupied})
 
 
-def _recompute_blocked():
-    """
-    Mark a bus as blocked if there is another bus in a slot with a lower
-    slot_number in the same row (i.e. closer to the exit).
-    Row A slot 1 is closest to exit.
-    """
-    for slot in ParkingSlot.objects.filter(is_occupied=True).select_related("bus"):
-        blocking = ParkingSlot.objects.filter(
-            row=slot.row,
-            is_occupied=True,
-            slot_number__lt=slot.slot_number,
-        ).exists()
-        slot.is_blocked = blocking
-        slot.save(update_fields=["is_blocked"])
+

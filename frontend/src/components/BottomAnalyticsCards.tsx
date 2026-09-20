@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { PieChart as PieIcon, BarChart2 } from "lucide-react";
 import { alpha } from "../utils/color";
+import { getBuses } from "../api/endpoints";
 
 export const SlotUtilizationCard: React.FC<{
   occupied?: number;
@@ -63,14 +64,42 @@ export const SlotUtilizationCard: React.FC<{
   );
 };
 
+const ROUTE_COLORS = [
+  "var(--accent-blue)", "var(--accent-violet)", "var(--accent-pink)",
+  "var(--accent-green)", "var(--accent-amber)", "var(--accent-cyan)",
+];
+
 export const BusRouteDistributionCard: React.FC = () => {
-  const routes = [
-    { name: "Route 1", count: 1, color: "var(--accent-blue)" },
-    { name: "Route 2", count: 1, color: "var(--accent-violet)" },
-    { name: "Route 3", count: 1, color: "var(--accent-pink)" },
-    { name: "Route 4", count: 1, color: "var(--accent-green)" },
-  ];
-  const maxScale = 6;
+  const [routes, setRoutes] = useState<{ name: string; count: number; color: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    getBuses()
+      .then((buses) => {
+        const counts = new Map<string, number>();
+        buses.forEach((b) => {
+          const label = b.route?.trim() || "Unassigned";
+          counts.set(label, (counts.get(label) ?? 0) + 1);
+        });
+        const list = Array.from(counts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .map(([name, count], i) => ({ name, count, color: ROUTE_COLORS[i % ROUTE_COLORS.length] }));
+        setRoutes(list);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const maxScale = Math.max(4, ...routes.map((r) => r.count), 1);
+  // Round up to a clean multiple of 2 for tidy axis labels
+  const axisMax = Math.ceil(maxScale / 2) * 2;
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 22px", height: "100%" }}>
@@ -79,34 +108,42 @@ export const BusRouteDistributionCard: React.FC = () => {
         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>Bus Route Distribution</span>
       </div>
 
-      <div style={{ display: "flex", height: 110, gap: 10, alignItems: "flex-end", paddingBottom: 6 }}>
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", color: "var(--text-dim)", fontSize: 10, fontFamily: "monospace", paddingRight: 6 }}>
-          <span>6</span><span>4</span><span>2</span><span>0</span>
-        </div>
-        <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "flex-end", justifyContent: "space-around", borderBottom: "1px solid rgb(var(--ov) / 0.1)", borderLeft: "1px solid rgb(var(--ov) / 0.1)", paddingLeft: 12, paddingRight: 12 }}>
-          {routes.map((r, i) => {
-            const heightPct = (r.count / maxScale) * 100;
-            return (
-              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", width: "18%" }}>
-                <span style={{ fontSize: 10, color: r.color, marginBottom: 4, fontFamily: "monospace", fontWeight: 700 }}>{r.count}</span>
-                <div style={{
-                  width: "100%", height: `${heightPct}%`,
-                  borderRadius: "4px 4px 0 0",
-                  background: `linear-gradient(180deg, ${r.color} 0%, ${alpha(r.color, 33)} 100%)`,
-                  boxShadow: `0 0 12px ${alpha(r.color, 33)}`,
-                  transition: "height 0.6s cubic-bezier(0.16,1,0.3,1)",
-                }} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {loading ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "20px 0" }}>Loading routes…</div>
+      ) : routes.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "20px 0" }}>No buses registered yet.</div>
+      ) : (
+        <>
+          <div style={{ display: "flex", height: 110, gap: 10, alignItems: "flex-end", paddingBottom: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", color: "var(--text-dim)", fontSize: 10, fontFamily: "monospace", paddingRight: 6 }}>
+              <span>{axisMax}</span><span>{Math.round(axisMax / 2)}</span><span>0</span>
+            </div>
+            <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "flex-end", justifyContent: "space-around", borderBottom: "1px solid rgb(var(--ov) / 0.1)", borderLeft: "1px solid rgb(var(--ov) / 0.1)", paddingLeft: 12, paddingRight: 12 }}>
+              {routes.map((r, i) => {
+                const heightPct = (r.count / axisMax) * 100;
+                return (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", width: `${Math.max(14, 90 / routes.length)}%` }}>
+                    <span style={{ fontSize: 10, color: r.color, marginBottom: 4, fontFamily: "monospace", fontWeight: 700 }}>{r.count}</span>
+                    <div style={{
+                      width: "100%", height: `${heightPct}%`,
+                      borderRadius: "4px 4px 0 0",
+                      background: `linear-gradient(180deg, ${r.color} 0%, ${alpha(r.color, 33)} 100%)`,
+                      boxShadow: `0 0 12px ${alpha(r.color, 33)}`,
+                      transition: "height 0.6s cubic-bezier(0.16,1,0.3,1)",
+                    }} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-      <div style={{ display: "flex", justifyContent: "space-around", paddingLeft: 28, marginTop: 6 }}>
-        {routes.map((r, i) => (
-          <span key={i} style={{ fontSize: 10, color: r.color, fontWeight: 600 }}>{r.name}</span>
-        ))}
-      </div>
+          <div style={{ display: "flex", justifyContent: "space-around", paddingLeft: 28, marginTop: 6, flexWrap: "wrap", gap: 4 }}>
+            {routes.map((r, i) => (
+              <span key={i} style={{ fontSize: 10, color: r.color, fontWeight: 600 }}>{r.name}</span>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

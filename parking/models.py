@@ -51,3 +51,24 @@ class ParkingSlot(models.Model):
 
     def __str__(self):
         return f"{self.row} - Slot {self.slot_number}"
+
+
+def recompute_blocked_slots():
+    """
+    Single source of truth for "is a parked bus blocked".
+
+    A slot is blocked if another occupied slot in the same row has a lower
+    slot_number (i.e. sits between it and the gate at slot 1). Called after
+    ANY operation that parks, moves, or removes a bus — RFID/ultrasonic
+    sensor events, and applying an optimisation result — so the flag never
+    goes stale no matter which code path changed the layout.
+    """
+    for slot in ParkingSlot.objects.filter(is_occupied=True):
+        blocking = ParkingSlot.objects.filter(
+            row=slot.row,
+            is_occupied=True,
+            slot_number__lt=slot.slot_number,
+        ).exists()
+        if slot.is_blocked != blocking:
+            slot.is_blocked = blocking
+            slot.save(update_fields=["is_blocked"])

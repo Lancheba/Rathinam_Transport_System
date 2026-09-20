@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Clock } from "lucide-react";
 import { MetricCards } from "../components/MetricCards";
 import { ParkingGroundRealistic } from "../components/ParkingGroundRealistic";
@@ -11,7 +11,7 @@ import {
   SlotUtilizationCard,
   BusRouteDistributionCard,
 } from "../components/BottomAnalyticsCards";
-import { getParkingSummary } from "../api/endpoints";
+import { getParkingSummary, getBuses, getSensors } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 
 export const Dashboard: React.FC = () => {
@@ -20,14 +20,17 @@ export const Dashboard: React.FC = () => {
   const [greeting, setGreeting] = useState("Good Afternoon");
   const { username } = useAuth();
 
-  // Live state from API with fallback to demo match
+  // Live state from API — starts at 0 rather than stale demo numbers, so a
+  // slow/failed fetch never shows a value that doesn't exist in the backend.
   const [summary, setSummary] = useState({
-    total_slots: 32,
-    occupied: 4,
-    free: 28,
-    blocked: 1,
-    utilisation_pct: 12.5,
+    total_slots: 0,
+    occupied: 0,
+    free: 0,
+    blocked: 0,
+    utilisation_pct: 0,
   });
+  const [busStats, setBusStats] = useState({ total: 0, active: 0 });
+  const [sensorStats, setSensorStats] = useState({ active: 0, offline: 0 });
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -60,23 +63,59 @@ export const Dashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
+  const loadSummary = useCallback(() => {
     getParkingSummary()
       .then((data) => {
         if (data) {
           setSummary({
-            total_slots: data.total_slots || 32,
-            occupied: data.occupied || 4,
-            free: data.free || 28,
-            blocked: data.blocked || 1,
-            utilisation_pct: data.utilisation_pct || 12.5,
+            total_slots: data.total_slots ?? 0,
+            occupied: data.occupied ?? 0,
+            free: data.free ?? 0,
+            blocked: data.blocked ?? 0,
+            utilisation_pct: data.utilisation_pct ?? 0,
           });
         }
       })
       .catch(() => {
-        // Fallback demo state matches reference image
+        // keep whatever we last had on a transient error; next poll retries
       });
   }, []);
+
+  const loadBuses = useCallback(() => {
+    getBuses()
+      .then((buses) => {
+        setBusStats({
+          total: buses.length,
+          active: buses.filter((b) => b.is_active).length,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  const loadSensors = useCallback(() => {
+    getSensors()
+      .then((sensors) => {
+        setSensorStats({
+          active: sensors.filter((s) => s.is_active).length,
+          offline: sensors.filter((s) => !s.is_active).length,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadSummary();
+    loadBuses();
+    loadSensors();
+    // Poll every 15s so the top metric cards stay in sync with the live ground
+    // view instead of freezing at whatever the first successful fetch returned.
+    const id = setInterval(() => {
+      loadSummary();
+      loadBuses();
+      loadSensors();
+    }, 15000);
+    return () => clearInterval(id);
+  }, [loadSummary, loadBuses, loadSensors]);
 
   return (
     <div style={{ maxWidth: 1480, margin: "0 auto" }}>
@@ -141,16 +180,16 @@ export const Dashboard: React.FC = () => {
 
       {/* 6 Metric Cards */}
       <MetricCards
-        totalBuses={4}
-        activeBuses={4}
+        totalBuses={busStats.total}
+        activeBuses={busStats.active}
         blockedBuses={summary.blocked}
         occupiedSlots={summary.occupied}
         freeSlots={summary.free}
         totalSlots={summary.total_slots}
         avgRetrievalTime="2.5 min"
         retrievalImprovement="45% faster (vs. last hour)"
-        activeSensors={5}
-        offlineSensors={1}
+        activeSensors={sensorStats.active}
+        offlineSensors={sensorStats.offline}
       />
 
       {/* Main Grid: Left (Ground + Bottom Analytics) vs. Right (3 Cards) */}

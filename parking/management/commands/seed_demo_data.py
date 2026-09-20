@@ -36,12 +36,15 @@ EXTRA_PARKING = [
 ]
 
 DEMO_SENSORS = [
-    {"sensor_id": "RFID-001", "sensor_type": "RFID",       "location": "Ground Entry Gate"},
-    {"sensor_id": "RFID-002", "sensor_type": "RFID",       "location": "Row A Entrance"},
-    {"sensor_id": "US-001",   "sensor_type": "ULTRASONIC", "location": "Row A Slot 1"},
-    {"sensor_id": "US-002",   "sensor_type": "ULTRASONIC", "location": "Row A Slot 2"},
-    {"sensor_id": "US-003",   "sensor_type": "ULTRASONIC", "location": "Row B Slot 1"},
-    {"sensor_id": "US-004",   "sensor_type": "ULTRASONIC", "location": "Row B Slot 2"},
+    # RFID gate sensors — only at the two lane openings, Row A and Row D
+    {"sensor_id": "RFID-001", "sensor_type": "RFID",       "location": "Row A Entrance"},
+    {"sensor_id": "RFID-002", "sensor_type": "RFID",       "location": "Row D Entrance"},
+    # Ultrasonic occupancy sensors — placed at the edges (first/last slot) of
+    # the inner rows B and C, which have no gate of their own
+    {"sensor_id": "US-001",   "sensor_type": "ULTRASONIC", "location": "Row B Slot 1"},
+    {"sensor_id": "US-002",   "sensor_type": "ULTRASONIC", "location": "Row B Slot 8"},
+    {"sensor_id": "US-003",   "sensor_type": "ULTRASONIC", "location": "Row C Slot 1"},
+    {"sensor_id": "US-004",   "sensor_type": "ULTRASONIC", "location": "Row C Slot 8"},
 ]
 
 
@@ -117,7 +120,7 @@ class Command(BaseCommand):
 
         # --- Sensors ---
         for data in DEMO_SENSORS:
-            Sensor.objects.get_or_create(
+            Sensor.objects.update_or_create(
                 sensor_id=data["sensor_id"],
                 defaults={"sensor_type": data["sensor_type"], "location": data["location"]},
             )

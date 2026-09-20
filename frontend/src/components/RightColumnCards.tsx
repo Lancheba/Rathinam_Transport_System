@@ -1,20 +1,38 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Bus as BusIcon, Clock, Radio, ChevronRight,
-  ParkingSquare, ArrowRightLeft, CreditCard, AlertTriangle,
+  ParkingSquare, ArrowRightLeft, CreditCard, AlertTriangle, LogIn, Volume2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AddBusButton } from "./AddBusButton";
 import { alpha } from "../utils/color";
+import { getBuses, getEvents, getSensors } from "../api/endpoints";
+import type { Bus, ParkingEvent, Sensor } from "../types";
+import { relativeTime } from "../utils/time";
 
 export const BusInformationCard: React.FC = () => {
   const navigate = useNavigate();
-  const buses = [
-    { num: "B01", route: "Route 1", slot: "D1", status: "Parked",  blocked: false },
-    { num: "B02", route: "Route 2", slot: "C2", status: "Parked",  blocked: false },
-    { num: "B03", route: "Route 3", slot: "B3", status: "Blocked", blocked: true },
-    { num: "B04", route: "Route 4", slot: "B6", status: "Parked",  blocked: false },
-  ];
+  const [buses, setBuses] = useState<Bus[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    getBuses()
+      .then(setBuses)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  // Only buses currently sitting in a slot, most recently placed first, capped to 4 rows
+  const parkedBuses = buses
+    .filter(b => b.parking_slot_info)
+    .slice(-4)
+    .reverse();
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 20px" }}>
@@ -24,7 +42,7 @@ export const BusInformationCard: React.FC = () => {
           <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>Bus Information</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <AddBusButton variant="subtle" onCreated={(bus) => navigate("/dashboard/buses", { state: { addedBus: bus.bus_number } })} />
+          <AddBusButton variant="subtle" onCreated={(bus) => { setBuses(prev => [...prev, bus]); navigate("/dashboard/buses", { state: { addedBus: bus.bus_number } }); }} />
           <Link to="/dashboard/buses" style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: 3, fontWeight: 500 }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--accent-blue)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
@@ -33,53 +51,84 @@ export const BusInformationCard: React.FC = () => {
         </div>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-        <thead>
-          <tr style={{ color: "var(--text-dim)", borderBottom: "1px solid rgb(var(--ov) / 0.08)", textAlign: "left" }}>
-            {["Bus No.", "Route", "Slot", "Status", ""].map(h => (
-              <th key={h} style={{ paddingBottom: 8, fontWeight: 600 }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {buses.map(b => (
-            <tr key={b.num} style={{ borderBottom: "1px solid rgb(var(--ov) / 0.04)", transition: "background 0.15s" }}>
-              <td style={{ padding: "10px 0", fontWeight: 700, color: "var(--text-strong)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <BusIcon size={13} style={{ color: "var(--accent-blue)" }} /> {b.num}
-                </div>
-              </td>
-              <td style={{ padding: "10px 0", color: "var(--text-soft)" }}>{b.route}</td>
-              <td style={{ padding: "10px 0", fontFamily: "monospace", color: "var(--text-muted)" }}>{b.slot}</td>
-              <td style={{ padding: "10px 0" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{
-                    width: 6, height: 6, borderRadius: "50%",
-                    background: b.blocked ? "var(--accent-amber)" : "var(--accent-green)",
-                    boxShadow: b.blocked ? "0 0 8px var(--accent-amber)" : "0 0 8px var(--accent-green)",
-                  }} />
-                  <span style={{ color: b.blocked ? "var(--accent-amber)" : "var(--accent-green)", fontWeight: 600 }}>{b.status}</span>
-                </div>
-              </td>
-              <td style={{ padding: "10px 0", color: "var(--text-dim)", textAlign: "right" }}>
-                <ChevronRight size={14} />
-              </td>
+      {loading ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "10px 0" }}>Loading buses…</div>
+      ) : parkedBuses.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "10px 0" }}>No buses parked right now.</div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <thead>
+            <tr style={{ color: "var(--text-dim)", borderBottom: "1px solid rgb(var(--ov) / 0.08)", textAlign: "left" }}>
+              {["Bus No.", "Route", "Slot", "Status", ""].map(h => (
+                <th key={h} style={{ paddingBottom: 8, fontWeight: 600 }}>{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {parkedBuses.map(b => {
+              const info = b.parking_slot_info!;
+              const blocked = info.is_blocked;
+              return (
+                <tr key={b.id} style={{ borderBottom: "1px solid rgb(var(--ov) / 0.04)", transition: "background 0.15s" }}>
+                  <td style={{ padding: "10px 0", fontWeight: 700, color: "var(--text-strong)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <BusIcon size={13} style={{ color: "var(--accent-blue)" }} /> {b.bus_number}
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 0", color: "var(--text-soft)" }}>{b.route}</td>
+                  <td style={{ padding: "10px 0", fontFamily: "monospace", color: "var(--text-muted)" }}>{info.row}{info.slot_number}</td>
+                  <td style={{ padding: "10px 0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: "50%",
+                        background: blocked ? "var(--accent-amber)" : "var(--accent-green)",
+                        boxShadow: blocked ? "0 0 8px var(--accent-amber)" : "0 0 8px var(--accent-green)",
+                      }} />
+                      <span style={{ color: blocked ? "var(--accent-amber)" : "var(--accent-green)", fontWeight: 600 }}>
+                        {blocked ? "Blocked" : "Parked"}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 0", color: "var(--text-dim)", textAlign: "right" }}>
+                    <ChevronRight size={14} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
 
+const EVENT_META: Record<string, { icon: React.FC<{ size: number }>; bg: string; color: string }> = {
+  PARKED:   { icon: ParkingSquare,  bg: "rgba(74,222,128,0.15)",  color: "var(--accent-green)" },
+  ENTRY:    { icon: LogIn,          bg: "rgba(167,139,250,0.15)", color: "var(--accent-violet)" },
+  DETECTED: { icon: Radio,          bg: "rgba(34,211,238,0.15)",  color: "var(--accent-cyan)" },
+  MOVED:    { icon: ArrowRightLeft, bg: "rgba(96,165,250,0.15)",  color: "var(--accent-blue)" },
+  RFID:     { icon: CreditCard,     bg: "rgba(167,139,250,0.15)", color: "var(--accent-violet)" },
+  EXIT:     { icon: AlertTriangle,  bg: "rgba(251,191,36,0.15)",  color: "var(--accent-amber)" },
+};
+
+const eventMeta = (ev: ParkingEvent) => EVENT_META[ev.event_type] ?? EVENT_META["RFID"];
+
 export const RecentEventsCard: React.FC = () => {
-  const events = [
-    { icon: ParkingSquare, badgeBg: "rgba(74,222,128,0.15)",   badgeColor: "var(--accent-green)",  text: "B04 parked at Row B - Slot 6",       time: "12:15 PM" },
-    { icon: Radio,         badgeBg: "rgba(34,211,238,0.15)",   badgeColor: "var(--accent-cyan)",  text: "B03 detected at Row B - Slot 3",     time: "12:10 PM" },
-    { icon: ArrowRightLeft,badgeBg: "rgba(96,165,250,0.15)",   badgeColor: "var(--accent-blue)",  text: "B02 moved to Row C - Slot 2",        time: "11:56 AM" },
-    { icon: CreditCard,    badgeBg: "rgba(167,139,250,0.15)",  badgeColor: "var(--accent-violet)",  text: "B01 entry detected (RFID-001)",      time: "11:42 AM" },
-    { icon: AlertTriangle, badgeBg: "rgba(251,191,36,0.15)",   badgeColor: "var(--accent-amber)",  text: "B05 blocked by B02",                 time: "11:30 AM" },
-  ];
+  const [events, setEvents] = useState<ParkingEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    getEvents({ limit: "5" })
+      .then(setEvents)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 20px" }}>
@@ -93,39 +142,56 @@ export const RecentEventsCard: React.FC = () => {
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {events.map((ev, i) => {
-          const Icon = ev.icon;
-          return (
-            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: 6,
-                  background: ev.badgeBg, color: ev.badgeColor,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                  border: `1px solid ${alpha(ev.badgeColor, 25)}`,
-                }}>
-                  <Icon size={14} />
+      {loading ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "6px 0" }}>Loading activity…</div>
+      ) : events.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "6px 0" }}>No recent activity yet.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {events.map((ev) => {
+            const meta = eventMeta(ev);
+            const Icon = meta.icon;
+            return (
+              <div key={ev.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: 6,
+                    background: meta.bg, color: meta.color,
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    border: `1px solid ${alpha(meta.color, 25)}`,
+                  }}>
+                    <Icon size={14} />
+                  </div>
+                  <span style={{ fontSize: 12, color: "var(--text-soft)", fontWeight: 500 }}>
+                    {ev.message || `${ev.bus_number ?? "Bus"} — ${ev.event_type}`}
+                  </span>
                 </div>
-                <span style={{ fontSize: 12, color: "var(--text-soft)", fontWeight: 500 }}>{ev.text}</span>
+                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "monospace", flexShrink: 0 }}>{relativeTime(ev.timestamp)}</span>
               </div>
-              <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "monospace", flexShrink: 0 }}>{ev.time}</span>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
 
 export const SensorStatusCard: React.FC = () => {
-  const sensors = [
-    { id: "RFID-001", loc: "Main Entrance",   online: true  },
-    { id: "US-001",   loc: "Row A - Slot 1",  online: true  },
-    { id: "US-002",   loc: "Row B - Slot 3",  online: true  },
-    { id: "US-003",   loc: "Row C - Slot 7",  online: false },
-    { id: "RFID-002", loc: "Exit Gate",       online: true  },
-  ];
+  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    getSensors()
+      .then(setSensors)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 20px" }}>
@@ -134,32 +200,40 @@ export const SensorStatusCard: React.FC = () => {
           <Radio size={17} style={{ color: "var(--accent-cyan)" }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>Sensor Status</span>
         </div>
-        <span style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 2 }}>
+        <Link to="/dashboard/sensors" style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 2, textDecoration: "none" }}>
           View All <ChevronRight size={12} />
-        </span>
+        </Link>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        {sensors.map(s => (
-          <div key={s.id} className="sensor-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
-            <div className="sensor-id" style={{ display: "flex", alignItems: "center", gap: 8, width: 95 }}>
-              <Radio size={12} style={{ color: s.online ? "var(--accent-cyan)" : "var(--text-dim)" }} />
-              <span style={{ fontWeight: 600, color: "var(--text-strong)", fontFamily: "monospace" }}>{s.id}</span>
+      {loading ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "6px 0" }}>Loading sensors…</div>
+      ) : sensors.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", padding: "6px 0" }}>No sensors registered yet.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+          {sensors.slice(0, 5).map(s => (
+            <div key={s.id} className="sensor-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+              <div className="sensor-id" style={{ display: "flex", alignItems: "center", gap: 8, width: 95 }}>
+                {s.sensor_type === "RFID"
+                  ? <Radio size={12} style={{ color: s.is_active ? "var(--accent-cyan)" : "var(--text-dim)" }} />
+                  : <Volume2 size={12} style={{ color: s.is_active ? "var(--accent-cyan)" : "var(--text-dim)" }} />}
+                <span style={{ fontWeight: 600, color: "var(--text-strong)", fontFamily: "monospace" }}>{s.sensor_id}</span>
+              </div>
+              <span style={{ color: "var(--text-muted)", flex: 1, textAlign: "left", paddingLeft: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.location}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: s.is_active ? "var(--accent-green)" : "var(--accent-red)",
+                  boxShadow: s.is_active ? "0 0 8px var(--accent-green)" : "0 0 8px var(--accent-red)",
+                }} />
+                <span style={{ color: s.is_active ? "var(--accent-green)" : "var(--accent-red)", fontWeight: 600, fontSize: 11 }}>
+                  {s.is_active ? "Online" : "Offline"}
+                </span>
+              </div>
             </div>
-            <span style={{ color: "var(--text-muted)", flex: 1, textAlign: "left", paddingLeft: 10 }}>{s.loc}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: s.online ? "var(--accent-green)" : "var(--accent-red)",
-                boxShadow: s.online ? "0 0 8px var(--accent-green)" : "0 0 8px var(--accent-red)",
-              }} />
-              <span style={{ color: s.online ? "var(--accent-green)" : "var(--accent-red)", fontWeight: 600, fontSize: 11 }}>
-                {s.online ? "Online" : "Offline"}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

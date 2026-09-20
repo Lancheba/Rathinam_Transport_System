@@ -49,6 +49,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
   const rows = Array.from(rowSet).sort();
   const slotNums = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
 
+  // Only rows A and D have a lane gate — that's where buses actually enter/exit.
+  const GATE_ROWS = new Set(["A", "D"]);
+  const gateRows = rows.filter((r) => GATE_ROWS.has(r));
+
   const totalSlots   = slots.length;
   const occupiedSlots = slots.filter(s => s.is_occupied && !s.is_blocked).length;
   const blockedSlots  = slots.filter(s => s.is_blocked).length;
@@ -150,27 +154,39 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
             color: "var(--accent-violet)", padding: "4px 14px", borderRadius: 9999,
             background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)",
           }}>
-            ⇄ LANE GATES {rows.join(" · ")} — ENTRY / EXIT
+            ⇄ LANE GATES {gateRows.length ? gateRows.join(" · ") : "A · D"} — ENTRY / EXIT
           </span>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(167,139,250,0.4))" }} />
         </div>
 
         {/* Rows */}
-        {rows.map((row) => (
+        {rows.map((row) => {
+          const isGate = GATE_ROWS.has(row);
+          return (
           <div key={row} className="pm2d__row" style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-            {/* Lane gate: the row is open at its left end (slot 1), where buses drive in and out */}
-            <span className="pm2d__label" title={`Gate ${row} — buses enter and leave this lane here`} style={{
+            {/* Lane gate: only rows A and D are open at their left end (slot 1) —
+                buses drive in and out only through those two lanes. B and C have no gate. */}
+            <span
+              className="pm2d__label"
+              title={isGate ? `Gate ${row} — buses enter and leave this lane here` : `Row ${row} — no direct entry/exit`}
+              style={{
               width: 34, height: 48, flexShrink: 0,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
               borderRadius: 6,
               backgroundColor: "var(--canvas-solid)",
-              backgroundImage: "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)",
-              borderLeft: "3px solid var(--accent-green)",
+              backgroundImage: isGate
+                ? "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)"
+                : "none",
+              borderLeft: isGate ? "3px solid var(--accent-green)" : "3px solid rgb(var(--ov) / 0.15)",
               fontSize: 13, fontWeight: 800, lineHeight: 1,
               color: "var(--accent-violet)", textShadow: "0 0 8px rgba(167,139,250,0.5)",
             }}>
               {row}
-              <ArrowLeftRight size={10} style={{ color: "var(--accent-green)" }} />
+              {isGate ? (
+                <ArrowLeftRight size={10} style={{ color: "var(--accent-green)" }} />
+              ) : (
+                <span style={{ fontSize: 6, fontWeight: 700, color: "var(--text-dim)", letterSpacing: "0.04em" }}>NO GATE</span>
+              )}
             </span>
 
             {slotNums.map((num) => {
@@ -234,7 +250,8 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
               );
             })}
           </div>
-        ))}
+          );
+        })}
 
         {/* Footer */}
         <div style={{

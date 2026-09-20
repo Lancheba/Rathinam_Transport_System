@@ -2,6 +2,7 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from accounts.permissions import CanManageBuses
+from parking.models import recompute_blocked_slots
 from .models import Bus
 from .serializers import BusSerializer
 
@@ -31,6 +32,8 @@ class BusViewSet(viewsets.ModelViewSet):
             slot.bus = None
             slot.save(update_fields=["is_occupied", "is_blocked", "bus"])
         instance.delete()
+        # A bus leaving might unblock others behind it in the same row
+        recompute_blocked_slots()
 
     @action(detail=False, methods=["get"], url_path="search")
     def search_by_number(self, request):
