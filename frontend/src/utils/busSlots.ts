@@ -8,6 +8,7 @@
 const EXTRA_BUS_SLOTS: Record<string, { from: number; to: number }> = {
   B: { from: 4, to: 12 },
   C: { from: 4, to: 12 },
+  E: { from: 4, to: 12 },
 };
 
 /** True if a bus may park in this slot: either its row has a gate, or the

@@ -296,7 +296,26 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   </div>
 
                   <div className="pg__slots" style={{ display: "flex", flex: 1, gap: 18 }}>
+                    {/* B1-B3 and C1-C3: show as one merged Cars & Bikes cell */}
+                    {(row === "B" || row === "C") && slotNumbers[0] === 1 && (
+                      <div
+                        title="Cars & Bikes Parking — B1-B3 / C1-C3"
+                        style={{
+                          flex: 3, height: 48, borderRadius: 6,
+                          background: "repeating-linear-gradient(45deg, rgba(251,191,36,0.18) 0 7px, rgba(251,191,36,0.04) 7px 14px)",
+                          border: "1.5px dashed rgba(251,191,36,0.6)",
+                          display: "flex", flexDirection: "column",
+                          alignItems: "center", justifyContent: "center", gap: 2,
+                          cursor: "default",
+                        }}
+                      >
+                        <span style={{ fontSize: 13 }}>🚗🛵</span>
+                        <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.06em", color: "rgba(251,191,36,0.9)", textAlign: "center" }}>CARS &amp; BIKES</span>
+                        <span style={{ fontSize: 7, fontFamily: "monospace", color: "rgba(251,191,36,0.55)" }}>{row}1 – {row}3</span>
+                      </div>
+                    )}
                     {slotNumbers.map((num) => {
+                      if ((row === "B" || row === "C") && num <= 3) return null;
                       const slotKey = `${row}${num}`;
                       const slot = slotMap[slotKey];
                       const hasBus    = !!slot?.is_occupied;
@@ -304,83 +323,34 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                       const isSelected = selectedSlot === slotKey || pickedKey === slotKey;
                       const exists = !!slot;
                       const isHov = hovered === slotKey;
-                      // Empty slots in rows with no bus gate are the bike & car area — unless
-                      // this slot falls inside that row's extra bus-parking range.
                       const reserved = exists && !isBusParkable(row, num, isGate) && !hasBus;
-
                       return (
-                        <div
-                          key={num}
-                          className="pg__slot"
-                          onClick={() => {
-                            if (!exists) return;
-                            if (isMobile) setPicked((cur) => (cur === slotKey ? null : slotKey));
-                            onSlotClick?.(slotKey, slot?.bus_number ?? undefined);
-                          }}
+                        <div key={num} className="pg__slot"
+                          onClick={() => { if (!exists) return; if (isMobile) setPicked((cur) => (cur === slotKey ? null : slotKey)); onSlotClick?.(slotKey, slot?.bus_number ?? undefined); }}
                           onMouseEnter={() => exists && setHovered(slotKey)}
                           onMouseLeave={() => setHovered(null)}
-                          title={
-                            !exists ? "No such slot"
-                            : reserved ? `${slotKey} — Bikes & cars only, no bus parking`
-                            : hasBus ? `${slot?.bus_number ?? "Unknown"}${isBlocked ? " — ⚠ BLOCKED" : ""}\n${slot?.bus_route ?? ""}\nDeparts: ${slot?.bus_departure ?? "—"}`
-                            : `${slotKey} — Free`
-                          }
+                          title={!exists ? "No such slot" : reserved ? `${slotKey} — Bikes & cars only` : hasBus ? `${slot?.bus_number ?? "Unknown"}` : `${slotKey} — Free`}
                           style={{
-                            flex: 1, height: 48, borderRadius: 6,
-                            position: "relative",
+                            flex: 1, height: 48, borderRadius: 6, position: "relative",
                             opacity: exists ? 1 : 0.25,
                             background: reserved ? "repeating-linear-gradient(45deg, rgba(251,191,36,0.16) 0 6px, rgba(251,191,36,0.03) 6px 12px)" : slotBg(hasBus, isBlocked, isSelected),
                             border: reserved ? "1px dashed rgba(251,191,36,0.45)" : slotBorder(hasBus, isBlocked, isSelected),
-                            boxShadow: reserved ? "none" : isHov && exists
-                              ? (isBlocked ? "0 0 22px rgba(251,191,36,0.5), inset 0 0 10px rgba(251,191,36,0.12)"
-                                : hasBus ? "0 0 18px rgba(96,165,250,0.4), inset 0 0 8px rgba(96,165,250,0.08)"
-                                : "0 0 10px rgba(74,222,128,0.2)")
-                              : slotGlow(hasBus, isBlocked, isSelected),
+                            boxShadow: reserved ? "none" : isHov && exists ? (isBlocked ? "0 0 22px rgba(251,191,36,0.5)" : hasBus ? "0 0 18px rgba(96,165,250,0.4)" : "0 0 10px rgba(74,222,128,0.2)") : slotGlow(hasBus, isBlocked, isSelected),
                             cursor: reserved ? "not-allowed" : exists ? "pointer" : "default",
-                            // blocked/occupied styling hides the blue "selected" look, so mark the tapped slot explicitly
                             outline: pickedKey === slotKey ? "2px solid rgb(var(--ov) / 0.9)" : undefined,
                             outlineOffset: pickedKey === slotKey ? 2 : undefined,
-                            display: "flex", flexDirection: "column",
-                            alignItems: "center", justifyContent: "center",
+                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                             transition: "all 0.15s ease",
                             transform: isHov && hasBus ? "translateY(-2px)" : "none",
                           }}
                         >
                           {hasBus ? (
-                            <div style={{
-                              width: "82%", height: 24, borderRadius: 4,
-                              background: busBg(isBlocked),
-                              boxShadow: busGlow(isBlocked),
-                              border: busBorder(isBlocked),
-                              position: "relative",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}>
-                              {/* windshield */}
-                              <div style={{
-                                position: "absolute", left: 3,
-                                width: 5, height: 16,
-                                background: isBlocked ? "rgb(var(--shadow-rgb) / calc(0.5 * var(--shadow-k)))" : "rgba(30,58,138,0.8)",
-                                borderRadius: 1,
-                              }} />
-                              {isBlocked ? (
-                                <TriangleAlert size={12} style={{ color: "var(--accent-amber)", filter: "drop-shadow(0 0 4px var(--accent-amber))" }} />
-                              ) : (
-                                <span style={{
-                                  fontSize: 8, fontWeight: 800,
-                                  color: "#1e3a8a", letterSpacing: "-0.03em",
-                                }}>{slot?.bus_number ?? ""}</span>
-                              )}
+                            <div style={{ width: "82%", height: 24, borderRadius: 4, background: busBg(isBlocked), boxShadow: busGlow(isBlocked), border: busBorder(isBlocked), position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <div style={{ position: "absolute", left: 3, width: 5, height: 16, background: isBlocked ? "rgb(var(--shadow-rgb) / calc(0.5 * var(--shadow-k)))" : "rgba(30,58,138,0.8)", borderRadius: 1 }} />
+                              {isBlocked ? <TriangleAlert size={12} style={{ color: "var(--accent-amber)", filter: "drop-shadow(0 0 4px var(--accent-amber))" }} /> : <span style={{ fontSize: 8, fontWeight: 800, color: "#1e3a8a", letterSpacing: "-0.03em" }}>{slot?.bus_number ?? ""}</span>}
                             </div>
                           ) : null}
-
-                          <span style={{
-                            position: "absolute", bottom: 2,
-                            fontSize: 9, fontFamily: "monospace", fontWeight: 600,
-                            color: reserved ? "rgba(251,191,36,0.65)"
-                              : isBlocked ? "var(--accent-amber)"
-                              : hasBus ? "var(--accent-blue)"
-                              : "var(--slot-free-label)",
-                          }}>{slotKey}</span>
+                          <span style={{ position: "absolute", bottom: 2, fontSize: 9, fontFamily: "monospace", fontWeight: 600, color: reserved ? "rgba(251,191,36,0.65)" : isBlocked ? "var(--accent-amber)" : hasBus ? "var(--accent-blue)" : "var(--slot-free-label)" }}>{slotKey}</span>
                         </div>
                       );
                     })}
