@@ -12,17 +12,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { getEvents } from "../api/endpoints";
-import type { ParkingEvent } from "../types";
+import type { Announcement, ParkingEvent } from "../types";
+import { relativeTime } from "../utils/time";
+import { AnnouncementsTab } from "./AnnouncementsTab";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
-
-function relativeTime(ts: string): string {
-  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (diff < 60) return diff <= 1 ? "just now" : `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 type EventIconFC = React.FC<{ size: number }>;
 
@@ -41,12 +35,32 @@ function getMetaForEvent(ev: ParkingEvent) {
 
 // ── component ──────────────────────────────────────────────────────────────────
 
+type Tab = "announcements" | "activity";
+
 interface NotificationPanelProps {
   open: boolean;
   onClose: () => void;
+  /** Notices posted by admins / transport staff, for everyone to read */
+  announcements: Announcement[];
+  unreadAnnouncements: number;
+  /** True for admins and transport staff: shows the "New announcement" button */
+  canPost: boolean;
+  /** Re-fetch announcements (after posting, deleting or pressing refresh) */
+  onReloadAnnouncements: () => void;
+  /** Called while the announcements tab is on screen, to clear the unread dot */
+  onSeenAnnouncements: () => void;
 }
 
-export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onClose }) => {
+export const NotificationPanel: React.FC<NotificationPanelProps> = ({
+  open,
+  onClose,
+  announcements,
+  unreadAnnouncements,
+  canPost,
+  onReloadAnnouncements,
+  onSeenAnnouncements,
+}) => {
+  const [tab, setTab] = useState<Tab>("announcements");
   const [events, setEvents] = useState<ParkingEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -64,17 +78,33 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
       .finally(() => setLoading(false));
   }, []);
 
-  // fetch when panel opens
-  useEffect(() => {
-    if (open) fetchEvents();
-  }, [open, fetchEvents]);
+  const showingActivity = open && tab === "activity";
 
-  // auto-refresh every 15 s while open
+  // fetch parking events when the Activity tab is showing
   useEffect(() => {
-    if (!open) return;
+    if (showingActivity) fetchEvents();
+  }, [showingActivity, fetchEvents]);
+
+  // auto-refresh every 15 s while Activity is showing
+  useEffect(() => {
+    if (!showingActivity) return;
     const id = setInterval(fetchEvents, 15_000);
     return () => clearInterval(id);
-  }, [open, fetchEvents]);
+  }, [showingActivity, fetchEvents]);
+
+  // refresh announcements when the panel opens, and mark them read while they're on screen
+  useEffect(() => {
+    if (open) onReloadAnnouncements();
+  }, [open, onReloadAnnouncements]);
+
+  useEffect(() => {
+    if (open && tab === "announcements") onSeenAnnouncements();
+  }, [open, tab, announcements, onSeenAnnouncements]);
+
+  const refresh = () => {
+    onReloadAnnouncements();
+    if (tab === "activity") fetchEvents();
+  };
 
   if (!open) return null;
 
@@ -122,24 +152,10 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Bell size={15} style={{ color: "var(--text-strong)" }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)" }}>Notifications</span>
-            {events.length > 0 && (
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: "var(--btn-fg)",
-                  background: "var(--text-soft)",
-                  borderRadius: 9999,
-                  padding: "1px 6px",
-                }}
-              >
-                {events.length}
-              </span>
-            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
-              onClick={fetchEvents}
+              onClick={refresh}
               disabled={loading}
               title="Refresh"
               aria-label="Refresh notifications"
@@ -176,8 +192,57 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
           </div>
         </div>
 
+        {/* tabs */}
+        <div role="tablist" style={{ display: "flex", gap: 4, padding: "8px 12px 0", flexShrink: 0 }}>
+          {(
+            [
+              ["announcements", "Announcements", unreadAnnouncements],
+              ["activity", "Activity", 0],
+            ] as const
+          ).map(([id, label, count]) => {
+            const active = tab === id;
+            return (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  color: active ? "var(--text-strong)" : "var(--text-muted)",
+                  background: active ? "rgb(var(--ov) / 0.1)" : "transparent",
+                  border: "none",
+                }}
+              >
+                {label}
+                {count > 0 && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "var(--btn-fg)",
+                      background: "var(--text-soft)",
+                      borderRadius: 9999,
+                      padding: "1px 6px",
+                    }}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {/* last refresh */}
-        {lastRefresh && (
+        {tab === "activity" && lastRefresh && (
           <div style={{ fontSize: 10, color: "var(--text-dim)", padding: "6px 16px 0", flexShrink: 0 }}>
             Last updated{" "}
             {lastRefresh.toLocaleTimeString("en-US", {
@@ -190,7 +255,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ open, onCl
 
         {/* list */}
         <div style={{ overflowY: "auto", flex: 1, padding: "10px 12px 12px" }}>
-          {loading && events.length === 0 ? (
+          {tab === "announcements" ? (
+            <AnnouncementsTab items={announcements} canPost={canPost} onChanged={onReloadAnnouncements} />
+          ) : loading && events.length === 0 ? (
             <div style={{ color: "var(--text-dim)", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
               Loading events…
             </div>

@@ -1,5 +1,6 @@
 ﻿from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
+from announcements.models import Announcement
 from buses.models import Bus
 from parking.models import ParkingGround, ParkingSlot
 from sensors.models import Sensor, ParkingEvent
@@ -135,5 +136,16 @@ class Command(BaseCommand):
             staff.profile.role = "STAFF"
             staff.profile.save()
             self.stdout.write(self.style.SUCCESS("  Staff user created (staff / staff123)"))
+
+        # --- Sample announcement (students see this in the bell menu) ---
+        Announcement.objects.get_or_create(
+            title="Welcome to Smart Bus Parking",
+            defaults={
+                "message": "Find your bus in the Find Bus page. Transport staff will post schedule changes here.",
+                "priority": "INFO",
+                "author": User.objects.filter(username="staff").first(),
+            },
+        )
+        self.stdout.write(self.style.SUCCESS("  Sample announcement ready"))
 
         self.stdout.write(self.style.SUCCESS("\nDemo data seeded successfully!"))

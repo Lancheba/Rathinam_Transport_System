@@ -1,7 +1,8 @@
 ﻿import api from "./client";
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
-  ParkingEvent, ParkingSummary, OptimizationResult, SensorInput
+  ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
+  Announcement, AnnouncementInput
 } from "../types";
 
 // Buses
@@ -44,3 +45,9 @@ export const getMe = () => api.get<CurrentUser>("/auth/me/").then(r => r.data);
 // Sensors: create / delete
 export const createSensor = (data: SensorInput) => api.post<Sensor>("/sensors/", data).then(r => r.data);
 export const deleteSensor = (id: number) => api.delete(`/sensors/${id}/`);
+
+// Announcements (anyone can read; admins and transport staff can post)
+export const getAnnouncements = () => api.get<Announcement[]>("/announcements/").then(r => r.data);
+export const createAnnouncement = (data: AnnouncementInput) =>
+  api.post<Announcement>("/announcements/", data).then(r => r.data);
+export const deleteAnnouncement = (id: number) => api.delete(`/announcements/${id}/`);

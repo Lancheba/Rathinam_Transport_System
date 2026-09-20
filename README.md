@@ -22,6 +22,7 @@ A full-stack IoT-enabled smart parking system that eliminates blocked-bus proble
 | React + TypeScript Dashboard | ✅ Complete |
 | 2D Interactive Parking Map | ✅ Complete |
 | Student Bus Finder | ✅ Complete |
+| Announcements (staff/admin post, everyone reads) | ✅ Complete |
 | Sensor Monitoring Page | ✅ Complete |
 | Optimization Comparison UI | ✅ Complete |
 | ESP32 + RFID Hardware | ⬜ Phase 2 |
@@ -85,6 +86,9 @@ Once the server is running, visit **http://localhost:8000/api/docs/** for intera
 | GET | `/api/events/` | Parking event log |
 | POST | `/api/optimization/run/` | Run optimization engine |
 | POST | `/api/optimization/apply/` | Apply optimized layout |
+| GET | `/api/announcements/` | List announcements (public) |
+| POST | `/api/announcements/` | Post an announcement (admin / staff only) |
+| DELETE | `/api/announcements/<id>/` | Delete one (its author, or an admin) |
 
 ### Simulate RFID Detection
 
@@ -98,6 +102,17 @@ curl -X POST http://localhost:8000/api/sensors/rfid/ \
 ```json
 {"bus": "B04", "event_type": "PARKED", "slot": "A5"}
 ```
+
+---
+
+## 📢 Announcements
+
+Admins and transport staff can post notices that every student sees.
+
+- **Read:** anyone — open the 🔔 bell in the top bar → **Announcements** tab. A red dot on the bell means there is something new.
+- **Post:** log in as admin or staff → bell → **New announcement**. Pick a priority (Info / Important / Urgent) so it stands out.
+- **Delete:** the author can delete their own notice; admins can delete any. Students never see the post/delete controls, and the server enforces this too.
+- The bell's **Activity** tab still shows live parking events.
 
 ---
 
@@ -167,6 +182,7 @@ Rathinam_Smart_Bus_Parking/
 ├── buses/           # Bus model + CRUD API
 ├── parking/         # Parking ground, slots, seed commands
 ├── sensors/         # RFID/ultrasonic event APIs
+├── announcements/   # Staff/admin notices for students
 ├── optimization/    # Optimization engine + API
 ├── frontend/        # React + TypeScript dashboard
 │   └── src/

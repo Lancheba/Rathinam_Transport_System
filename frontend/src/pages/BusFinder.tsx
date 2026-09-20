@@ -1,26 +1,56 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import { Search, CircleX, Bus as BusIcon, MapPin, ParkingSquare, TriangleAlert, Route as RouteIcon, Clock } from "lucide-react";
 import { searchBus } from "../api/endpoints";
 import type { Bus } from "../types";
 
-const BusFinder: React.FC = () => {
-  const [query, setQuery] = useState("");
-  const [result, setResult] = useState<Bus | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+const MIN_CHARS = 2;
+const DEBOUNCE_MS = 400;
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    setLoading(true); setError(""); setResult(null);
-    try {
-      const bus = await searchBus(query.trim().toUpperCase());
-      setResult(bus);
-    } catch {
-      setError("Bus not found. Check the bus number and try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+type Outcome = { q: string; bus: Bus | null; error: string };
+
+/**
+ * Find My Bus. There is no search box here: it uses the search bar in the top navbar,
+ * which puts the text in the URL as ?q=... and this page looks that bus up.
+ */
+const BusFinder: React.FC = () => {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const q = (params.get("q") ?? "").trim().toUpperCase();
+
+  // Wait for a pause in typing so "B" and "B0" don't each trigger a "not found"
+  const [settled, setSettled] = useState(q);
+  useEffect(() => {
+    const id = setTimeout(() => setSettled(q), DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [q]);
+
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  useEffect(() => {
+    if (settled.length < MIN_CHARS) return;
+    let cancelled = false;
+    searchBus(settled)
+      .then((bus) => { if (!cancelled) setOutcome({ q: settled, bus, error: "" }); })
+      .catch((err) => {
+        if (cancelled) return;
+        const signedOut = axios.isAxiosError(err) && err.response?.status === 401;
+        setOutcome({
+          q: settled,
+          bus: null,
+          error: signedOut
+            ? "Please sign in to search for a bus."
+            : "Bus not found. Check the bus number and try again.",
+        });
+      });
+    return () => { cancelled = true; };
+  }, [settled]);
+
+  const searching = q.length >= MIN_CHARS;
+  const current = searching && outcome?.q === q ? outcome : null;
+  const result = current?.bus ?? null;
+  const error = current?.error ?? "";
+  const loading = searching && !current;
 
   const slot = result?.parking_slot_info;
 
@@ -30,33 +60,12 @@ const BusFinder: React.FC = () => {
         <Search size={20} strokeWidth={1.9} /> Find My Bus
       </h2>
       <p style={{ color: "var(--text-muted)", textAlign: "center", marginBottom: 24, fontSize: 14 }}>
-        Enter your bus number to find its parking location
+        Type your bus number in the search bar above to find its parking location
       </p>
 
-      <div className="bf-search" style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        <input
-          aria-label="Bus number"
-          autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="search"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleSearch()}
-          placeholder="e.g. B04"
-          style={{
-            flex: 1, minWidth: 0, padding: "12px 16px", borderRadius: 10,
-            border: "1px solid rgb(var(--ov) / 0.14)", background: "rgb(var(--ov) / 0.05)",
-            backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
-            color: "var(--text-strong)", fontSize: 16, outline: "none",
-          }}
-        />
-        <button onClick={handleSearch} disabled={loading} className="bf-go" style={{
-          background: "rgb(var(--ov) / 0.18)", color: "var(--text-strong)", border: "1px solid rgb(var(--ov) / 0.28)",
-          borderRadius: 10, padding: "12px 24px", fontWeight: "bold",
-          fontSize: 15, cursor: "pointer",
-          backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
-        }}>
-          {loading ? "..." : "Search"}
-        </button>
-      </div>
+      {loading && (
+        <div style={{ color: "var(--text-muted)", textAlign: "center", fontSize: 14 }}>Searching…</div>
+      )}
 
       {error && (
         <div style={{
@@ -110,11 +119,11 @@ const BusFinder: React.FC = () => {
         </div>
       )}
 
-      {!result && !error && (
+      {!result && !error && !loading && (
         <div style={{ marginTop: 32 }}>
           <div style={{ color: "var(--text-dim)", textAlign: "center", fontSize: 13 }}>
             Quick search: {["B01", "B02", "B03", "B04"].map(b => (
-              <button key={b} className="bf-chip" onClick={() => { setQuery(b); }} style={{
+              <button key={b} className="bf-chip" onClick={() => navigate(`/dashboard/find?q=${b}`, { replace: true })} style={{
                 background: "rgb(var(--ov) / 0.06)", color: "var(--text-muted)", border: "1px solid rgb(var(--ov) / 0.1)",
                 borderRadius: 6, padding: "4px 10px", margin: "0 4px", cursor: "pointer"
               }}>{b}</button>

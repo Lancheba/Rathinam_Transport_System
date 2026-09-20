@@ -4,6 +4,7 @@ import rathinamLogo from "../assets/rathinam_logo.jpg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { NotificationPanel } from "./NotificationPanel";
+import { useAnnouncements } from "../hooks/useAnnouncements";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface TopNavProps {
@@ -19,7 +20,9 @@ export const TopNav: React.FC<TopNavProps> = ({
   adminName = "Admin",
   roleTitle = "Administrator",
 }) => {
-  const { isLoggedIn, username, logout } = useAuth();
+  // Admins and transport staff (the people who manage buses) are the ones who post announcements
+  const { isLoggedIn, username, logout, canManageBuses: canPostAnnouncements } = useAuth();
+  const announcements = useAnnouncements();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   // Phones show the search field only when asked for it, to keep the bar to one row
@@ -129,6 +132,10 @@ export const TopNav: React.FC<TopNavProps> = ({
           aria-label="Search bus number, slot or RFID"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter searches again with what's already typed (works from any page)
+            if (e.key === "Enter") onSearchChange(searchQuery);
+          }}
           placeholder="Search bus number, slot, RFID..."
           style={{
             width: "100%",
@@ -212,20 +219,31 @@ export const TopNav: React.FC<TopNavProps> = ({
             }}
           >
             <Bell size={16} />
-            <span
-              style={{
-                position: "absolute",
-                top: 7,
-                right: 7,
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "var(--text-muted)",
-                boxShadow: "0 0 8px var(--text-muted)",
-              }}
-            />
+            {announcements.unread > 0 && (
+              <span
+                aria-label={`${announcements.unread} unread announcements`}
+                style={{
+                  position: "absolute",
+                  top: 7,
+                  right: 7,
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "var(--accent-red)",
+                  boxShadow: "0 0 8px var(--accent-red)",
+                }}
+              />
+            )}
           </button>
-          <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
+          <NotificationPanel
+            open={notifOpen}
+            onClose={() => setNotifOpen(false)}
+            announcements={announcements.items}
+            unreadAnnouncements={announcements.unread}
+            canPost={canPostAnnouncements}
+            onReloadAnnouncements={announcements.reload}
+            onSeenAnnouncements={announcements.markSeen}
+          />
         </div>
 
         {/* User Pill with Dropdown */}

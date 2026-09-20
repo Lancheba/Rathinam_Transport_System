@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TopNav } from "./components/TopNav";
@@ -19,16 +19,45 @@ import LandingPage from "./pages/LandingPage";
 import SignUpPage from "./pages/SignUpPage";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const { pathname } = useLocation();
+  const [params] = useSearchParams();
+  // On the Find page the search text lives in the URL, so a refresh or shared link
+  // starts with the navbar box already filled in.
+  const [searchQuery, setSearchQuery] = useState(() =>
+    pathname === "/dashboard/find" ? params.get("q") ?? "" : ""
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const { roleLabel } = useAuth();
   const isMobile = useIsMobile();
 
+  const onFindPage = pathname === "/dashboard/find";
+  const urlQuery = params.get("q") ?? "";
+
+  // The Find page keeps the search text in the URL (?q=B04). When that changes from
+  // somewhere else (e.g. a quick-search chip), reflect it in the navbar search box.
+  const [lastUrlQuery, setLastUrlQuery] = useState(urlQuery);
+  if (lastUrlQuery !== urlQuery) {
+    setLastUrlQuery(urlQuery);
+    if (onFindPage && urlQuery !== searchQuery.trim()) setSearchQuery(urlQuery);
+  }
+
+  // Leaving the Find page (sidebar, back button...) clears the search box, so old text
+  // isn't left sitting there looking like an active search.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    if (lastPath === "/dashboard/find") setSearchQuery("");
+  }
+
   const handleSearch = (q: string) => {
     setSearchQuery(q);
-    if (q.trim().length > 1) {
-      navigate(`/dashboard/find?q=${encodeURIComponent(q.trim())}`);
+    const trimmed = q.trim();
+    if (onFindPage) {
+      // Already on the Find page: update the URL in place (don't fill the back button)
+      navigate(trimmed ? `/dashboard/find?q=${encodeURIComponent(trimmed)}` : "/dashboard/find", { replace: true });
+    } else if (trimmed.length > 1) {
+      navigate(`/dashboard/find?q=${encodeURIComponent(trimmed)}`);
     }
   };
 

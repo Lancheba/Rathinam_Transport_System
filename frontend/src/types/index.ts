@@ -122,3 +122,25 @@ export interface SensorInput {
   location: string;
   is_active: boolean;
 }
+
+export type AnnouncementPriority = "INFO" | "IMPORTANT" | "URGENT";
+
+export interface Announcement {
+  id: number;
+  title: string;
+  message: string;
+  priority: AnnouncementPriority;
+  author_name: string;
+  author_role: string;
+  /** True when the signed-in user may delete this notice (server enforces it too) */
+  can_edit: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fields the "New announcement" form sends to POST /api/announcements/ */
+export interface AnnouncementInput {
+  title: string;
+  message: string;
+  priority: AnnouncementPriority;
+}
