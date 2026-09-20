@@ -14,14 +14,21 @@ import {
 import { getParkingSummary, getBuses, getSensors } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 
+const greetingFor = (date: Date) => {
+  const hour = date.getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+};
+
 export const Dashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
-  const [greeting, setGreeting] = useState("Good Afternoon");
+  const [greeting, setGreeting] = useState(() => greetingFor(new Date()));
   const { username } = useAuth();
 
-  // Live state from API — starts at 0 rather than stale demo numbers, so a
-  // slow/failed fetch never shows a value that doesn't exist in the backend.
+  // Live state from API — starts at 0 so a slow/failed fetch never shows a
+  // value that doesn't exist in the backend.
   const [summary, setSummary] = useState({
     total_slots: 0,
     occupied: 0,
@@ -51,11 +58,7 @@ export const Dashboard: React.FC = () => {
       });
       setCurrentTime(timeStr);
 
-      // Dynamic Greeting
-      const hour = now.getHours();
-      if (hour < 12) setGreeting("Good Morning");
-      else if (hour < 17) setGreeting("Good Afternoon");
-      else setGreeting("Good Evening");
+      setGreeting(greetingFor(now));
     };
 
     updateDateTime();
@@ -166,19 +169,19 @@ export const Dashboard: React.FC = () => {
           }}
         >
           <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
-            {currentDate || "Sep 26, 2025"}
+            {currentDate}
           </span>
           <div style={{ width: 1, height: 14, background: "rgb(var(--ov) / 0.15)" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontFamily: "monospace" }}>
-              {currentTime || "12:28 PM"}
+              {currentTime}
             </span>
             <Clock size={14} style={{ color: "var(--text-muted)" }} />
           </div>
         </div>
       </div>
 
-      {/* 6 Metric Cards */}
+      {/* Metric Cards */}
       <MetricCards
         totalBuses={busStats.total}
         activeBuses={busStats.active}
@@ -186,8 +189,6 @@ export const Dashboard: React.FC = () => {
         occupiedSlots={summary.occupied}
         freeSlots={summary.free}
         totalSlots={summary.total_slots}
-        avgRetrievalTime="2.5 min"
-        retrievalImprovement="45% faster (vs. last hour)"
         activeSensors={sensorStats.active}
         offlineSensors={sensorStats.offline}
       />

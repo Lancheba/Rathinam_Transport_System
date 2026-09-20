@@ -1,33 +1,32 @@
 import React from "react";
-import { Bus, AlertTriangle, ParkingCircle, Car, Clock, Radio } from "lucide-react";
+import { Bus, AlertTriangle, ParkingCircle, Car, Radio } from "lucide-react";
 
 interface MetricCardsProps {
-  totalBuses?: number;
-  activeBuses?: number;
-  blockedBuses?: number;
-  occupiedSlots?: number;
-  freeSlots?: number;
-  totalSlots?: number;
-  avgRetrievalTime?: string;
-  retrievalImprovement?: string;
-  activeSensors?: number;
-  offlineSensors?: number;
+  totalBuses: number;
+  activeBuses: number;
+  blockedBuses: number;
+  occupiedSlots: number;
+  freeSlots: number;
+  totalSlots: number;
+  activeSensors: number;
+  offlineSensors: number;
 }
 
+const pctOf = (part: number, whole: number) =>
+  whole > 0 ? ((part / whole) * 100).toFixed(1) : "0.0";
+
 export const MetricCards: React.FC<MetricCardsProps> = ({
-  totalBuses = 4,
-  activeBuses = 4,
-  blockedBuses = 1,
-  occupiedSlots = 4,
-  freeSlots = 28,
-  totalSlots = 32,
-  avgRetrievalTime = "2.5 min",
-  retrievalImprovement = "45% faster (vs. last hour)",
-  activeSensors = 5,
-  offlineSensors = 1,
+  totalBuses,
+  activeBuses,
+  blockedBuses,
+  occupiedSlots,
+  freeSlots,
+  totalSlots,
+  activeSensors,
+  offlineSensors,
 }) => {
-  const occupiedPct = ((occupiedSlots / (totalSlots || 32)) * 100).toFixed(1);
-  const freePct = ((freeSlots / (totalSlots || 32)) * 100).toFixed(1);
+  const occupiedPct = pctOf(occupiedSlots, totalSlots);
+  const freePct = pctOf(freeSlots, totalSlots);
 
   const cards = [
     {
@@ -80,18 +79,6 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       accentBorder: "rgba(74,222,128,0.25)",
     },
     {
-      title: "Avg. Retrieval Time",
-      value: avgRetrievalTime,
-      sub: retrievalImprovement,
-      icon: Clock,
-      iconColor: "var(--accent-cyan)",
-      iconBg: "rgba(34,211,238,0.15)",
-      iconBorder: "rgba(34,211,238,0.3)",
-      valueColor: "var(--text-strong)",
-      subColor: "var(--accent-cyan)",
-      accentBorder: "rgba(34,211,238,0.2)",
-    },
-    {
       title: "Active Sensors",
       value: activeSensors,
       sub: `● ${offlineSensors} Offline`,
@@ -110,7 +97,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       className="metric-grid"
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(6, 1fr)",
+        gridTemplateColumns: "repeat(5, 1fr)",
         gap: 14,
         marginBottom: 20,
       }}

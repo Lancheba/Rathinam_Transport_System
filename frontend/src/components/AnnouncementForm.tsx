@@ -88,7 +88,7 @@ export const AnnouncementForm: React.FC<Props> = ({ onPosted, onCancel }) => {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         maxLength={TITLE_MAX}
-        placeholder="Title (e.g. Route 4 delayed)"
+        placeholder="Title"
         aria-label="Announcement title"
         disabled={saving}
         autoFocus

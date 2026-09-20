@@ -103,7 +103,7 @@ const SensorsPage: React.FC = () => {
         ))}
         {sensors.length === 0 && (
           <div style={{ color: "var(--text-dim)", gridColumn: "1/-1" }}>
-            No sensors found. Run <code>seed_demo_data</code> to add demo sensors.
+            No sensors registered yet.
           </div>
         )}
       </div>

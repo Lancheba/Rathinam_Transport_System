@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { Search, CircleX, Bus as BusIcon, MapPin, ParkingSquare, TriangleAlert, Route as RouteIcon, Clock } from "lucide-react";
 import { searchBus } from "../api/endpoints";
@@ -15,7 +15,6 @@ type Outcome = { q: string; bus: Bus | null; error: string };
  * which puts the text in the URL as ?q=... and this page looks that bus up.
  */
 const BusFinder: React.FC = () => {
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const q = (params.get("q") ?? "").trim().toUpperCase();
 
@@ -119,18 +118,6 @@ const BusFinder: React.FC = () => {
         </div>
       )}
 
-      {!result && !error && !loading && (
-        <div style={{ marginTop: 32 }}>
-          <div style={{ color: "var(--text-dim)", textAlign: "center", fontSize: 13 }}>
-            Quick search: {["B01", "B02", "B03", "B04"].map(b => (
-              <button key={b} className="bf-chip" onClick={() => navigate(`/dashboard/find?q=${b}`, { replace: true })} style={{
-                background: "rgb(var(--ov) / 0.06)", color: "var(--text-muted)", border: "1px solid rgb(var(--ov) / 0.1)",
-                borderRadius: 6, padding: "4px 10px", margin: "0 4px", cursor: "pointer"
-              }}>{b}</button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

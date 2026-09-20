@@ -128,6 +128,13 @@
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 .abm__input::placeholder { color: var(--text-dim); }
+
+/* The native dropdown list takes the select's own background, which is a see-through
+   white tint here, so the options came out white-on-white. Give them a solid theme colour. */
+.abm__input option {
+  color: var(--text-strong);
+  background-color: var(--canvas-solid);
+}
 .abm__input:hover:not(:disabled) { border-color: rgb(var(--ov) / 0.22); }
 .abm__input:focus-visible {
   background: rgb(var(--ov) / 0.08);

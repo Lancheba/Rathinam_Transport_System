@@ -4,11 +4,12 @@ import { alpha } from "../utils/color";
 import { getBuses } from "../api/endpoints";
 
 export const SlotUtilizationCard: React.FC<{
-  occupied?: number;
-  free?: number;
-  total?: number;
-}> = ({ occupied = 4, free = 28, total = 32 }) => {
-  const pct = ((occupied / (total || 32)) * 100).toFixed(1);
+  occupied: number;
+  free: number;
+  total: number;
+}> = ({ occupied, free, total }) => {
+  const ratio = total > 0 ? occupied / total : 0;
+  const pct = (ratio * 100).toFixed(1);
 
   return (
     <div className="liquid-glass-card" style={{ padding: "18px 22px", height: "100%" }}>
@@ -26,7 +27,7 @@ export const SlotUtilizationCard: React.FC<{
               cx="50" cy="50" r="40" fill="transparent"
               stroke="url(#donutGradColor)" strokeWidth="11"
               strokeDasharray="251.2"
-              strokeDashoffset={251.2 - (251.2 * (occupied / (total || 32)))}
+              strokeDashoffset={251.2 - 251.2 * ratio}
               strokeLinecap="round"
               style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)", filter: "drop-shadow(0 0 8px rgba(244,114,182,0.6))" }}
             />

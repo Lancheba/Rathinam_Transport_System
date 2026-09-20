@@ -207,7 +207,7 @@ export const AddSensorModal: React.FC<Props> = ({ onClose, onCreated }) => {
                 ref={firstFieldRef}
                 value={form.sensor_id}
                 onChange={(e) => set("sensor_id", e.target.value)}
-                placeholder="RFID-009"
+                placeholder="Sensor ID"
                 maxLength={50}
                 autoComplete="off"
                 spellCheck={false}
@@ -235,7 +235,7 @@ export const AddSensorModal: React.FC<Props> = ({ onClose, onCreated }) => {
                 {...field("location")}
                 value={form.location}
                 onChange={(e) => set("location", e.target.value)}
-                placeholder="Row A entrance"
+                placeholder="Location"
                 maxLength={100}
                 autoComplete="off"
               />

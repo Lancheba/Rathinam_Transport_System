@@ -25,14 +25,13 @@ type Errors = Partial<Record<FieldName, string>>;
 
 const FIELDS: FieldName[] = ["bus_number", "rfid_uid", "route", "departure_time", "length_m", "width_m"];
 
-// Typical college bus; matches the demo data
 const INITIAL: FormState = {
   bus_number: "",
   rfid_uid: "",
   route: "",
   departure_time: "",
-  length_m: "12",
-  width_m: "2.5",
+  length_m: "",
+  width_m: "",
   is_active: true,
 };
 
@@ -238,7 +237,7 @@ export const AddBusModal: React.FC<Props> = ({ onClose, onCreated }) => {
                 ref={firstFieldRef}
                 value={form.bus_number}
                 onChange={(e) => set("bus_number", e.target.value)}
-                placeholder="B09"
+                placeholder="Bus number"
                 maxLength={20}
                 autoComplete="off"
               />
@@ -251,7 +250,7 @@ export const AddBusModal: React.FC<Props> = ({ onClose, onCreated }) => {
                 {...field("rfid_uid")}
                 value={form.rfid_uid}
                 onChange={(e) => set("rfid_uid", e.target.value)}
-                placeholder="e.g. RFID-009"
+                placeholder="RFID UID"
                 maxLength={100}
                 autoComplete="off"
                 spellCheck={false}
@@ -265,7 +264,7 @@ export const AddBusModal: React.FC<Props> = ({ onClose, onCreated }) => {
                 {...field("route")}
                 value={form.route}
                 onChange={(e) => set("route", e.target.value)}
-                placeholder="Route 9 - Tech Park"
+                placeholder="Route name"
                 maxLength={100}
                 autoComplete="off"
               />

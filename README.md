@@ -47,16 +47,19 @@ pip install -r requirements.txt
 # 3. Run migrations
 python manage.py migrate
 
-# 4. Seed demo data (32 slots + 8 buses + sensors + users)
-python manage.py seed_demo_data
+# 4. Create your own admin account
+python manage.py createsuperuser
 
-# 5. Start server
+# 5. Define the parking ground and its slots (use your measured values)
+python manage.py create_slots --name "<ground name>" --length <m> --width <m> \
+    --entrance-width <m> --exit-width <m> --rows <n> --slots-per-row <n>
+
+# 6. Start server
 python manage.py runserver
 ```
 
-**Demo credentials:**
-- Admin: `admin` / `admin123`
-- Staff: `staff` / `staff123`
+The database starts empty. Nothing is pre-loaded: add buses, sensors and staff
+accounts from the dashboard or the Django admin site.
 
 ### Frontend (React + TypeScript)
 
@@ -78,7 +81,7 @@ Once the server is running, visit **http://localhost:8000/api/docs/** for intera
 |---|---|---|
 | POST | `/api/auth/login/` | Get JWT tokens |
 | GET | `/api/buses/` | List all buses |
-| GET | `/api/buses/search/?q=B04` | Find bus by number |
+| GET | `/api/buses/search/?q=<bus_number>` | Find bus by number |
 | GET | `/api/parking/slots/` | All parking slots |
 | GET | `/api/parking/summary/` | Occupancy stats |
 | POST | `/api/sensors/rfid/` | Simulate RFID detection |
@@ -95,12 +98,12 @@ Once the server is running, visit **http://localhost:8000/api/docs/** for intera
 ```bash
 curl -X POST http://localhost:8000/api/sensors/rfid/ \
   -H "Content-Type: application/json" \
-  -d '{"rfid_uid": "DEMO-RFID-004", "event_type": "PARKED"}'
+  -d '{"rfid_uid": "<rfid_uid of a registered bus>", "event_type": "PARKED"}'
 ```
 
 **Response:**
 ```json
-{"bus": "B04", "event_type": "PARKED", "slot": "A5"}
+{"bus": "<bus_number>", "event_type": "PARKED", "slot": "<row><slot>"}
 ```
 
 ---
@@ -119,8 +122,8 @@ Admins and transport staff can post notices that every student sees.
 ## 🗄️ Database Models
 
 ```
-ParkingGround (60m × 35m demo)
-    └── ParkingSlot (rows A–D, slots 1–8 each = 32 total)
+ParkingGround (dimensions you provide)
+    └── ParkingSlot (rows and slots per row set by create_slots)
             └── Bus (FK — which bus occupies this slot)
 
 Bus ─── ParkingEvent (history log)
@@ -166,7 +169,7 @@ The sensor API is ready. When the ESP32 + RC522 RFID reader is wired:
 ```cpp
 // ESP32 Arduino sketch will POST to:
 POST http://<your-server>/api/sensors/rfid/
-{"rfid_uid": "<scanned-uid>", "sensor_id": "RFID-001", "event_type": "DETECTED"}
+{"rfid_uid": "<scanned-uid>", "sensor_id": "<sensor-id>", "event_type": "DETECTED"}
 ```
 
 The dashboard will update in real time.
@@ -180,7 +183,7 @@ Rathinam_Smart_Bus_Parking/
 ├── config/          # Django settings & main URLs
 ├── accounts/        # User auth + JWT + roles
 ├── buses/           # Bus model + CRUD API
-├── parking/         # Parking ground, slots, seed commands
+├── parking/         # Parking ground, slots, create_slots command
 ├── sensors/         # RFID/ultrasonic event APIs
 ├── announcements/   # Staff/admin notices for students
 ├── optimization/    # Optimization engine + API
@@ -205,7 +208,3 @@ Rathinam_Smart_Bus_Parking/
 - [ ] PostgreSQL migration for production
 - [ ] Vercel (frontend) + Railway (backend) deployment
 - [ ] C29 poster, presentation, and demo video
-
----
-
-*Ground dimensions (60m × 35m) are placeholders. Replace with your measured field data.*

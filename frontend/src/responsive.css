@@ -285,6 +285,7 @@ button, a, [role="button"], label, input, select, textarea {
   }
   .pg__scroll::-webkit-scrollbar { display: none; }
   .pg__rows { min-width: max-content; gap: 10px !important; }
+  .pg__slots { gap: 6px !important; }
   .pg__slot { min-width: 46px; height: 52px !important; }
   .pg__label {
     position: sticky;

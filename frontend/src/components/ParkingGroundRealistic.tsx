@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { MapPin, TriangleAlert, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowLeftRight, Building2, Lightbulb } from "lucide-react";
 import { getGround, getSlots } from "../api/endpoints";
+import { useGateRows } from "../hooks/useGateRows";
 import type { ParkingGround, ParkingSlot } from "../types";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { alpha } from "../utils/color";
@@ -102,9 +103,10 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   const slotNumbers = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
   const pickedSlot = pickedKey ? slotMap[pickedKey] : undefined;
 
-  // Only rows A and D have a lane gate — that's where buses actually enter/exit.
-  const GATE_ROWS = new Set(["A", "D"]);
+  // Gate rows come from the registered RFID sensors — that's where buses enter/exit.
+  const GATE_ROWS = useGateRows(rows);
   const gateRows = rows.filter((r) => GATE_ROWS.has(r));
+  const nonGateRows = rows.filter((r) => !GATE_ROWS.has(r));
 
   /* live mini-stats */
   const freeCount     = slots.filter(s => !s.is_occupied).length;
@@ -241,20 +243,20 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             <div className="pg__scroll" style={{ marginBottom: 28 }}>
             <div
               className="pg__rows"
-              style={{ display: "flex", flexDirection: "column", gap: 14, ["--pg-cols" as string]: slotNumbers.length }}
+              style={{ display: "flex", flexDirection: "column", gap: 30, ["--pg-cols" as string]: slotNumbers.length }}
             >
               {rows.map((row) => {
                 const isGate = GATE_ROWS.has(row);
                 return (
                 <div key={row} className="pg__row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {/* Lane gate: only rows A and D are open at their left end (Slot 1) —
-                      buses only drive in and back out through those two openings.
-                      Rows B and C are accessed internally, not directly from outside. */}
+                  {/* Lane gate: gated rows are open at their left end (Slot 1) —
+                      buses drive in and back out through those openings.
+                      Rows without a gate are accessed internally. */}
                   <div
                     className="pg__label"
                     title={isGate ? `Gate ${row} — buses enter and leave this lane here` : `Row ${row} — no direct entry/exit`}
                     style={{
-                    width: 56, height: 48, flexShrink: 0,
+                    width: 56, height: 48, flexShrink: 0, marginRight: 36,
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
                     borderRadius: 8,
                     backgroundColor: "var(--canvas-solid)",
@@ -284,7 +286,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                     )}
                   </div>
 
-                  <div className="pg__slots" style={{ display: "flex", flex: 1, gap: 6 }}>
+                  <div className="pg__slots" style={{ display: "flex", flex: 1, gap: 18 }}>
                     {slotNumbers.map((num) => {
                       const slotKey = `${row}${num}`;
                       const slot = slotMap[slotKey];
@@ -293,6 +295,8 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                       const isSelected = selectedSlot === slotKey || pickedKey === slotKey;
                       const exists = !!slot;
                       const isHov = hovered === slotKey;
+                      // Empty slots in rows with no bus gate are the bike & car area: no bus parks here
+                      const reserved = exists && !isGate && !hasBus;
 
                       return (
                         <div
@@ -307,6 +311,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                           onMouseLeave={() => setHovered(null)}
                           title={
                             !exists ? "No such slot"
+                            : reserved ? `${slotKey} — Bikes & cars only, no bus parking`
                             : hasBus ? `${slot?.bus_number ?? "Unknown"}${isBlocked ? " — ⚠ BLOCKED" : ""}\n${slot?.bus_route ?? ""}\nDeparts: ${slot?.bus_departure ?? "—"}`
                             : `${slotKey} — Free`
                           }
@@ -314,14 +319,14 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                             flex: 1, height: 48, borderRadius: 6,
                             position: "relative",
                             opacity: exists ? 1 : 0.25,
-                            background: slotBg(hasBus, isBlocked, isSelected),
-                            border: slotBorder(hasBus, isBlocked, isSelected),
-                            boxShadow: isHov && exists
+                            background: reserved ? "repeating-linear-gradient(45deg, rgba(251,191,36,0.16) 0 6px, rgba(251,191,36,0.03) 6px 12px)" : slotBg(hasBus, isBlocked, isSelected),
+                            border: reserved ? "1px dashed rgba(251,191,36,0.45)" : slotBorder(hasBus, isBlocked, isSelected),
+                            boxShadow: reserved ? "none" : isHov && exists
                               ? (isBlocked ? "0 0 22px rgba(251,191,36,0.5), inset 0 0 10px rgba(251,191,36,0.12)"
                                 : hasBus ? "0 0 18px rgba(96,165,250,0.4), inset 0 0 8px rgba(96,165,250,0.08)"
                                 : "0 0 10px rgba(74,222,128,0.2)")
                               : slotGlow(hasBus, isBlocked, isSelected),
-                            cursor: exists ? "pointer" : "default",
+                            cursor: reserved ? "not-allowed" : exists ? "pointer" : "default",
                             // blocked/occupied styling hides the blue "selected" look, so mark the tapped slot explicitly
                             outline: pickedKey === slotKey ? "2px solid rgb(var(--ov) / 0.9)" : undefined,
                             outlineOffset: pickedKey === slotKey ? 2 : undefined,
@@ -361,7 +366,8 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                           <span style={{
                             position: "absolute", bottom: 2,
                             fontSize: 9, fontFamily: "monospace", fontWeight: 600,
-                            color: isBlocked ? "var(--accent-amber)"
+                            color: reserved ? "rgba(251,191,36,0.65)"
+                              : isBlocked ? "var(--accent-amber)"
                               : hasBus ? "var(--accent-blue)"
                               : "var(--slot-free-label)",
                           }}>{slotKey}</span>
@@ -397,7 +403,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                   <span style={{ color: "var(--accent-green)", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>ENTRY / EXIT</span>
                 </div>
                 <div style={{ fontSize: 9, color: "var(--text-dim)", fontFamily: "monospace" }}>
-                  Gates {gateRows.length ? gateRows.join(" · ") : "A · D"} — open end of the lane · rows B/C have no direct gate
+                  Gates {gateRows.join(" · ")} — open end of the lane{nonGateRows.length > 0 && ` · rows ${nonGateRows.join("/")} are for bikes & cars — no bus parking`}
                 </div>
               </div>
             </div>

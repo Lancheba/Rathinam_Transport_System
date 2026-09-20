@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TriangleAlert, Bus, ArrowLeftRight } from "lucide-react";
 import type { ParkingSlot } from "../types";
 import { alpha } from "../utils/color";
+import { useGateRows } from "../hooks/useGateRows";
 
 interface Props {
   slots: ParkingSlot[];
@@ -49,9 +50,10 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
   const rows = Array.from(rowSet).sort();
   const slotNums = Array.from({ length: maxSlotNum || 0 }, (_, i) => i + 1);
 
-  // Only rows A and D have a lane gate — that's where buses actually enter/exit.
-  const GATE_ROWS = new Set(["A", "D"]);
+  // Gate rows come from the registered RFID sensors — that's where buses enter/exit.
+  const GATE_ROWS = useGateRows(rows);
   const gateRows = rows.filter((r) => GATE_ROWS.has(r));
+  const nonGateRows = rows.filter((r) => !GATE_ROWS.has(r));
 
   const totalSlots   = slots.length;
   const occupiedSlots = slots.filter(s => s.is_occupied && !s.is_blocked).length;
@@ -154,7 +156,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
             color: "var(--accent-violet)", padding: "4px 14px", borderRadius: 9999,
             background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)",
           }}>
-            ⇄ LANE GATES {gateRows.length ? gateRows.join(" · ") : "A · D"} — ENTRY / EXIT
+            ⇄ LANE GATES {gateRows.join(" · ")} — ENTRY / EXIT
           </span>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(167,139,250,0.4))" }} />
         </div>
@@ -164,13 +166,13 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
           const isGate = GATE_ROWS.has(row);
           return (
           <div key={row} className="pm2d__row" style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-            {/* Lane gate: only rows A and D are open at their left end (slot 1) —
-                buses drive in and out only through those two lanes. B and C have no gate. */}
+            {/* Lane gate: gated rows are open at their left end (slot 1) —
+                buses drive in and out through those lanes. Other rows have no gate. */}
             <span
               className="pm2d__label"
               title={isGate ? `Gate ${row} — buses enter and leave this lane here` : `Row ${row} — no direct entry/exit`}
               style={{
-              width: 34, height: 48, flexShrink: 0,
+              width: 34, height: 48, flexShrink: 0, marginRight: 24,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
               borderRadius: 6,
               backgroundColor: "var(--canvas-solid)",
@@ -203,8 +205,16 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
                 }} />
               );
 
-              const base = slotStyle(slot);
-              const textColor = slotTextColor(slot);
+              // Empty slots in rows with no bus gate are the bike & car area: no bus parks here
+              const reserved = !isGate && !slot.is_occupied;
+              const base: React.CSSProperties = reserved
+                ? {
+                    background: "repeating-linear-gradient(45deg, rgba(251,191,36,0.16) 0 6px, rgba(251,191,36,0.03) 6px 12px)",
+                    border: "1px dashed rgba(251,191,36,0.45)",
+                    boxShadow: "none",
+                  }
+                : slotStyle(slot);
+              const textColor = reserved ? "rgba(251,191,36,0.65)" : slotTextColor(slot);
 
               return (
                 <div
@@ -215,6 +225,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
                   title={
                     slot.is_occupied
                       ? `${slot.bus_number} — ${slot.bus_route}\nDeparts: ${slot.bus_departure}${slot.is_blocked ? "\n⚠ BLOCKED" : ""}`
+                      : reserved ? `${key} — Bikes & cars only, no bus parking`
                       : `${key} — Free`
                   }
                   style={{
@@ -259,6 +270,7 @@ const ParkingMap2D: React.FC<Props> = ({ slots }) => {
           color: "var(--text-dim)", letterSpacing: "0.05em",
         }}>
           Slots 1–{maxSlotNum} &nbsp;·&nbsp; Slot 1 = at the lane gate (open end)
+          {nonGateRows.length > 0 && <> &nbsp;·&nbsp; Rows {nonGateRows.join("/")} are for bikes &amp; cars — no bus parking</>}
         </div>
       </div>
     </div>

@@ -17,6 +17,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { ParkingGroundRealistic } from "../components/ParkingGroundRealistic";
+import { getGround, getParkingSummary } from "../api/endpoints";
+import type { ParkingGround, ParkingSummary } from "../types";
 import rathinamLogo from "../assets/rathinam_logo_crop.png";
 import rguFooterLogo from "../assets/rgu_footer_logo.png";
 import "./LandingPage.css";
@@ -88,6 +90,19 @@ const SOCIALS = [
 export const LandingPage: React.FC = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const [showTop, setShowTop] = useState(false);
+  const [summary, setSummary] = useState<ParkingSummary | null>(null);
+  const [ground, setGround] = useState<ParkingGround | null>(null);
+
+  // Live figures for the hero stats (both endpoints are public)
+  useEffect(() => {
+    const load = () => {
+      getParkingSummary().then(setSummary).catch(() => {});
+      getGround().then((g) => setGround(g?.[0] ?? null)).catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 320);
@@ -203,15 +218,18 @@ export const LandingPage: React.FC = () => {
           <div className="lp-hero__stats lg">
             <div className="lp-hero__stat">
               <CheckCircle2 size={16} />
-              <span><strong>32</strong> Ground Slots (60m &times; 35m)</span>
+              <span>
+                <strong>{summary ? summary.total_slots : "—"}</strong> Ground Slots
+                {ground && <> ({Number(ground.length_m)}m &times; {Number(ground.width_m)}m)</>}
+              </span>
             </div>
             <div className="lp-hero__stat">
               <Clock size={16} />
-              <span><strong>2.5 min</strong> Avg. Retrieval Time</span>
+              <span><strong>{summary ? summary.occupied : "—"}</strong> Buses Parked Now</span>
             </div>
             <div className="lp-hero__stat">
               <Shield size={16} />
-              <span><strong>0</strong> Blocked Buses with AI</span>
+              <span><strong>{summary ? summary.blocked : "—"}</strong> Blocked Buses Now</span>
             </div>
           </div>
         </section>
