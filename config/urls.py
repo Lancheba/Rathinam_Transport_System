@@ -46,6 +46,7 @@ urlpatterns = [
 
     # Core APIs
     path("api/buses/", include("buses.urls")),
+    path("api/students/", include("students.urls")),
     path("api/parking/", include("parking.urls")),
     path("api/", include("sensors.urls")),
     path("api/optimization/", include("optimization.urls")),

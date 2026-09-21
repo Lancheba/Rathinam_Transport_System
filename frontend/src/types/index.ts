@@ -146,6 +146,51 @@ export interface AnnouncementInput {
 }
 
 
+export interface Student {
+  id: number;
+  name: string;
+  roll_number: string;
+  department: string;
+  year: 1 | 2 | 3 | 4 | null;
+  phone: string;
+  email: string;
+  boarding_point: string;
+  bus: number | null;
+  bus_number: string | null;
+  bus_route: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fields the "Add student" form sends to POST /api/students/ */
+export interface StudentInput {
+  name: string;
+  roll_number: string;
+  department: string;
+  year: 1 | 2 | 3 | 4 | null;
+  phone: string;
+  email: string;
+  boarding_point: string;
+  bus: number | null;
+}
+
+/** One row of GET /api/students/roster/ — a bus and everyone riding it */
+export interface BusRoster {
+  bus_id: number;
+  bus_number: string;
+  route: string;
+  student_count: number;
+  students: Pick<Student, "id" | "name" | "roll_number" | "department" | "year" | "phone" | "boarding_point">[];
+}
+
+/** GET /api/students/summary/ — aggregate counts only, no student PII */
+export interface StudentSummary {
+  total: number;
+  assigned: number;
+  unassigned: number;
+  buses_with_students: number;
+}
+
 /** A vehicle the camera (YOLO) is currently following. bus is null until it is identified. */
 export interface VisionTrack {
   id: number;

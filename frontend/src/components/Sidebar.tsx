@@ -2,6 +2,7 @@ import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { navItems } from "./navItems";
+import { useAuth } from "../context/AuthContext";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -9,6 +10,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+  const { canManageBuses } = useAuth();
+  const visibleItems = navItems.filter((item) => !item.staffOnly || canManageBuses);
   return (
     <aside
       style={{
@@ -56,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
       {/* Navigation Links */}
       <nav style={{ display: "flex", flexDirection: "column", gap: 6, zIndex: 2, marginTop: 40 }}>
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

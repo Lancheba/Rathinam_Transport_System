@@ -1,0 +1,284 @@
+/* Add bus dialog: uses the dashboard's glass tokens from index.css */
+
+.asm__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--scrim);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: asm-fade 0.16s ease-out;
+}
+
+.asm__panel {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: 22px 24px 20px;
+  animation: asm-rise 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* the shared glass card lifts on hover; a dialog shouldn't */
+.asm__panel.liquid-glass-card:hover {
+  border-color: var(--glass-card-border);
+  border-top-color: var(--glass-highlight);
+  box-shadow: var(--glass-glow);
+}
+
+.asm__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.asm__badge {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: var(--text-strong);
+  background: rgb(var(--ov) / 0.08);
+  border: 1px solid rgb(var(--ov) / 0.14);
+}
+
+.asm__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.asm__subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.asm__close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.asm__close:hover:not(:disabled) {
+  background: rgb(var(--ov) / 0.08);
+  color: var(--text-strong);
+}
+
+.asm__alert {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-soft);
+  background: rgb(var(--ov) / 0.1);
+  border: 1px solid rgb(var(--ov) / 0.3);
+}
+.asm__alert svg { flex-shrink: 0; margin-top: 1px; }
+
+.asm__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 14px;
+}
+.asm__full { grid-column: 1 / -1; }
+
+.asm__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.asm__input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-strong);
+  color-scheme: dark; /* light picker icons on the time field */
+  background: rgb(var(--ov) / 0.05);
+  border: 1px solid rgb(var(--ov) / 0.12);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.asm__input::placeholder { color: var(--text-dim); }
+
+/* The native dropdown list takes the select's own background, which is a see-through
+   white tint here, so the options came out white-on-white. Give them a solid theme colour. */
+.asm__input option {
+  color: var(--text-strong);
+  background-color: var(--canvas-solid);
+}
+.asm__input:hover:not(:disabled) { border-color: rgb(var(--ov) / 0.22); }
+.asm__input:focus-visible {
+  background: rgb(var(--ov) / 0.08);
+  border-color: rgb(var(--ov) / 0.7);
+  box-shadow: 0 0 0 3px rgb(var(--ov) / 0.16);
+}
+.asm__input[aria-invalid="true"] {
+  border-color: rgb(var(--ov) / 0.65);
+}
+.asm__input:disabled { opacity: 0.6; }
+
+.asm__hint,
+.asm__error {
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.asm__hint { color: var(--text-dim); }
+.asm__error { color: var(--text-muted); }
+
+.asm__check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.asm__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--text-soft);
+  cursor: pointer;
+}
+
+.asm__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(var(--ov) / 0.07);
+}
+
+.asm__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.asm__btn:focus-visible,
+.asm__close:focus-visible,
+.asm__check input:focus-visible {
+  outline: 2px solid var(--text-soft);
+  outline-offset: 2px;
+}
+.asm__btn--ghost {
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid rgb(var(--ov) / 0.14);
+}
+.asm__btn--ghost:hover:not(:disabled) { background: rgb(var(--ov) / 0.07); }
+.asm__btn--primary {
+  color: var(--btn-fg);
+  background: var(--text-strong);
+  border: 1px solid var(--text-strong);
+}
+.asm__btn--primary:hover:not(:disabled) { background: var(--text-strong); }
+.asm__btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.asm__spin { animation: asm-spin 0.8s linear infinite; }
+
+/* Buttons that open the dialog */
+.asm-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.asm-trigger:focus-visible { outline: 2px solid var(--text-soft); outline-offset: 2px; }
+.asm-trigger--primary {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--btn-fg);
+  background: var(--text-strong);
+  border: 1px solid var(--text-strong);
+  border-radius: 8px;
+}
+.asm-trigger--primary:hover { background: var(--text-strong); }
+.asm-trigger--subtle {
+  padding: 5px 11px;
+  font-size: 11px;
+  color: var(--text-soft);
+  background: rgb(var(--ov) / 0.06);
+  border: 1px solid rgb(var(--ov) / 0.14);
+  border-radius: 9999px;
+}
+.asm-trigger--subtle:hover {
+  background: rgb(var(--ov) / 0.12);
+  border-color: rgb(var(--ov) / 0.28);
+}
+
+@media (max-width: 520px) {
+  /* Bottom sheet: easier to reach with a thumb, and it survives the on-screen keyboard */
+  .asm__backdrop { align-items: flex-end; padding: 0; }
+  .asm__panel {
+    max-width: none;
+    max-height: 92vh;
+    max-height: 92dvh;
+    padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    overscroll-behavior: contain;
+    animation: asm-sheet 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .asm__grid { grid-template-columns: minmax(0, 1fr); }
+  .asm__input { min-height: 46px; }
+  .asm__close { width: 36px; height: 36px; }
+  .asm__foot { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); margin-left: -16px; margin-right: -16px; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: var(--surface-solid); }
+  .asm__foot .asm__btn { flex: 1; min-height: 46px; }
+  .asm__check input { width: 20px; height: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asm__backdrop,
+  .asm__panel { animation: none; }
+  .asm__spin { animation-duration: 2s; }
+}
+
+@keyframes asm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes asm-sheet { from { transform: translateY(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes asm-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes asm-spin { to { transform: rotate(360deg); } }

@@ -2,20 +2,25 @@ import React, { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Ellipsis, Search } from "lucide-react";
 import { navItems, MOBILE_TAB_COUNT } from "./navItems";
+import { useAuth } from "../context/AuthContext";
 import "./MobileNav.css";
-
-const tabs = navItems.slice(0, MOBILE_TAB_COUNT);
-const more = [
-  ...navItems.slice(MOBILE_TAB_COUNT),
-  // Students use this on their phones, so it earns a place here
-  { to: "/dashboard/find", label: "Find My Bus", short: "Find", icon: Search },
-];
 
 /** Bottom tab bar for phones and small tablets. Replaces the sidebar below 900px. */
 export const MobileNav: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const { canManageBuses } = useAuth();
   const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Staff-only links (e.g. Students) never take one of the precious mobile tab
+  // slots for a signed-out or student user — they're filtered before slicing.
+  const visible = navItems.filter((item) => !item.staffOnly || canManageBuses);
+  const tabs = visible.slice(0, MOBILE_TAB_COUNT);
+  const more = [
+    ...visible.slice(MOBILE_TAB_COUNT),
+    // Students use this on their phones, so it earns a place here
+    { to: "/dashboard/find", label: "Find My Bus", short: "Find", icon: Search },
+  ];
 
   const moreActive = more.some((m) => pathname.startsWith(m.to));
 

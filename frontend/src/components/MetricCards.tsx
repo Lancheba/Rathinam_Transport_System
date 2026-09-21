@@ -1,5 +1,5 @@
 import React from "react";
-import { Bus, AlertTriangle, ParkingCircle, Car, Radio } from "lucide-react";
+import { Bus, AlertTriangle, ParkingCircle, Car, Radio, Users } from "lucide-react";
 
 interface MetricCardsProps {
   totalBuses: number;
@@ -10,6 +10,9 @@ interface MetricCardsProps {
   totalSlots: number;
   activeSensors: number;
   offlineSensors: number;
+  /** Omit entirely for students — roster totals are a staff/admin-only metric. */
+  totalStudents?: number;
+  unassignedStudents?: number;
 }
 
 const pctOf = (part: number, whole: number) =>
@@ -24,6 +27,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   totalSlots,
   activeSensors,
   offlineSensors,
+  totalStudents,
+  unassignedStudents,
 }) => {
   const occupiedPct = pctOf(occupiedSlots, totalSlots);
   const freePct = pctOf(freeSlots, totalSlots);
@@ -92,12 +97,27 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
     },
   ];
 
+  if (totalStudents !== undefined) {
+    cards.push({
+      title: "Total Students",
+      value: totalStudents,
+      sub: unassignedStudents ? `● ${unassignedStudents} unassigned` : "● All assigned to a bus",
+      icon: Users,
+      iconColor: "var(--accent-cyan)",
+      iconBg: "rgba(34,211,238,0.15)",
+      iconBorder: "rgba(34,211,238,0.3)",
+      valueColor: "var(--text-strong)",
+      subColor: unassignedStudents ? "var(--accent-amber)" : "var(--accent-cyan)",
+      accentBorder: "rgba(34,211,238,0.2)",
+    });
+  }
+
   return (
     <div
       className="metric-grid"
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: 14,
         marginBottom: 20,
       }}

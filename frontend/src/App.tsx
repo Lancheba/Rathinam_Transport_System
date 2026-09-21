@@ -9,6 +9,7 @@ import { useIsMobile } from "./hooks/useMediaQuery";
 import Dashboard from "./pages/Dashboard";
 import ParkingPage from "./pages/ParkingPage";
 import BusesPage from "./pages/BusesPage";
+import StudentsPage from "./pages/StudentsPage";
 import BusFinder from "./pages/BusFinder";
 import OptimizePage from "./pages/OptimizePage";
 import SensorsPage from "./pages/SensorsPage";
@@ -138,6 +139,7 @@ export const App: React.FC = () => {
                   <Route path="" element={<Dashboard />} />
                   <Route path="parking" element={<ParkingPage />} />
                   <Route path="buses" element={<BusesPage />} />
+                  <Route path="students" element={<StudentsPage />} />
                   <Route path="optimize" element={<OptimizePage />} />
                   <Route path="sensors" element={<SensorsPage />} />
                   <Route path="reports" element={<ReportsPage />} />

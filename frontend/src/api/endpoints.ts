@@ -2,7 +2,7 @@
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
-  Announcement, AnnouncementInput, VisionTrack
+  Announcement, AnnouncementInput, VisionTrack, Student, StudentInput, BusRoster, StudentSummary
 } from "../types";
 
 // Buses
@@ -51,6 +51,20 @@ export const getAnnouncements = () => api.get<Announcement[]>("/announcements/")
 export const createAnnouncement = (data: AnnouncementInput) =>
   api.post<Announcement>("/announcements/", data).then(r => r.data);
 export const deleteAnnouncement = (id: number) => api.delete(`/announcements/${id}/`);
+
+// Students (transport staff / admins only — roll numbers, phone numbers etc. are personal data)
+export const getStudents = (params?: Record<string, string>) =>
+  api.get<Student[]>("/students/", { params }).then(r => r.data);
+export const getStudentsByBus = (busId: number) =>
+  api.get<Student[]>("/students/", { params: { bus: String(busId) } }).then(r => r.data);
+export const searchStudents = (q: string) =>
+  api.get<Student[]>("/students/", { params: { search: q } }).then(r => r.data);
+export const getBusRoster = () => api.get<BusRoster[]>("/students/roster/").then(r => r.data);
+export const getStudentSummary = () => api.get<StudentSummary>("/students/summary/").then(r => r.data);
+export const createStudent = (data: StudentInput) => api.post<Student>("/students/", data).then(r => r.data);
+export const updateStudent = (id: number, data: Partial<StudentInput>) =>
+  api.patch<Student>(`/students/${id}/`, data).then(r => r.data);
+export const deleteStudent = (id: number) => api.delete(`/students/${id}/`);
 
 // Camera tracking (YOLO). Staff can tell the system which bus an unidentified track really is.
 export const getVisionTracks = () => api.get<VisionTrack[]>("/vision/tracks/").then(r => r.data);

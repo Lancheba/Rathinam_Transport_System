@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Trash2, Radio, Volume2, Camera } from "lucide-react";
+import { Trash2, Radio, Volume2, Camera, ShieldAlert } from "lucide-react";
 import { getSensors, deleteSensor } from "../api/endpoints";
 import { AddSensorButton } from "../components/AddSensorButton";
 import { useAuth } from "../context/AuthContext";
@@ -12,10 +12,24 @@ const SensorsPage: React.FC = () => {
   const { canManageBuses } = useAuth();
 
   useEffect(() => {
+    if (!canManageBuses) return;
     getSensors().then(setSensors).catch(() => {});
     const interval = setInterval(() => getSensors().then(setSensors).catch(() => {}), 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [canManageBuses]);
+
+  // The nav link is already hidden for students; this stops a direct URL visit too.
+  if (!canManageBuses) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "60px 20px", textAlign: "center" }}>
+        <ShieldAlert size={32} style={{ color: "var(--accent-amber)" }} />
+        <h2 style={{ color: "var(--text-strong)", margin: 0 }}>Staff access only</h2>
+        <p style={{ color: "var(--text-muted)", maxWidth: 420, fontSize: 14 }}>
+          Sensor hardware status is only visible to transport staff and admins.
+        </p>
+      </div>
+    );
+  }
 
   const handleCreated = (sensor: Sensor) => { setSensors(prev => [...prev, sensor]); };
 

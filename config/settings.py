@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "buses",
+    "students",
     "parking",
     "sensors",
     "optimization",

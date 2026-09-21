@@ -11,7 +11,7 @@ import {
   SlotUtilizationCard,
   BusRouteDistributionCard,
 } from "../components/BottomAnalyticsCards";
-import { getParkingSummary, getBuses, getSensors } from "../api/endpoints";
+import { getParkingSummary, getBuses, getSensors, getStudentSummary } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 
 const greetingFor = (date: Date) => {
@@ -25,7 +25,7 @@ export const Dashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [greeting, setGreeting] = useState(() => greetingFor(new Date()));
-  const { username } = useAuth();
+  const { username, canManageBuses } = useAuth();
 
   // Live state from API — starts at 0 so a slow/failed fetch never shows a
   // value that doesn't exist in the backend.
@@ -38,6 +38,7 @@ export const Dashboard: React.FC = () => {
   });
   const [busStats, setBusStats] = useState({ total: 0, active: 0 });
   const [sensorStats, setSensorStats] = useState({ active: 0, offline: 0 });
+  const [studentStats, setStudentStats] = useState<{ total: number; unassigned: number } | null>(null);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -106,19 +107,30 @@ export const Dashboard: React.FC = () => {
       .catch(() => {});
   }, []);
 
+  // Roll numbers are personal data — the API 403s for students, so only
+  // staff/admin ever attempt this call (and only they see the resulting card).
+  const loadStudents = useCallback(() => {
+    if (!canManageBuses) { setStudentStats(null); return; }
+    getStudentSummary()
+      .then((s) => setStudentStats({ total: s.total, unassigned: s.unassigned }))
+      .catch(() => {});
+  }, [canManageBuses]);
+
   useEffect(() => {
     loadSummary();
     loadBuses();
     loadSensors();
+    loadStudents();
     // Poll every 15s so the top metric cards stay in sync with the live ground
     // view instead of freezing at whatever the first successful fetch returned.
     const id = setInterval(() => {
       loadSummary();
       loadBuses();
       loadSensors();
+      loadStudents();
     }, 15000);
     return () => clearInterval(id);
-  }, [loadSummary, loadBuses, loadSensors]);
+  }, [loadSummary, loadBuses, loadSensors, loadStudents]);
 
   return (
     <div style={{ maxWidth: 1480, margin: "0 auto" }}>
@@ -191,6 +203,8 @@ export const Dashboard: React.FC = () => {
         totalSlots={summary.total_slots}
         activeSensors={sensorStats.active}
         offlineSensors={sensorStats.offline}
+        totalStudents={studentStats?.total}
+        unassignedStudents={studentStats?.unassigned}
       />
 
       {/* Main Grid: Left (Ground + Bottom Analytics) vs. Right (3 Cards) */}
