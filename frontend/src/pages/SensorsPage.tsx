@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Trash2, Radio, Volume2 } from "lucide-react";
+import { Trash2, Radio, Volume2, Camera } from "lucide-react";
 import { getSensors, deleteSensor } from "../api/endpoints";
 import { AddSensorButton } from "../components/AddSensorButton";
 import { useAuth } from "../context/AuthContext";
+import VisionTracksPanel from "../components/VisionTracksPanel";
 import type { Sensor } from "../types";
 
 const SensorsPage: React.FC = () => {
@@ -60,7 +61,9 @@ const SensorsPage: React.FC = () => {
               <span style={{ fontWeight: "bold", color: "var(--text-strong)", display: "flex", alignItems: "center", gap: 8 }}>
                 {sensor.sensor_type === "RFID"
                   ? <Radio size={14} style={{ color: "var(--accent-cyan)" }} />
-                  : <Volume2 size={14} style={{ color: "var(--accent-violet)" }} />}
+                  : sensor.sensor_type === "CAMERA"
+                    ? <Camera size={14} style={{ color: "var(--accent-violet)" }} />
+                    : <Volume2 size={14} style={{ color: "var(--accent-violet)" }} />}
                 {sensor.sensor_id}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -107,6 +110,8 @@ const SensorsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <VisionTracksPanel />
     </div>
   );
 };

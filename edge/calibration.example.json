@@ -1,0 +1,5 @@
+{
+  "_note": "Pick 4 points on the ground that you can see in the camera image AND measure in metres. Use the same axes as the parking slots: x runs along the ground length starting at the slot-1 end, y runs across the rows. Generate your own with: python vision_tracker.py --calibrate --source frame.jpg",
+  "pixel_points":    [[120, 640], [1780, 660], [1500, 300], [380, 280]],
+  "ground_points_m": [[0, 0],     [60, 0],     [60, 35],    [0, 35]]
+}

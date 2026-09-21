@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   Bus as BusIcon, Clock, Radio, ChevronRight,
-  ParkingSquare, ArrowRightLeft, CreditCard, AlertTriangle, LogIn, Volume2,
+  ParkingSquare, ArrowRightLeft, CreditCard, AlertTriangle, LogIn, Volume2, Camera,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AddBusButton } from "./AddBusButton";
@@ -216,7 +216,9 @@ export const SensorStatusCard: React.FC = () => {
               <div className="sensor-id" style={{ display: "flex", alignItems: "center", gap: 8, width: 95 }}>
                 {s.sensor_type === "RFID"
                   ? <Radio size={12} style={{ color: s.is_active ? "var(--accent-cyan)" : "var(--text-dim)" }} />
-                  : <Volume2 size={12} style={{ color: s.is_active ? "var(--accent-cyan)" : "var(--text-dim)" }} />}
+                  : s.sensor_type === "CAMERA"
+                    ? <Camera size={12} style={{ color: s.is_active ? "var(--accent-cyan)" : "var(--text-dim)" }} />
+                    : <Volume2 size={12} style={{ color: s.is_active ? "var(--accent-cyan)" : "var(--text-dim)" }} />}
                 <span style={{ fontWeight: 600, color: "var(--text-strong)", fontFamily: "monospace" }}>{s.sensor_id}</span>
               </div>
               <span style={{ color: "var(--text-muted)", flex: 1, textAlign: "left", paddingLeft: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.location}</span>

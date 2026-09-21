@@ -1,28 +1,15 @@
-# Python
-venv/
+# Python / Django
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.db
-*.sqlite3
-*.log
-.env
-*.egg-info/
-dist/
-build/
-.eggs/
+venv/
+.venv/
+db.sqlite3
 
-# Django
-staticfiles/
-media/
-
-# Node
+# Frontend
 frontend/node_modules/
+frontend/dist/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-.DS_Store
-Thumbs.db
+# Camera script: your own calibration and model weights
+edge/calibration.json
+*.pt
+*.mp4

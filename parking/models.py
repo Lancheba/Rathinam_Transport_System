@@ -2,24 +2,16 @@ from django.db import models
 
 
 class ParkingGround(models.Model):
-    name = models.CharField(max_length=100, default="College Bus Parking Ground")
+    name = models.CharField(max_length=100)
 
-    length_m = models.DecimalField(max_digits=6, decimal_places=2, default=60.00)
-    width_m = models.DecimalField(max_digits=6, decimal_places=2, default=35.00)
+    length_m = models.DecimalField(max_digits=6, decimal_places=2)
+    width_m = models.DecimalField(max_digits=6, decimal_places=2)
 
-    entrance_width_m = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=6.00
-    )
+    entrance_width_m = models.DecimalField(max_digits=5, decimal_places=2)
 
-    exit_width_m = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=6.00
-    )
+    exit_width_m = models.DecimalField(max_digits=5, decimal_places=2)
 
-    total_slots = models.PositiveIntegerField(default=32)
+    total_slots = models.PositiveIntegerField()
 
     def __str__(self):
         return self.name

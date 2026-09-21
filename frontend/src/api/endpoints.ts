@@ -2,7 +2,7 @@
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
-  Announcement, AnnouncementInput
+  Announcement, AnnouncementInput, VisionTrack
 } from "../types";
 
 // Buses
@@ -51,3 +51,8 @@ export const getAnnouncements = () => api.get<Announcement[]>("/announcements/")
 export const createAnnouncement = (data: AnnouncementInput) =>
   api.post<Announcement>("/announcements/", data).then(r => r.data);
 export const deleteAnnouncement = (id: number) => api.delete(`/announcements/${id}/`);
+
+// Camera tracking (YOLO). Staff can tell the system which bus an unidentified track really is.
+export const getVisionTracks = () => api.get<VisionTrack[]>("/vision/tracks/").then(r => r.data);
+export const assignVisionTrack = (trackId: number, busId: number) =>
+  api.post<VisionTrack>(`/vision/tracks/${trackId}/assign/`, { bus_id: busId }).then(r => r.data);

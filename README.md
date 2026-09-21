@@ -1,210 +1,321 @@
-﻿# 🚍 Smart College Bus Parking & Retrieval System
+# Rathinam Smart Bus Parking
 
-**Rathinam College of Engineering** | C29 Final Project
+**AI Immersion Task 01 (C29) · Rathinam Technical Campus**
 
-A full-stack IoT-enabled smart parking system that eliminates blocked-bus problems at college bus yards using RFID detection, real-time tracking, and constraint-based optimization.
+A system that knows **which bus is inside the bus ground, where it is parked, and which buses
+are boxed in by others**, then recommends a better parking order so early-departing buses are
+never blocked.
 
----
-
-## 🏗️ Current Build Status
-
-| Component | Status |
-|---|---|
-| Django REST API | ✅ Complete |
-| JWT Authentication (Admin / Staff / Student roles) | ✅ Complete |
-| Bus CRUD API | ✅ Complete |
-| Parking Ground + Slot API | ✅ Complete |
-| RFID Sensor Event API | ✅ Complete |
-| Ultrasonic Sensor API | ✅ Complete |
-| Parking Event Log API | ✅ Complete |
-| Optimization Engine | ✅ Complete |
-| Swagger API Docs | ✅ Complete (`/api/docs/`) |
-| React + TypeScript Dashboard | ✅ Complete |
-| 2D Interactive Parking Map | ✅ Complete |
-| Student Bus Finder | ✅ Complete |
-| Announcements (staff/admin post, everyone reads) | ✅ Complete |
-| Sensor Monitoring Page | ✅ Complete |
-| Optimization Comparison UI | ✅ Complete |
-| ESP32 + RFID Hardware | ⬜ Phase 2 |
-| 3D Parking Visualization | ⬜ Phase 2 |
-| PostgreSQL + Deployment | ⬜ Phase 2 |
+- **RFID gate readers** say *which* bus entered or left.
+- **A camera running YOLO** says *where* every bus is sitting.
+- **Django** joins the two, stores everything, and runs the optimiser.
+- **A React dashboard** shows the ground live and lets transport staff correct and act.
 
 ---
 
-## 🚀 Quick Start
+## 1. The problem
 
-### Backend (Django)
+The campus bus ground is open ground with no painted slots. Buses park wherever there is space,
+so a bus that must leave early is often boxed in behind buses that leave later. Drivers and staff
+then spend time finding the owner of the blocking bus and shuffling vehicles.
 
-```bash
-# 1. Create & activate virtual environment
-python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # Linux/Mac
+> Fill this in from **your own field visit**. Do not use numbers you did not observe or source.
+>
+> **Problem statement:** [User group] at [specific location] currently [what they do today],
+> which causes [measurable consequence] because [root cause]. Existing approaches such as
+> [what is tried now] fall short because [gap].
+>
+> **My three numbers:** frequency ___ · magnitude ___ · reach ___
+> (say which you counted and which you sourced)
 
-# 2. Install packages
-pip install -r requirements.txt
+---
 
-# 3. Run migrations
-python manage.py migrate
+## 2. Architecture
 
-# 4. Create your own admin account
-python manage.py createsuperuser
-
-# 5. Define the parking ground and its slots (use your measured values)
-python manage.py create_slots --name "<ground name>" --length <m> --width <m> \
-    --entrance-width <m> --exit-width <m> --rows <n> --slots-per-row <n>
-
-# 6. Start server
-python manage.py runserver
+```mermaid
+flowchart LR
+  T["Bus RFID tag"] -->|"tag UID"| R["RFID reader + ESP32 (entrance / exit)"]
+  R -->|"HTTP POST /api/sensors/rfid/ ENTRY or EXIT"| API
+  C["Camera over the ground"] -->|"video frames, 2 fps"| Y["YOLO detector + ByteTrack"]
+  Y -->|"HTTP POST /api/vision/positions/ ground x,y in metres"| API
+  API["Django API: database, camera-RFID linking, optimiser"] -->|"slots, blocked flags, tracks"| D["React dashboard"]
+  D --> S["Transport staff"]
+  S -->|"assign unidentified bus / apply new layout"| API
 ```
 
-The database starts empty. Nothing is pre-loaded: add buses, sensors and staff
-accounts from the dashboard or the Django admin site.
+| Layer | Technology |
+|---|---|
+| Identification | RC522 (demo) or UHF (production) RFID + ESP32 |
+| Localisation | YOLO (Ultralytics) + ByteTrack, image-to-ground homography |
+| Backend | Django, Django REST Framework, JWT auth, SQLite |
+| Frontend | React + TypeScript + Vite |
+| Optimisation | Rule-based departure-time ordering (see section 8) |
 
-### Frontend (React + TypeScript)
+### How the camera and RFID are joined
+
+Nothing physical connects them, so `vision/linking.py` does it:
+
+1. Each detection (a point on the ground, in metres) is matched to the nearest slot,
+   **one detection per slot**.
+2. A vehicle must stay closest to the same slot for `VISION_STABLE_FRAMES` frames before it
+   counts as parked there (stops flip-flopping between neighbouring slots).
+3. A tracked vehicle learns which bus it is, in this order:
+   1. **Inherit**: it settled in a slot the database already says holds a bus (this is why
+      restarting the camera script is harmless).
+   2. **First in, first matched**: the oldest recent RFID `ENTRY` nobody has claimed goes to
+      the oldest unidentified vehicle (buses appear on camera in the order they tapped in).
+   3. **Staff assign** it by hand in the dashboard (Sensors page, "Camera tracking").
+4. Identified, settled vehicles are written into `ParkingSlot`; blocked flags are recomputed.
+5. An RFID `EXIT` (or a new `ENTRY`) frees the bus's slot and forgets its old camera identity.
+
+---
+
+## 3. What works today
+
+| Part | Status |
+|---|---|
+| Buses, slots, sensors, events, announcements, JWT roles (admin / staff / student) | Built and tested |
+| Dashboard, 2D parking map, Find My Bus, announcements | Built |
+| Camera-RFID linking server (`vision` app) | Built; **51 automated tests pass** (Django 4.2 and 6.1); exercised end to end over HTTP with simulated camera payloads |
+| Staff "assign this vehicle to a bus" UI | Built; frontend type-checks and builds |
+| `edge/vision_tracker.py` (YOLO + tracking + calibration + posting) | Written; geometry/calibration maths unit-tested. **YOLO itself has not been run on your ground yet** |
+| ESP32 sketches in `hardware/` | Written; **not tested on real boards** |
+| Accuracy of YOLO on your buses | **Unmeasured**. Measure it and report the real number |
+
+---
+
+## 4. Quick start
+
+### Backend
+
+```bash
+python -m venv venv
+venv\Scripts\activate            # Windows   (Linux/Mac: source venv/bin/activate)
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+
+# Nothing is pre-loaded: describe YOUR ground (metres) and how many slots to create.
+python manage.py create_slots --name "Rathinam Bus Ground" --length 60 --width 35 \
+    --entrance-width 8 --exit-width 8 --rows 3 --slots-per-row 8
+
+# Devices must send this secret. Change it, and use the same value on every device.
+set DEVICE_API_KEY=my-long-random-secret        # Windows (Linux/Mac: export ...)
+
+python manage.py runserver 0.0.0.0:8000         # 0.0.0.0 so the ESP32 / camera PC can reach it
+```
+
+`create_slots` makes a **virtual grid** of slots (the real ground has no painted lines). The
+camera places each bus at the nearest grid slot. Coordinates: **x runs along the ground length
+starting at the slot-1 end (nearest the exit), y runs across the rows.** Each slot's exact
+position is in `/api/parking/slots/`.
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev      # → http://localhost:3000
+npm run dev          # http://localhost:3000 (proxies /api to Django)
+# or: npm run build   -> Django serves the built app at http://localhost:8000
 ```
+
+Register each bus in the dashboard with its **RFID UID** (see `hardware/HARDWARE.md`).
 
 ---
 
-## 📡 API Reference
+## 5. Camera (YOLO) setup
 
-Once the server is running, visit **http://localhost:8000/api/docs/** for interactive Swagger documentation.
+Runs on a laptop or small GPU box on the same network as the server.
 
-### Key Endpoints
+```bash
+cd edge
+pip install -r requirements.txt          # ultralytics pulls in PyTorch (large download)
+```
 
-| Method | Endpoint | Description |
+**1. Calibrate once.** Take one frame from the camera, click 4 points on the ground whose
+positions you can measure, then type each point's ground `x,y` in metres:
+
+```bash
+python vision_tracker.py --calibrate --source frame.jpg      # writes calibration.json
+```
+
+Use four well-spread points (for example the four corners of the ground, or cones you place).
+Re-calibrate if the camera moves. See `calibration.example.json`.
+
+**2. Try it on a photo, sending nothing:**
+
+```bash
+python vision_tracker.py --source bus_ground.jpg --dry-run --save annotated.jpg
+```
+
+Check `annotated.jpg`: does it box every bus? How many did it miss? **Write that number down.**
+
+**3. Run live:**
+
+```bash
+python vision_tracker.py --source rtsp://user:pass@CAMERA_IP/stream \
+    --server http://SERVER_IP:8000 --key my-long-random-secret --show
+```
+
+`--source 0` uses a USB webcam; a video file also works.
+
+**If detection is poor** (buses at angles, partly hidden, dust, evening light): the pretrained
+model knows the generic COCO "bus" class. Fine-tune it on 50-200 labelled photos of *your* buses
+and pass `--model your_best.pt --classes 0`. Fine-tuning and honest accuracy reporting are the
+real AI work in this project.
+
+Server settings (environment variables):
+
+| Variable | Default | Meaning |
 |---|---|---|
-| POST | `/api/auth/login/` | Get JWT tokens |
-| GET | `/api/buses/` | List all buses |
-| GET | `/api/buses/search/?q=<bus_number>` | Find bus by number |
-| GET | `/api/parking/slots/` | All parking slots |
-| GET | `/api/parking/summary/` | Occupancy stats |
-| POST | `/api/sensors/rfid/` | Simulate RFID detection |
-| POST | `/api/sensors/occupancy/` | Simulate ultrasonic sensor |
-| GET | `/api/events/` | Parking event log |
-| POST | `/api/optimization/run/` | Run optimization engine |
-| POST | `/api/optimization/apply/` | Apply optimized layout |
-| GET | `/api/announcements/` | List announcements (public) |
-| POST | `/api/announcements/` | Post an announcement (admin / staff only) |
-| DELETE | `/api/announcements/<id>/` | Delete one (its author, or an admin) |
+| `DEVICE_API_KEY` | `dev-device-key` | Shared secret for all devices. **Change it.** |
+| `VISION_MAX_SLOT_DISTANCE_M` | 4.0 | A detection farther than this from every slot is ignored |
+| `VISION_STABLE_FRAMES` | 3 | Frames before a vehicle counts as parked in a slot |
+| `VISION_LINK_MIN_FRAMES` | 5 | Frames a vehicle must be tracked before it is matched to an ENTRY |
+| `VISION_ENTRY_WINDOW_MIN` | 15 | How long an RFID ENTRY waits to be matched |
+| `VISION_TRACK_TIMEOUT_S` | 30 | Vehicle unseen this long is marked inactive (its slot is kept until EXIT) |
 
-### Simulate RFID Detection
+---
+
+## 6. API reference
+
+Base URL `http://localhost:8000/api/`. Interactive docs: `/api/docs/`.
+
+**Device endpoints** need the header `X-Device-Key: <DEVICE_API_KEY>` (no login):
+
+| Method | Path | Body |
+|---|---|---|
+| POST | `/sensors/rfid/` | `{"rfid_uid": "A1B2C3D4", "sensor_id": "RFID-GATE-IN", "event_type": "ENTRY"}` (`ENTRY`, `EXIT`, `PARKED`, `DETECTED`) |
+| POST | `/sensors/occupancy/` | `{"sensor_id": "US-A1", "is_occupied": true, "slot_id": 1}` |
+| POST | `/vision/positions/` | `{"camera_id": "CAM-1", "session": "20260920101500", "detections": [{"track_id": 3, "x_m": 12.4, "y_m": 8.1, "confidence": 0.91}]}` |
 
 ```bash
 curl -X POST http://localhost:8000/api/sensors/rfid/ \
-  -H "Content-Type: application/json" \
-  -d '{"rfid_uid": "<rfid_uid of a registered bus>", "event_type": "PARKED"}'
+  -H "Content-Type: application/json" -H "X-Device-Key: my-long-random-secret" \
+  -d '{"rfid_uid":"A1B2C3D4","sensor_id":"RFID-GATE-IN","event_type":"ENTRY"}'
 ```
 
-**Response:**
-```json
-{"bus": "<bus_number>", "event_type": "PARKED", "slot": "<row><slot>"}
-```
+**Dashboard endpoints** (JWT; reading is public, changing needs admin or transport staff):
 
----
-
-## 📢 Announcements
-
-Admins and transport staff can post notices that every student sees.
-
-- **Read:** anyone — open the 🔔 bell in the top bar → **Announcements** tab. A red dot on the bell means there is something new.
-- **Post:** log in as admin or staff → bell → **New announcement**. Pick a priority (Info / Important / Urgent) so it stands out.
-- **Delete:** the author can delete their own notice; admins can delete any. Students never see the post/delete controls, and the server enforces this too.
-- The bell's **Activity** tab still shows live parking events.
-
----
-
-## 🗄️ Database Models
-
-```
-ParkingGround (dimensions you provide)
-    └── ParkingSlot (rows and slots per row set by create_slots)
-            └── Bus (FK — which bus occupies this slot)
-
-Bus ─── ParkingEvent (history log)
-Sensor ─┘
-```
-
----
-
-## 🤖 Optimization Algorithm
-
-**Strategy:** Sort all parked buses by departure time (earliest first), then assign them to slots starting from slot 1 (closest to the exit) within each row.
-
-**Effect:** The bus that leaves earliest is always in the front slot — it is never blocked by a bus that leaves later.
-
-**Input:**
-- Current slot assignments
-- Bus departure times
-
-**Output:**
-- Recommended layout (zero blocked buses)
-- Number of movements required
-- Current vs. optimised comparison
-
----
-
-## 🖥️ Dashboard Pages
-
-| Page | URL | Description |
+| Method | Path | Purpose |
 |---|---|---|
-| Dashboard | `/` | Stats + live parking map + recent events |
-| Parking Map | `/parking` | Full 2D color-coded slot grid |
-| Buses | `/buses` | All buses with parking info |
-| Optimise | `/optimize` | Run & apply optimization |
-| Sensors | `/sensors` | Live sensor status |
-| Find Bus | `/find` | Student-facing bus search (no login) |
+| POST | `/auth/login/`, `/auth/refresh/` (GET `/auth/me/`) | JWT login |
+| GET/POST/PUT/DELETE | `/buses/`, `/buses/<id>/` (GET `/buses/search/?q=`) | Buses |
+| GET | `/parking/ground/`, `/parking/slots/`, `/parking/summary/` | Ground, slots, counts |
+| GET/POST/DELETE | `/sensors/`, `/sensors/<id>/` | Sensor registry (RFID, ULTRASONIC, CAMERA) |
+| GET | `/events/` | Event log (ENTRY, EXIT, PARKED, DETECTED, ...) |
+| GET | `/vision/tracks/` | Vehicles the camera currently follows |
+| POST | `/vision/tracks/<id>/assign/` | Staff: `{"bus_id": 3}` says which bus a track really is |
+| POST | `/optimization/run/`, `/optimization/apply/` | Recommend / apply a new layout |
+| GET/POST | `/announcements/` | Notices |
 
 ---
 
-## 🔌 ESP32 Integration (Phase 2)
+## 7. Data model
 
-The sensor API is ready. When the ESP32 + RC522 RFID reader is wired:
+| Model | Key fields |
+|---|---|
+| `Bus` | `bus_number`, `rfid_uid` (unique), `route`, `departure_time`, `length_m`, `width_m` |
+| `ParkingGround` | `length_m`, `width_m`, `entrance_width_m`, `exit_width_m`, `total_slots` |
+| `ParkingSlot` | `row`, `slot_number`, `x_position_m`, `y_position_m`, `bus` (one-to-one), `is_occupied`, `is_blocked` |
+| `Sensor` | `sensor_id`, `sensor_type` (RFID / ULTRASONIC / CAMERA), `location`, `last_seen` |
+| `ParkingEvent` | `bus`, `sensor`, `parking_slot`, `event_type`, `message`, `timestamp` |
+| `VisionTrack` | `camera_id`, `session`, `track_id`, `bus`, `slot`, `x_m`, `y_m`, `confidence`, `is_active` |
+| `OptimizationResult` | current vs recommended layout, blocked before/after, movements |
 
-```cpp
-// ESP32 Arduino sketch will POST to:
-POST http://<your-server>/api/sensors/rfid/
-{"rfid_uid": "<scanned-uid>", "sensor_id": "<sensor-id>", "event_type": "DETECTED"}
-```
-
-The dashboard will update in real time.
-
----
-
-## 📁 Project Structure
-
-```
-Rathinam_Smart_Bus_Parking/
-├── config/          # Django settings & main URLs
-├── accounts/        # User auth + JWT + roles
-├── buses/           # Bus model + CRUD API
-├── parking/         # Parking ground, slots, create_slots command
-├── sensors/         # RFID/ultrasonic event APIs
-├── announcements/   # Staff/admin notices for students
-├── optimization/    # Optimization engine + API
-├── frontend/        # React + TypeScript dashboard
-│   └── src/
-│       ├── api/     # Axios client + endpoints
-│       ├── pages/   # Dashboard, ParkingPage, BusFinder, etc.
-│       ├── components/ # ParkingMap2D
-│       ├── context/ # AuthContext (JWT)
-│       └── types/   # TypeScript interfaces
-├── manage.py
-└── requirements.txt
-```
+Within a row, **slot 1 is nearest the exit**. A bus is *blocked* when a bus in a lower-numbered
+slot of the same row would have to move for it to leave.
 
 ---
 
-## 🗓️ Roadmap
+## 8. The optimiser (what it really does)
 
-- [ ] ESP32 + RFID hardware integration
-- [ ] Three.js 3D parking visualization
-- [ ] Real-time WebSocket updates
-- [ ] PostgreSQL migration for production
-- [ ] Vercel (frontend) + Railway (backend) deployment
-- [ ] C29 poster, presentation, and demo video
+`optimization/engine.py` sorts buses by departure time (earliest first) and gives the earliest
+departures the slots nearest the exit, row by row. It reports blocked buses **before and after**
+the recommended layout. Staff review the result and click **Apply**.
+
+This is **rule-based**, not learned, and it does not guarantee zero blocked buses: a row that
+holds more than one bus still has an order to respect, and the engine fills row A first rather
+than spreading buses across rows. Known limits are in section 11.
+
+---
+
+## 9. Testing
+
+```bash
+python manage.py test                          # backend: 51 tests (buses, parking, sensors, vision)
+cd edge && python -m unittest test_geometry    # calibration / coordinate maths
+cd frontend && npm run build                   # type-check + production build
+```
+
+---
+
+## 10. Project structure
+
+```
+config/          Django settings and URLs (also serves the built frontend)
+accounts/        JWT auth, roles, permissions (incl. device-key permission)
+buses/           Bus model + API
+parking/         Ground, slots, blocked-slot logic, create_slots command
+sensors/         Sensor registry, RFID + occupancy endpoints, event log
+vision/          Camera tracking: models, API, camera-RFID linking, tests
+optimization/    Departure-time optimiser
+announcements/   Notices
+edge/            vision_tracker.py (YOLO), calibration, geometry tests
+hardware/        ESP32 sketches + HARDWARE.md (wiring, parts, tag registration)
+frontend/        React + TypeScript dashboard
+```
+
+---
+
+## 11. Known limitations and next steps
+
+- **YOLO on the real ground is untested.** Buses at odd angles, occlusion, dust and evening
+  light will cause misses. Measure and report real accuracy; fine-tune if needed.
+- **Identity matching is by order.** Two buses entering together and parking in a different order
+  can be swapped; staff can correct them from the dashboard. Reading the bus number painted on
+  each bus (OCR) would remove the guess.
+- **A bus that leaves without tapping EXIT stays on the map** until it taps ENTRY again or staff
+  fix it.
+- **RC522 reads only about 3-5 cm.** Use a UHF reader for buses driving through a gate.
+- **The slot grid is virtual.** It approximates where buses stand; it is not painted bays.
+- **Optimiser:** fills row A first, ignores bus length versus slot size and the cost of moving a
+  bus. Spreading buses across rows and minimising moves is the obvious improvement, and a model
+  that predicts *actual* departure times from past `EXIT` events would replace the timetable
+  assumption with something learned.
+- **Not production-ready:** `DEBUG = True`, a hardcoded `SECRET_KEY`, SQLite, open CORS. Change
+  these before any real deployment. The dashboard updates by polling, not WebSockets.
+
+---
+
+## 12. C29 submission map
+
+| Brief item | Where it lives |
+|---|---|
+| Block diagram (technique named, arrows labelled, feedback loop, human in it) | Section 2: YOLO + ByteTrack (localisation), departure-time ordering (optimiser), staff corrections closing the loop |
+| Data acquisition | RFID UID events, camera frames at 2 fps |
+| Pre-processing | Homography to ground metres, nearest-slot matching, 3-frame debounce |
+| Human in the loop | Staff assign unidentified vehicles and approve layouts |
+| Feasibility, cost, risk | `hardware/HARDWARE.md`, section 11 |
+| Evidence still to record | E1 field video, E2 AI analysis, E3 peer discussion, E4 ideation and scoring, D1 poster, D2 deck, D3 video |
+
+**AI usage declaration** (complete honestly for your final slide and video description):
+
+| Tool | Purpose | One sample prompt |
+|---|---|---|
+| _e.g. Claude_ | _e.g. helped design and write the camera-RFID linking code_ | _your real prompt_ |
+
+---
+
+## 13. Change log for this update
+
+- **Added** the `vision` app, `edge/vision_tracker.py`, the Camera tracking panel, and the
+  `CAMERA` sensor type.
+- **Fixed** a routing bug: `POST /api/sensors/rfid/` and `/api/sensors/occupancy/` were caught by
+  the sensor router (`sensors/<pk>/`) and returned 401, so hardware could never reach them. The
+  device routes now come first.
+- **Secured** the device endpoints with `X-Device-Key` (they were open to anyone).
+- **Fixed** a model/migration mismatch: `ParkingGround` in `models.py` still had default sizes
+  that migration `0002` had removed.
+- **Relaxed** the Django pin to `>=4.2,<7.0` (your migrations were generated on Django 6.1).
+- **Rewrote** this README, including correcting the earlier "zero blocked buses" claim.

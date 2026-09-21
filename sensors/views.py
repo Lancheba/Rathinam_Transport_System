@@ -1,7 +1,7 @@
-﻿from django.utils import timezone
+from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes
-from accounts.permissions import CanManageBuses
+from accounts.permissions import CanManageBuses, HasDeviceKey
 from rest_framework.response import Response
 from .models import Sensor, ParkingEvent
 from .serializers import SensorSerializer, ParkingEventSerializer, RFIDEventSerializer, OccupancyEventSerializer
@@ -40,7 +40,7 @@ class ParkingEventViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([HasDeviceKey])
 def rfid_event(request):
     """Receives RFID detection from ESP32 or simulation."""
     ser = RFIDEventSerializer(data=request.data)
@@ -65,6 +65,12 @@ def rfid_event(request):
         sensor.last_reading = rfid_uid
         sensor.last_seen = timezone.now()
         sensor.save()
+
+    # An ENTRY means the bus is arriving, an EXIT that it left: either way any
+    # old camera identity / slot for this bus is stale.
+    if event_type in ("ENTRY", "EXIT"):
+        from vision.linking import release_bus
+        release_bus(bus)
 
     # Assign bus to slot if PARKED or DETECTED
     slot = None
@@ -100,7 +106,7 @@ def rfid_event(request):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([HasDeviceKey])
 def occupancy_event(request):
     """Receives ultrasonic sensor data from ESP32 or simulation."""
     ser = OccupancyEventSerializer(data=request.data)

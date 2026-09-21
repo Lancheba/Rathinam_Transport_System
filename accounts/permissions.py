@@ -1,3 +1,6 @@
+import hmac
+
+from django.conf import settings
 from rest_framework import permissions
 
 
@@ -64,3 +67,19 @@ class CanPostAnnouncements(permissions.BasePermission):
             return True
         self.message = "You can only change announcements you posted."
         return False
+
+
+
+class HasDeviceKey(permissions.BasePermission):
+    """
+    For hardware (ESP32 readers, ultrasonic nodes, the camera script) that has
+    no user account. The device sends the shared secret in `X-Device-Key`.
+    """
+
+    message = "Missing or invalid device key."
+
+    def has_permission(self, request, view):
+        supplied = request.headers.get("X-Device-Key", "")
+        return bool(supplied) and hmac.compare_digest(
+            supplied.encode(), settings.DEVICE_API_KEY.encode()
+        )

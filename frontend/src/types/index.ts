@@ -63,7 +63,7 @@ export interface ParkingGround {
 export interface Sensor {
   id: number;
   sensor_id: string;
-  sensor_type: "RFID" | "ULTRASONIC";
+  sensor_type: "RFID" | "ULTRASONIC" | "CAMERA";
   location: string;
   is_active: boolean;
   last_reading: string | null;
@@ -118,7 +118,7 @@ export interface OptimizationResult {
 /** Fields the "Add sensor" form sends to POST /api/sensors/ */
 export interface SensorInput {
   sensor_id: string;
-  sensor_type: "RFID" | "ULTRASONIC";
+  sensor_type: "RFID" | "ULTRASONIC" | "CAMERA";
   location: string;
   is_active: boolean;
 }
@@ -143,4 +143,23 @@ export interface AnnouncementInput {
   title: string;
   message: string;
   priority: AnnouncementPriority;
+}
+
+
+/** A vehicle the camera (YOLO) is currently following. bus is null until it is identified. */
+export interface VisionTrack {
+  id: number;
+  camera_id: string;
+  track_id: number;
+  bus: number | null;
+  bus_number: string | null;
+  slot: number | null;
+  slot_label: string | null;
+  x_m: number;
+  y_m: number;
+  confidence: number;
+  frames_seen: number;
+  is_active: boolean;
+  first_seen: string;
+  last_seen: string;
 }

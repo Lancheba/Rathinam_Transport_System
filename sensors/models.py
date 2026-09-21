@@ -5,6 +5,7 @@ class Sensor(models.Model):
     SENSOR_TYPES = [
         ("RFID", "RFID"),
         ("ULTRASONIC", "Ultrasonic"),
+        ("CAMERA", "Camera"),
     ]
 
     sensor_id = models.CharField(max_length=50, unique=True)

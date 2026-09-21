@@ -13,7 +13,7 @@ interface Props {
 
 type FormState = {
   sensor_id: string;
-  sensor_type: "RFID" | "ULTRASONIC";
+  sensor_type: "RFID" | "ULTRASONIC" | "CAMERA";
   location: string;
   is_active: boolean;
 };
@@ -184,7 +184,7 @@ export const AddSensorModal: React.FC<Props> = ({ onClose, onCreated }) => {
           <div className="abm__badge"><Radio size={18} /></div>
           <div>
             <h2 id="asm-title" className="abm__title">Add sensor</h2>
-            <p className="abm__subtitle">Register an RFID or ultrasonic sensor.</p>
+            <p className="abm__subtitle">Register an RFID reader, ultrasonic sensor or camera.</p>
           </div>
           <button type="button" className="abm__close" onClick={onClose} disabled={saving} aria-label="Close">
             <X size={16} />
@@ -226,6 +226,7 @@ export const AddSensorModal: React.FC<Props> = ({ onClose, onCreated }) => {
               >
                 <option value="RFID">RFID</option>
                 <option value="ULTRASONIC">Ultrasonic</option>
+                <option value="CAMERA">Camera</option>
               </select>
             </div>
 

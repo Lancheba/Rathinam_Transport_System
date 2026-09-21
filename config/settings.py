@@ -1,4 +1,5 @@
-﻿from pathlib import Path
+import os
+from pathlib import Path
 from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +27,7 @@ INSTALLED_APPS = [
     "sensors",
     "optimization",
     "announcements",
+    "vision",
 ]
 
 MIDDLEWARE = [
@@ -107,3 +109,16 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+
+# --- Devices (ESP32 RFID readers, ultrasonic sensors, the camera script) ---
+# Every device request must send this value in an "X-Device-Key" header.
+# CHANGE IT: set the DEVICE_API_KEY environment variable before real use.
+DEVICE_API_KEY = os.environ.get("DEVICE_API_KEY", "dev-device-key")
+
+# --- Camera / YOLO tracking (see vision/linking.py) ---
+VISION_MAX_SLOT_DISTANCE_M = float(os.environ.get("VISION_MAX_SLOT_DISTANCE_M", 4.0))  # detection -> slot
+VISION_STABLE_FRAMES = int(os.environ.get("VISION_STABLE_FRAMES", 3))       # frames before "parked here"
+VISION_LINK_MIN_FRAMES = int(os.environ.get("VISION_LINK_MIN_FRAMES", 5))   # frames before matching to an ENTRY
+VISION_ENTRY_WINDOW_MIN = int(os.environ.get("VISION_ENTRY_WINDOW_MIN", 15))  # how long an ENTRY stays claimable
+VISION_TRACK_TIMEOUT_S = int(os.environ.get("VISION_TRACK_TIMEOUT_S", 30))  # unseen this long -> inactive
