@@ -16,3 +16,8 @@ edge/calibration.json
 
 # collectstatic output
 staticfiles/
+
+# Environment files
+.env
+.env.*
+!.env.example
