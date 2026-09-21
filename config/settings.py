@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "optimization",
     "announcements",
     "vision",
+    "feedback",
 ]
 
 MIDDLEWARE = [
@@ -114,6 +115,7 @@ REST_FRAMEWORK = {
         "login": "10/min",
         "register": "10/hour",
         "optimize": "30/min",
+        "feedback": "20/hour",
     },
 }
 

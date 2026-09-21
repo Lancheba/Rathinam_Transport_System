@@ -6,6 +6,7 @@ class UserProfile(models.Model):
     ROLES = [
         ("ADMIN", "Admin"),
         ("STAFF", "Transport Staff"),
+        ("DRIVER", "Driver"),
         ("STUDENT", "Student"),
     ]
 

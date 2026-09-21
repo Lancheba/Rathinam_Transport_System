@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AuthCardLogo, AuthShell } from "../components/AuthShell";
 import "./AuthPage.css";
@@ -11,6 +11,7 @@ export const LoginPage: React.FC = () => {
   const [params] = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -63,13 +64,22 @@ export const LoginPage: React.FC = () => {
             <Lock size={19} strokeWidth={1.6} className="auth-field__icon" aria-hidden="true" />
             <input
               id="login-pass"
-              type="password"
+              type={showPass ? "text" : "password"}
               autoComplete="current-password"
               aria-label="Password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <button
+              type="button"
+              className="auth-field__toggle"
+              onClick={() => setShowPass((v) => !v)}
+              aria-label={showPass ? "Hide password" : "Show password"}
+              aria-pressed={showPass}
+            >
+              {showPass ? <EyeOff size={20} strokeWidth={1.6} /> : <Eye size={20} strokeWidth={1.6} />}
+            </button>
           </div>
 
           {error && <p className="auth-error" role="alert">{error}</p>}

@@ -52,6 +52,7 @@ urlpatterns = [
     path("api/optimization/", include("optimization.urls")),
     path("api/announcements/", include("announcements.urls")),
     path("api/vision/", include("vision.urls")),
+    path("api/feedback/", include("feedback.urls")),
 
     # Swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

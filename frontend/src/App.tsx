@@ -14,6 +14,7 @@ import BusFinder from "./pages/BusFinder";
 import OptimizePage from "./pages/OptimizePage";
 import SensorsPage from "./pages/SensorsPage";
 import ReportsPage from "./pages/ReportsPage";
+import FeedbackPage from "./pages/FeedbackPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
@@ -143,6 +144,7 @@ export const App: React.FC = () => {
                   <Route path="optimize" element={<OptimizePage />} />
                   <Route path="sensors" element={<SensorsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
+                  <Route path="feedback" element={<FeedbackPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="find" element={<BusFinder />} />
                 </Routes>

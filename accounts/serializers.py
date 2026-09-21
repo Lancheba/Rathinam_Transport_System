@@ -1,6 +1,6 @@
 ﻿from rest_framework import serializers
 from django.contrib.auth.models import User
-from .permissions import can_manage_buses
+from .permissions import can_manage_buses, is_admin
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -24,10 +24,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source="profile.role", read_only=True)
     can_manage_buses = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "can_manage_buses"]
+        fields = ["id", "username", "email", "role", "can_manage_buses", "is_admin"]
 
     def get_can_manage_buses(self, obj):
         return can_manage_buses(obj)
+
+    def get_is_admin(self, obj):
+        return is_admin(obj)

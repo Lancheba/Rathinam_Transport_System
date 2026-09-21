@@ -2,7 +2,7 @@
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
-  Announcement, AnnouncementInput, VisionTrack, Student, StudentInput, BusRoster, StudentSummary
+  Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary
 } from "../types";
 
 // Buses
@@ -70,3 +70,11 @@ export const deleteStudent = (id: number) => api.delete(`/students/${id}/`);
 export const getVisionTracks = () => api.get<VisionTrack[]>("/vision/tracks/").then(r => r.data);
 export const assignVisionTrack = (trackId: number, busId: number) =>
   api.post<VisionTrack>(`/vision/tracks/${trackId}/assign/`, { bus_id: busId }).then(r => r.data);
+
+// Complaints & feedback (any signed-in user can send; reading and managing is admin-only)
+export const sendFeedback = (data: FeedbackInput) => api.post("/feedback/", data).then(r => r.data);
+export const getFeedback = (params?: Record<string, string>) =>
+  api.get<Feedback[]>("/feedback/", { params }).then(r => r.data);
+export const updateFeedback = (id: number, data: { status?: FeedbackStatus; admin_note?: string }) =>
+  api.patch<Feedback>(`/feedback/${id}/`, data).then(r => r.data);
+export const deleteFeedback = (id: number) => api.delete(`/feedback/${id}/`);

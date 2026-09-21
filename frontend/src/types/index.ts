@@ -33,6 +33,8 @@ export interface CurrentUser {
   email: string;
   role: "ADMIN" | "STAFF" | "STUDENT";
   can_manage_buses: boolean;
+  /** Administrators only (not transport staff): may read complaints and feedback */
+  is_admin: boolean;
 }
 
 export interface ParkingSlot {
@@ -207,4 +209,39 @@ export interface VisionTrack {
   is_active: boolean;
   first_seen: string;
   last_seen: string;
+}
+
+// ---- Complaints & feedback (anyone signed in can send; only admins can read) ----
+export type FeedbackKind = "COMPLAINT" | "FEEDBACK" | "SUGGESTION";
+export type FeedbackCategory = "BUS" | "DRIVER" | "ROUTE" | "PARKING" | "APP" | "OTHER";
+export type FeedbackStatus = "NEW" | "IN_REVIEW" | "RESOLVED";
+
+/** Fields the "Send" form posts to POST /api/feedback/ */
+export interface FeedbackInput {
+  kind: FeedbackKind;
+  category: FeedbackCategory;
+  subject: string;
+  message: string;
+  bus: number | null;
+  is_anonymous: boolean;
+}
+
+/** What administrators get back from GET /api/feedback/ */
+export interface Feedback {
+  id: number;
+  kind: FeedbackKind;
+  kind_label: string;
+  category: FeedbackCategory;
+  category_label: string;
+  subject: string;
+  message: string;
+  bus: number | null;
+  bus_number: string | null;
+  author_name: string;
+  author_role: string;
+  is_anonymous: boolean;
+  status: FeedbackStatus;
+  admin_note: string;
+  created_at: string;
+  updated_at: string;
 }

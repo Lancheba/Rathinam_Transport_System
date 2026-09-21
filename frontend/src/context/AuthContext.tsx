@@ -11,12 +11,14 @@ interface AuthContextType {
   roleLabel: string | null;
   /** True for admins and transport staff: they can add and edit buses */
   canManageBuses: boolean;
+  /** True for administrators only (not transport staff): can read complaints and feedback */
+  isAdmin: boolean;
   login: (u: string, p: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  isLoggedIn: false, username: null, role: null, roleLabel: null, canManageBuses: false,
+  isLoggedIn: false, username: null, role: null, roleLabel: null, canManageBuses: false, isAdmin: false,
   login: async () => {}, logout: () => {},
 });
 
@@ -37,17 +39,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.getItem("role") as CurrentUser["role"] | null
   );
   const [canManageBuses, setCanManageBuses] = useState(localStorage.getItem("can_manage_buses") === "1");
+  const [isAdmin, setIsAdmin] = useState(localStorage.getItem("is_admin") === "1");
 
   const applyUser = useCallback((me: CurrentUser | null) => {
     if (me) {
       localStorage.setItem("role", me.role);
       localStorage.setItem("can_manage_buses", me.can_manage_buses ? "1" : "0");
+      localStorage.setItem("is_admin", me.is_admin ? "1" : "0");
     } else {
       localStorage.removeItem("role");
       localStorage.removeItem("can_manage_buses");
+      localStorage.removeItem("is_admin");
     }
     setRole(me?.role ?? null);
     setCanManageBuses(me?.can_manage_buses ?? false);
+    setIsAdmin(me?.is_admin ?? false);
   }, []);
 
   // Refresh role on page load in case it changed since the last visit
@@ -81,13 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsername(null);
     setRole(null);
     setCanManageBuses(false);
+    setIsAdmin(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
         isLoggedIn, username, role, roleLabel: labelFor(role, canManageBuses),
-        canManageBuses: isLoggedIn && canManageBuses, login, logout,
+        canManageBuses: isLoggedIn && canManageBuses, isAdmin: isLoggedIn && isAdmin, login, logout,
       }}
     >
       {children}

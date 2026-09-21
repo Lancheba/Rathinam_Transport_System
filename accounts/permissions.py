@@ -37,6 +37,15 @@ def is_admin(user):
     return bool(profile and profile.role == "ADMIN")
 
 
+class IsFullAdmin(permissions.BasePermission):
+    """Administrators only (superusers and the ADMIN role). Transport staff are NOT included."""
+
+    message = "Only administrators can view complaints and feedback."
+
+    def has_permission(self, request, view):
+        return is_admin(request.user)
+
+
 def role_label(user):
     """Human-friendly role shown next to an announcement's author."""
     profile = getattr(user, "profile", None)
@@ -44,6 +53,8 @@ def role_label(user):
         return "Transport Staff"
     if can_manage_buses(user):
         return "Administrator"
+    if profile and profile.role == "DRIVER":
+        return "Driver"
     return "Student"
 
 

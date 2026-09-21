@@ -1,4 +1,4 @@
-import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users } from "lucide-react";
+import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -18,6 +18,8 @@ export const navItems = [
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },
+  // Everyone signed in can send a complaint or feedback; only admins see the inbox inside the page.
+  { to: "/dashboard/feedback", label: "Complaints & Feedback", short: "Feedback", icon: MessageSquareWarning },
   { to: "/dashboard/settings", label: "Settings",          short: "Settings", icon: Settings },
 ];
 
