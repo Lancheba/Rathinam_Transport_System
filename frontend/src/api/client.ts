@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const BASE_URL = "/api";
+// In the original same-origin setup Django serves the built frontend, so a
+// relative "/api" works. Once the frontend is deployed separately (e.g. on
+// Vercel) it has no "/api" of its own, so the Railway backend's URL must be
+// supplied at build time via VITE_API_BASE_URL (see frontend/.env.example).
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 const api = axios.create({ baseURL: BASE_URL });
 

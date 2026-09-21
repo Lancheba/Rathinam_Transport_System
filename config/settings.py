@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -78,11 +80,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# Falls back to local SQLite when DATABASE_URL isn't set (plain `runserver`
+# development). Set DATABASE_URL in production (Railway's Postgres add-on sets
+# it automatically) — Railway containers don't persist local files like
+# db.sqlite3 across deploys, so SQLite alone will silently lose all data.
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -126,10 +132,23 @@ SIMPLE_JWT = {
 }
 
 # --- CORS ---
-# Open only in development. In production the dashboard is served by Django itself
-# (same origin), so no CORS is needed; list any extra origin in DJANGO_CORS_ORIGINS.
+# Open only in development. When the frontend is served by Django itself (same
+# origin), no CORS is needed. When it's deployed separately (e.g. on Vercel) it
+# is a different origin, so its exact URL(s) must be listed in
+# DJANGO_CORS_ORIGINS (comma-separated, e.g. "https://myapp.vercel.app").
+# DJANGO_CORS_ORIGIN_REGEXES is optional, for things like Vercel's per-branch
+# preview URLs, e.g. "^https://myapp-.*\.vercel\.app$".
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CORS_ORIGINS", "").split(",") if o.strip()]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r.strip() for r in os.environ.get("DJANGO_CORS_ORIGIN_REGEXES", "").split(",") if r.strip()
+]
+
+# --- CSRF ---
+# Needed for /admin/ (session + CSRF cookie based) if it's ever reached through
+# a custom domain or otherwise looks cross-origin to Django. Not needed for the
+# API itself, which authenticates with JWTs (Authorization header), not cookies.
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
 # --- Swagger ---
 SPECTACULAR_SETTINGS = {
