@@ -178,7 +178,7 @@ export const AddStudentModal: React.FC<Props> = ({ buses, defaultBusId, onClose,
       }}
       onKeyDown={handleKeyDown}
     >
-      <div ref={panelRef} className="asm__panel liquid-glass-card" role="dialog" aria-modal="true" aria-labelledby="asm-title">
+      <div ref={panelRef} className="asm__panel liquid-glass-card no-lift" role="dialog" aria-modal="true" aria-labelledby="asm-title">
         <div className="asm__head">
           <div className="asm__badge"><GraduationCap size={18} /></div>
           <div>

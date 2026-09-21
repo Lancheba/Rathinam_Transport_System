@@ -129,7 +129,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             key={i}
             className="liquid-glass-card metric-card"
             style={{
-              padding: "16px 18px",
+              padding: "18px 20px",
+              borderRadius: 20,
               borderColor: c.accentBorder,
               boxShadow: c.glowCard
                 ? `var(--glass-glow), ${c.glowCard}`
@@ -139,14 +140,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             {/* Top row */}
             <div className="metric-card__top" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div
-                className="metric-card__icon"
+                className="metric-card__icon glass-orb"
                 style={{
-                  width: 32, height: 32, borderRadius: "50%",
+                  width: 34, height: 34, borderRadius: "50%",
                   background: c.iconBg,
                   border: `1px solid ${c.iconBorder}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
                   color: c.iconColor,
-                  boxShadow: `0 0 12px ${c.iconBg}`,
+                  boxShadow: `0 0 14px ${c.iconBg}, inset 0 1px 0 0 rgba(255,255,255,0.3), inset 0 -1px 2px 0 rgb(var(--shadow-rgb) / calc(0.25 * var(--shadow-k)))`,
                 }}
               >
                 <Icon size={16} strokeWidth={2} />

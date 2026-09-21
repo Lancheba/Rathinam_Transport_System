@@ -205,7 +205,7 @@ export const AddBusModal: React.FC<Props> = ({ onClose, onCreated }) => {
     >
       <div
         ref={panelRef}
-        className="abm__panel liquid-glass-card"
+        className="abm__panel liquid-glass-card no-lift"
         role="dialog"
         aria-modal="true"
         aria-labelledby="abm-title"

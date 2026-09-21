@@ -175,7 +175,7 @@ export const AddSensorModal: React.FC<Props> = ({ onClose, onCreated }) => {
     >
       <div
         ref={panelRef}
-        className="abm__panel liquid-glass-card"
+        className="abm__panel liquid-glass-card no-lift"
         role="dialog"
         aria-modal="true"
         aria-labelledby="asm-title"

@@ -302,7 +302,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           {/* Dropdown Menu */}
           {dropdownOpen && (
             <div
-              className="liquid-glass-card tn__menu"
+              className="liquid-glass-card no-lift tn__menu"
               role="menu"
               style={{
                 position: "absolute",

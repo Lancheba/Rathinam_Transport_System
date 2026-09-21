@@ -121,7 +121,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
       {/* panel */}
       <div
-        className="liquid-glass-card notif-panel"
+        className="liquid-glass-card no-lift notif-panel"
         role="dialog"
         aria-label="Notifications"
         style={{
