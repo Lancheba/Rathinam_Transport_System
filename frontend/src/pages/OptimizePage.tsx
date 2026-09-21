@@ -69,7 +69,7 @@ const OptimizePage: React.FC = () => {
         <Cpu size={20} strokeWidth={1.9} /> Parking Optimisation
       </h2>
       <p style={{ color: "var(--text-muted)", marginBottom: 20, fontSize: 14 }}>
-        Rearranges buses by departure time — earliest buses go to slots closest to the exit. This eliminates blocking.
+        Rearranges buses by departure time — earliest buses go to slots closest to the exit. This reduces blocking; it does not guarantee zero.
       </p>
 
       <button onClick={handleRun} disabled={loading} className="opt-btn" style={{

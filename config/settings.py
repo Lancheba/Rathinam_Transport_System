@@ -4,9 +4,24 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-ki979u52+o_q=gd3ken%@)weudd1bvkta)liq#mnf*$ma178e9"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+
+
+def _env_bool(name, default="0"):
+    return os.environ.get(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
+# Development defaults keep `runserver` working with no setup.
+# For a real deployment set the DJANGO_* variables in README section "Deployment".
+DEBUG = _env_bool("DJANGO_DEBUG", "1")
+
+_DEV_SECRET_KEY = "django-insecure-dev-only-not-for-deployment-change-me"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _DEV_SECRET_KEY)
+
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1").split(",")
+    if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -32,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves /static/ (admin CSS) when DEBUG is off
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -80,6 +96,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"   # filled by: python manage.py collectstatic
+STATIC_ROOT.mkdir(exist_ok=True)          # keeps WhiteNoise quiet before the first collectstatic
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- REST Framework ---
@@ -91,6 +109,11 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/min",
+        "register": "10/hour",
+        "optimize": "30/min",
+    },
 }
 
 # --- JWT ---
@@ -100,7 +123,10 @@ SIMPLE_JWT = {
 }
 
 # --- CORS ---
-CORS_ALLOW_ALL_ORIGINS = True
+# Open only in development. In production the dashboard is served by Django itself
+# (same origin), so no CORS is needed; list any extra origin in DJANGO_CORS_ORIGINS.
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CORS_ORIGINS", "").split(",") if o.strip()]
 
 # --- Swagger ---
 SPECTACULAR_SETTINGS = {
@@ -122,3 +148,34 @@ VISION_STABLE_FRAMES = int(os.environ.get("VISION_STABLE_FRAMES", 3))       # fr
 VISION_LINK_MIN_FRAMES = int(os.environ.get("VISION_LINK_MIN_FRAMES", 5))   # frames before matching to an ENTRY
 VISION_ENTRY_WINDOW_MIN = int(os.environ.get("VISION_ENTRY_WINDOW_MIN", 15))  # how long an ENTRY stays claimable
 VISION_TRACK_TIMEOUT_S = int(os.environ.get("VISION_TRACK_TIMEOUT_S", 30))  # unseen this long -> inactive
+
+# --- Logging: without this, errors are silent when DEBUG is off ---
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"plain": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "plain"}},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO"},
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
+}
+
+# --- Production guards ---
+if not DEBUG:
+    from django.core.exceptions import ImproperlyConfigured
+
+    if SECRET_KEY == _DEV_SECRET_KEY:
+        raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value when DJANGO_DEBUG=0.")
+    if DEVICE_API_KEY == "dev-device-key":
+        raise ImproperlyConfigured("Set DEVICE_API_KEY to a long random value when DJANGO_DEBUG=0.")
+
+    # HTTPS hardening. Off by default so a plain-HTTP campus server keeps working;
+    # switch on with DJANGO_HTTPS=1 once the site really is served over HTTPS.
+    if _env_bool("DJANGO_HTTPS"):
+        SECURE_SSL_REDIRECT = True
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+        SECURE_HSTS_SECONDS = 3600          # raise (e.g. 31536000) after confirming HTTPS is stable
+        if _env_bool("DJANGO_BEHIND_PROXY"):  # only if a proxy you control sets X-Forwarded-Proto
+            SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

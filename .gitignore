@@ -13,3 +13,6 @@ frontend/dist/
 edge/calibration.json
 *.pt
 *.mp4
+
+# collectstatic output
+staticfiles/

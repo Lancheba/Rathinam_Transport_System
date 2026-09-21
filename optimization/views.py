@@ -1,5 +1,6 @@
-﻿import json
-from rest_framework.decorators import api_view, permission_classes
+import json
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from config.throttles import OptimizeThrottle
 from rest_framework import permissions, status
 from accounts.permissions import CanManageBuses
 from rest_framework.response import Response
@@ -10,6 +11,7 @@ from .serializers import OptimizationResultSerializer
 
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([OptimizeThrottle])
 def run_optimization_view(request):
     """Run optimisation and save the result (does not apply it)."""
     result = run_optimization()
@@ -21,6 +23,11 @@ def run_optimization_view(request):
     )
     opt.set_layout(result)
     opt.save()
+
+    # Keep only the 50 most recent previews so the table cannot grow without limit.
+    stale = list(OptimizationResult.objects.order_by("-id").values_list("id", flat=True)[50:])
+    if stale:
+        OptimizationResult.objects.filter(id__in=stale).delete()
 
     return Response({
         "id": opt.pk,
