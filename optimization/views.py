@@ -1,7 +1,7 @@
 import json
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from config.throttles import OptimizeThrottle
-from rest_framework import permissions, status
+from rest_framework import status
 from accounts.permissions import CanManageBuses
 from rest_framework.response import Response
 from .engine import run_optimization, apply_optimization
@@ -10,7 +10,7 @@ from .serializers import OptimizationResultSerializer
 
 
 @api_view(["POST"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([CanManageBuses])
 @throttle_classes([OptimizeThrottle])
 def run_optimization_view(request):
     """Run optimisation and save the result (does not apply it)."""
@@ -55,7 +55,7 @@ def apply_optimization_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([CanManageBuses])
 def optimization_results(request):
     results = OptimizationResult.objects.all()[:10]
     serializer = OptimizationResultSerializer(results, many=True)

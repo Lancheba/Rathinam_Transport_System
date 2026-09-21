@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Cpu, ArrowUp, Play, Loader2, CircleX, CircleCheck, TriangleAlert, ArrowRight } from "lucide-react";
+import { Cpu, ArrowUp, Play, Loader2, CircleX, CircleCheck, TriangleAlert, ArrowRight, ShieldAlert } from "lucide-react";
 import { runOptimization, applyOptimization } from "../api/endpoints";
+import { useAuth } from "../context/AuthContext";
 import type { OptimizationResult, OptimizationSlot } from "../types";
 import { alpha } from "../utils/color";
 
@@ -49,6 +50,7 @@ const OptimizePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState("");
+  const { canManageBuses } = useAuth();
 
   const handleRun = async () => {
     setLoading(true); setError(""); setApplied(false);
@@ -62,6 +64,19 @@ const OptimizePage: React.FC = () => {
     try { await applyOptimization(result.id); setApplied(true); }
     catch { setError("Failed to apply. You may need to log in as staff."); }
   };
+
+  // The nav link is already hidden for students; this stops a direct URL visit too.
+  if (!canManageBuses) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "60px 20px", textAlign: "center" }}>
+        <ShieldAlert size={32} style={{ color: "var(--accent-amber)" }} />
+        <h2 style={{ color: "var(--text-strong)", margin: 0 }}>Staff access only</h2>
+        <p style={{ color: "var(--text-muted)", maxWidth: 420, fontSize: 14 }}>
+          Parking optimisation changes where buses are parked, so it's only available to transport staff and admins.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
