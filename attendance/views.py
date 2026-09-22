@@ -1,0 +1,359 @@
+import csv
+import io
+from datetime import date as date_cls, datetime
+
+from django.db import transaction
+from django.http import HttpResponse
+from django.utils.dateparse import parse_date
+from rest_framework import filters, permissions, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.permissions import CanManageBuses
+from buses.models import Bus
+from students.models import Student
+
+from .models import AttendanceRecord, AttendanceSession, Teacher
+from .permissions import IsDriver, driver_bus, is_driver
+from .serializers import (
+    AttendanceSessionSerializer,
+    AttendanceSubmitSerializer,
+    TeacherSerializer,
+)
+
+
+# ---------------------------------------------------------------------------
+# Teachers roster (admin/staff manage it, the same way students are managed)
+# ---------------------------------------------------------------------------
+class TeacherViewSet(viewsets.ModelViewSet):
+    queryset = Teacher.objects.select_related("bus").all()
+    serializer_class = TeacherSerializer
+    permission_classes = [CanManageBuses]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name", "staff_id", "department"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        bus_id = self.request.query_params.get("bus")
+        if bus_id:
+            qs = qs.filter(bus_id=bus_id)
+        return qs
+
+
+# ---------------------------------------------------------------------------
+# Driver "my bus" setup: bus number + how many students/teachers ride it
+# ---------------------------------------------------------------------------
+class DriverBusView(APIView):
+    """
+    GET  -> the signed-in driver's linked bus (or null if not set up yet).
+    POST -> claim a bus by its (unique) bus number and set headcounts.
+    PATCH -> update headcounts only, without re-claiming the bus.
+    """
+
+    permission_classes = [IsDriver]
+
+    def get(self, request):
+        bus = driver_bus(request.user)
+        if not bus:
+            return Response({"bus": None})
+        from buses.serializers import BusSerializer
+
+        return Response({"bus": BusSerializer(bus).data})
+
+    def post(self, request):
+        bus_number = (request.data.get("bus_number") or "").strip()
+        if not bus_number:
+            return Response({"bus_number": "Enter the bus number."}, status=400)
+
+        try:
+            bus = Bus.objects.get(bus_number__iexact=bus_number)
+        except Bus.DoesNotExist:
+            return Response(
+                {"bus_number": "No bus with that number. Ask an admin to add it first."}, status=404
+            )
+
+        if bus.driver_id and bus.driver_id != request.user.id:
+            return Response(
+                {"bus_number": f"Bus {bus.bus_number} is already linked to another driver."}, status=400
+            )
+
+        existing = driver_bus(request.user)
+        if existing and existing.pk != bus.pk:
+            existing.driver = None
+            existing.save(update_fields=["driver"])
+
+        bus.driver = request.user
+        self._apply_capacity(bus, request.data)
+        bus.save(update_fields=["driver", "student_capacity", "teacher_capacity"])
+
+        from buses.serializers import BusSerializer
+
+        return Response({"bus": BusSerializer(bus).data}, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        bus = driver_bus(request.user)
+        if not bus:
+            return Response({"detail": "Set up your bus first."}, status=400)
+        self._apply_capacity(bus, request.data)
+        bus.save(update_fields=["student_capacity", "teacher_capacity"])
+
+        from buses.serializers import BusSerializer
+
+        return Response({"bus": BusSerializer(bus).data})
+
+    @staticmethod
+    def _apply_capacity(bus, data):
+        for field in ("student_capacity", "teacher_capacity"):
+            if field in data and data[field] not in (None, ""):
+                try:
+                    value = int(data[field])
+                except (TypeError, ValueError):
+                    continue
+                setattr(bus, field, max(0, value))
+
+
+def _resolve_bus(request):
+    """The bus this request is about: the driver's own bus, or ?bus=<id> for staff/admin."""
+    if is_driver(request.user):
+        return driver_bus(request.user), None
+    bus_id = request.query_params.get("bus") or request.data.get("bus")
+    if not bus_id:
+        return None, Response({"detail": "Provide ?bus=<id>."}, status=400)
+    try:
+        return Bus.objects.get(pk=bus_id), None
+    except (Bus.DoesNotExist, ValueError, TypeError):
+        return None, Response({"detail": "Bus not found."}, status=404)
+
+
+# ---------------------------------------------------------------------------
+# Today's (or any date's) roster to take attendance against
+# ---------------------------------------------------------------------------
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def attendance_roster(request):
+    bus, error = _resolve_bus(request)
+    if error:
+        return error
+    if not bus:
+        return Response({"detail": "You're not linked to a bus yet. Set it up first."}, status=400)
+    if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
+        return Response({"detail": "Not allowed."}, status=403)
+
+    day = parse_date(request.query_params.get("date", "")) or date_cls.today()
+
+    session = (
+        AttendanceSession.objects.filter(bus=bus, date=day)
+        .prefetch_related("records")
+        .first()
+    )
+    status_by_student = {}
+    status_by_teacher = {}
+    if session:
+        for r in session.records.all():
+            if r.student_id:
+                status_by_student[r.student_id] = r.status
+            if r.teacher_id:
+                status_by_teacher[r.teacher_id] = r.status
+
+    students = Student.objects.filter(bus=bus).order_by("roll_number")
+    teachers = Teacher.objects.filter(bus=bus).order_by("name")
+
+    return Response({
+        "bus_id": bus.id,
+        "bus_number": bus.bus_number,
+        "date": str(day),
+        "is_holiday": session.is_holiday if session else False,
+        "holiday_reason": session.holiday_reason if session else "",
+        "already_marked": session is not None,
+        "students": [
+            {
+                "id": s.id, "name": s.name, "roll_number": s.roll_number,
+                "status": status_by_student.get(s.id),
+            }
+            for s in students
+        ],
+        "teachers": [
+            {
+                "id": t.id, "name": t.name, "staff_id": t.staff_id,
+                "status": status_by_teacher.get(t.id),
+            }
+            for t in teachers
+        ],
+    })
+
+
+# ---------------------------------------------------------------------------
+# Submit today's (or a chosen date's) attendance, or mark it a holiday
+# ---------------------------------------------------------------------------
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def attendance_submit(request):
+    bus, error = _resolve_bus(request)
+    if error:
+        return error
+    if not bus:
+        return Response({"detail": "You're not linked to a bus yet. Set it up first."}, status=400)
+    if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
+        return Response({"detail": "Not allowed."}, status=403)
+
+    serializer = AttendanceSubmitSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    with transaction.atomic():
+        session, _ = AttendanceSession.objects.update_or_create(
+            bus=bus,
+            date=data["date"],
+            defaults={
+                "is_holiday": data["is_holiday"],
+                "holiday_reason": data.get("holiday_reason", "") if data["is_holiday"] else "",
+                "marked_by": request.user,
+            },
+        )
+
+        if data["is_holiday"]:
+            session.records.all().delete()
+        else:
+            seen_student_ids, seen_teacher_ids = set(), set()
+            for row in data["records"]:
+                defaults = {"status": row["status"], "remarks": row.get("remarks", ""), "person_type": row["person_type"]}
+                if row["person_type"] == "STUDENT":
+                    AttendanceRecord.objects.update_or_create(
+                        session=session, student_id=row["id"], defaults=defaults
+                    )
+                    seen_student_ids.add(row["id"])
+                else:
+                    AttendanceRecord.objects.update_or_create(
+                        session=session, teacher_id=row["id"], defaults=defaults
+                    )
+                    seen_teacher_ids.add(row["id"])
+            # Anyone not included in this submission is dropped from the session
+            # (e.g. they were reassigned off the bus since the form was opened).
+            session.records.filter(student__isnull=False).exclude(student_id__in=seen_student_ids).delete()
+            session.records.filter(teacher__isnull=False).exclude(teacher_id__in=seen_teacher_ids).delete()
+
+    return Response(AttendanceSessionSerializer(session).data, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# History: past sessions for a bus, for review / export
+# ---------------------------------------------------------------------------
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def attendance_history(request):
+    bus, error = _resolve_bus(request)
+    if error:
+        return error
+    if not bus:
+        return Response({"detail": "You're not linked to a bus yet. Set it up first."}, status=400)
+    if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
+        return Response({"detail": "Not allowed."}, status=403)
+
+    qs = AttendanceSession.objects.filter(bus=bus).prefetch_related("records").order_by("-date")
+    date_from = parse_date(request.query_params.get("from", "") or "")
+    date_to = parse_date(request.query_params.get("to", "") or "")
+    if date_from:
+        qs = qs.filter(date__gte=date_from)
+    if date_to:
+        qs = qs.filter(date__lte=date_to)
+
+    return Response(AttendanceSessionSerializer(qs[:180], many=True).data)
+
+
+# ---------------------------------------------------------------------------
+# Export attendance history as a downloadable file (CSV / Excel / PDF)
+# ---------------------------------------------------------------------------
+def _export_rows(bus, date_from, date_to):
+    qs = AttendanceSession.objects.filter(bus=bus).prefetch_related("records__student", "records__teacher")
+    if date_from:
+        qs = qs.filter(date__gte=date_from)
+    if date_to:
+        qs = qs.filter(date__lte=date_to)
+    qs = qs.order_by("date")
+
+    rows = [["Date", "Bus", "Type", "ID/Roll No.", "Name", "Status"]]
+    for session in qs:
+        if session.is_holiday:
+            rows.append([str(session.date), bus.bus_number, "—", "—", "—", f"HOLIDAY ({session.holiday_reason or '—'})"])
+            continue
+        for r in session.records.all():
+            who = r.student or r.teacher
+            identifier = r.student.roll_number if r.student else (r.teacher.staff_id if r.teacher else "")
+            rows.append([
+                str(session.date), bus.bus_number, r.person_type,
+                identifier, who.name if who else "", r.status,
+            ])
+    return rows
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def attendance_export(request):
+    bus, error = _resolve_bus(request)
+    if error:
+        return error
+    if not bus:
+        return Response({"detail": "You're not linked to a bus yet. Set it up first."}, status=400)
+    if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
+        return Response({"detail": "Not allowed."}, status=403)
+
+    # NOTE: DRF reserves the "format" query parameter for its own content
+    # negotiation (it 404s before this view even runs if given an unknown
+    # value like "xlsx"), so the export type is passed as "filetype" instead.
+    fmt = (request.query_params.get("filetype") or "csv").lower()
+    date_from = parse_date(request.query_params.get("from", "") or "")
+    date_to = parse_date(request.query_params.get("to", "") or "")
+    rows = _export_rows(bus, date_from, date_to)
+    filename_base = f"attendance_{bus.bus_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    if fmt == "xlsx":
+        try:
+            from openpyxl import Workbook
+        except ImportError:
+            return Response({"detail": "Excel export needs the 'openpyxl' package on the server."}, status=501)
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Attendance"
+        for row in rows:
+            ws.append(row)
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        resp = HttpResponse(
+            buf.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp["Content-Disposition"] = f'attachment; filename="{filename_base}.xlsx"'
+        return resp
+
+    if fmt == "pdf":
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+        except ImportError:
+            return Response({"detail": "PDF export needs the 'reportlab' package on the server."}, status=501)
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(buf, pagesize=landscape(A4))
+        table = Table(rows, repeatRows=1)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f3f4f6")]),
+        ]))
+        doc.build([table])
+        buf.seek(0)
+        resp = HttpResponse(buf.read(), content_type="application/pdf")
+        resp["Content-Disposition"] = f'attachment; filename="{filename_base}.pdf"'
+        return resp
+
+    # Default: CSV — no extra dependency needed.
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerows(rows)
+    resp = HttpResponse(buf.getvalue(), content_type="text/csv")
+    resp["Content-Disposition"] = f'attachment; filename="{filename_base}.csv"'
+    return resp

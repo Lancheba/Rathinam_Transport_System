@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "announcements",
     "vision",
     "feedback",
+    "attendance",
 ]
 
 MIDDLEWARE = [

@@ -4,6 +4,7 @@ from .models import Bus
 
 class BusSerializer(serializers.ModelSerializer):
     parking_slot_info = serializers.SerializerMethodField()
+    driver_username = serializers.CharField(source="driver.username", read_only=True, allow_null=True)
 
     # Bus dimensions are stored as DecimalField(5, 2): reject zero/negative values
     length_m = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=1)
@@ -15,6 +16,7 @@ class BusSerializer(serializers.ModelSerializer):
             "id", "bus_number", "rfid_uid", "route",
             "departure_time", "length_m", "width_m",
             "is_active", "parking_slot_info",
+            "driver_username", "student_capacity", "teacher_capacity",
             "created_at", "updated_at",
         ]
         # Uniqueness is checked in validate_bus_number / validate_rfid_uid
