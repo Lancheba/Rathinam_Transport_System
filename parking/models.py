@@ -45,22 +45,37 @@ class ParkingSlot(models.Model):
         return f"{self.row} - Slot {self.slot_number}"
 
 
+# Slots permanently reserved for cars & bikes — never treated as bus blockers.
+RESERVED_SLOTS = {
+    "B": (1, 2, 3),
+    "C": (1, 2, 3),
+}
+
+
 def recompute_blocked_slots():
     """
     Single source of truth for "is a parked bus blocked".
 
-    A slot is blocked if another occupied slot in the same row has a lower
-    slot_number (i.e. sits between it and the gate at slot 1). Called after
-    ANY operation that parks, moves, or removes a bus — RFID/ultrasonic
-    sensor events, and applying an optimisation result — so the flag never
-    goes stale no matter which code path changed the layout.
+    A slot is blocked if another bus-occupied slot in the same row has a lower
+    slot_number between it and the gate. Reserved slots (B1-B3, C1-C3) are
+    completely ignored so buses at B4+ and C4+ are never falsely blocked.
     """
-    for slot in ParkingSlot.objects.filter(is_occupied=True):
+    for slot in ParkingSlot.objects.filter(is_occupied=True, bus__isnull=False):
+        reserved = RESERVED_SLOTS.get(slot.row, ())
+        if slot.slot_number in reserved:
+            continue
+        # Find the effective gate slot number for this row
+        # (first slot number after the reserved zone, or 1 if no reserved zone)
+        gate_slot = max(reserved) + 1 if reserved else 1
+
         blocking = ParkingSlot.objects.filter(
             row=slot.row,
             is_occupied=True,
+            bus__isnull=False,
             slot_number__lt=slot.slot_number,
+            slot_number__gte=gate_slot,
         ).exists()
+
         if slot.is_blocked != blocking:
             slot.is_blocked = blocking
             slot.save(update_fields=["is_blocked"])
