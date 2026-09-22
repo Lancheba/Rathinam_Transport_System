@@ -19,7 +19,6 @@ import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
 import SignUpPage from "./pages/SignUpPage";
-import DriverAttendancePage from "./pages/DriverAttendancePage";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
@@ -148,7 +147,6 @@ export const App: React.FC = () => {
                   <Route path="feedback" element={<FeedbackPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="find" element={<BusFinder />} />
-                  <Route path="attendance" element={<DriverAttendancePage />} />
                 </Routes>
               </MainLayout>
             }
@@ -161,5 +159,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-
-

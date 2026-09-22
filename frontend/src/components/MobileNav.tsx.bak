@@ -9,14 +9,12 @@ import "./MobileNav.css";
 export const MobileNav: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
-  const { canManageBuses, role } = useAuth();
+  const { canManageBuses } = useAuth();
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Staff-only links (e.g. Students) never take one of the precious mobile tab
   // slots for a signed-out or student user — they're filtered before slicing.
-  const visible = navItems.filter(
-    (item) => (!item.staffOnly || canManageBuses) && (!item.driverOnly || role === "DRIVER")
-  );
+  const visible = navItems.filter((item) => !item.staffOnly || canManageBuses);
   const tabs = visible.slice(0, MOBILE_TAB_COUNT);
   const more = [
     ...visible.slice(MOBILE_TAB_COUNT),
@@ -103,4 +101,3 @@ export const MobileNav: React.FC = () => {
 };
 
 export default MobileNav;
-
