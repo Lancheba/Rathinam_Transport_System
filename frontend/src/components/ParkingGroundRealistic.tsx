@@ -250,6 +250,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
             >
               {rows.map((row) => {
                 const isGate = GATE_ROWS.has(row);
+                const isReservedGate = (row === "B" || row === "C");
                 return (
                 <div key={row} className="pg__row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {/* Lane gate: gated rows are open at their left end (Slot 1) —
@@ -269,19 +270,28 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
                     borderRadius: 8,
                     backgroundColor: "var(--canvas-solid)",
-                    backgroundImage: isGate
+                    backgroundImage: isReservedGate
+                      ? "linear-gradient(90deg, rgba(251,191,36,0.18) 0%, rgba(251,191,36,0.04) 100%)"
+                      : isGate
                       ? "linear-gradient(90deg, rgba(74,222,128,0.18) 0%, rgba(74,222,128,0.04) 100%)"
                       : "none",
-                    border: isGate ? "1px solid rgba(74,222,128,0.35)" : "1px solid rgb(var(--ov) / 0.08)",
-                    borderLeft: isGate ? "3px solid var(--accent-green)" : "3px solid rgb(var(--ov) / 0.15)",
-                    boxShadow: isGate ? "0 0 12px rgba(74,222,128,0.14)" : "none",
+                    border: isReservedGate ? "1px solid rgba(251,191,36,0.5)" : isGate ? "1px solid rgba(74,222,128,0.35)" : "1px solid rgb(var(--ov) / 0.08)",
+                    borderLeft: isReservedGate ? "3px solid var(--accent-amber)" : isGate ? "3px solid var(--accent-green)" : "3px solid rgb(var(--ov) / 0.15)",
+                    boxShadow: isReservedGate ? "0 0 12px rgba(251,191,36,0.14)" : isGate ? "0 0 12px rgba(74,222,128,0.14)" : "none",
                     fontFamily: "monospace",
                   }}>
                     <span style={{
                       fontSize: 14, fontWeight: 800, lineHeight: 1,
                       color: "var(--accent-violet)", textShadow: "0 0 10px rgba(167,139,250,0.6)",
                     }}>{row}</span>
-                    {isGate ? (
+                    {isReservedGate ? (
+                      <span className="pg__gate-text" style={{
+                        display: "flex", alignItems: "center", gap: 2,
+                        fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", color: "var(--accent-amber)",
+                      }}>
+                        BLOCKED
+                      </span>
+                    ) : isGate ? (
                       <span className="pg__gate-text" style={{
                         display: "flex", alignItems: "center", gap: 2,
                         fontSize: 7.5, fontWeight: 800, letterSpacing: "0.06em", color: "var(--accent-green)",
