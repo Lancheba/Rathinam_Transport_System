@@ -1,11 +1,12 @@
 from rest_framework import generics, permissions
 from rest_framework_simplejwt.views import TokenObtainPairView
 from config.throttles import LoginThrottle, RegisterThrottle
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer
 from django.contrib.auth.models import User
 
 
 class LoginView(TokenObtainPairView):
+    serializer_class = DriverLoginSerializer
     throttle_classes = [LoginThrottle]
 
 
