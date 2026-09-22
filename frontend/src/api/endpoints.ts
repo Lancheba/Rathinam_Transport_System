@@ -2,7 +2,8 @@
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
-  Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary
+  Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary,
+  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession
 } from "../types";
 
 // Buses
@@ -38,8 +39,8 @@ export const applyOptimization = (result_id: number) =>
   api.post("/optimization/apply/", { result_id }).then(r => r.data);
 
 // Auth
-export const login = (username: string, password: string) =>
-  api.post<{ access: string; refresh: string }>("/auth/login/", { username, password }).then(r => r.data);
+export const login = (username: string, password: string, cab_number?: string) =>
+  api.post<{ access: string; refresh: string }>("/auth/login/", { username, password, cab_number }).then(r => r.data);
 export const getMe = () => api.get<CurrentUser>("/auth/me/").then(r => r.data);
 
 // Sensors: create / delete
@@ -78,3 +79,35 @@ export const getFeedback = (params?: Record<string, string>) =>
 export const updateFeedback = (id: number, data: { status?: FeedbackStatus; admin_note?: string }) =>
   api.patch<Feedback>(`/feedback/${id}/`, data).then(r => r.data);
 export const deleteFeedback = (id: number) => api.delete(`/feedback/${id}/`);
+
+// Driver attendance
+export const getMyBus = () => api.get<DriverBusResponse>("/attendance/my-bus/").then(r => r.data);
+export const setMyBus = (data: { bus_number: string; student_capacity?: number; teacher_capacity?: number }) =>
+  api.post<DriverBusResponse>("/attendance/my-bus/", data).then(r => r.data);
+export const updateMyBusCapacity = (data: { student_capacity?: number; teacher_capacity?: number }) =>
+  api.patch<DriverBusResponse>("/attendance/my-bus/", data).then(r => r.data);
+export const getRoster = (date?: string) =>
+  api.get<AttendanceRoster>("/attendance/roster/", { params: date ? { date } : undefined }).then(r => r.data);
+export const submitAttendance = (data: AttendanceSubmitInput) =>
+  api.post<AttendanceSession>("/attendance/submit/", data).then(r => r.data);
+export const getAttendanceHistory = (params?: { from?: string; to?: string }) =>
+  api.get<AttendanceSession[]>("/attendance/sessions/", { params }).then(r => r.data);
+// JWT auth is a header, not a cookie, so export can't be a plain <a href> link —
+// fetch it as a blob (the interceptor attaches the token) and save it client-side.
+export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?: { from?: string; to?: string }) => {
+  const res = await api.get("/attendance/export/", {
+    params: { filetype, ...params },
+    responseType: "blob",
+  });
+  const disposition = res.headers["content-disposition"] as string | undefined;
+  const match = disposition?.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] ?? `attendance.${filetype}`;
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};

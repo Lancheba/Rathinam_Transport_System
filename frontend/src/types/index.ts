@@ -14,6 +14,10 @@ export interface Bus {
     slot_number: number;
     is_blocked: boolean;
   } | null;
+  /** Username of the driver linked to this bus, if any (set via the driver's "My Bus" setup) */
+  driver_username?: string | null;
+  student_capacity?: number;
+  teacher_capacity?: number;
 }
 
 /** Fields the "Add bus" form sends to POST /api/buses/ */
@@ -31,10 +35,12 @@ export interface CurrentUser {
   id: number;
   username: string;
   email: string;
-  role: "ADMIN" | "STAFF" | "STUDENT";
+  role: "ADMIN" | "STAFF" | "DRIVER" | "STUDENT";
   can_manage_buses: boolean;
   /** Administrators only (not transport staff): may read complaints and feedback */
   is_admin: boolean;
+  /** Bus number this driver is linked to, if role is DRIVER and a bus has been claimed */
+  driven_bus_number?: string | null;
 }
 
 export interface ParkingSlot {
@@ -242,6 +248,92 @@ export interface Feedback {
   is_anonymous: boolean;
   status: FeedbackStatus;
   admin_note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---- Driver attendance: "my bus" setup, roster, sessions ----
+
+export interface Teacher {
+  id: number;
+  name: string;
+  staff_id: string;
+  department: string;
+  phone: string;
+  email: string;
+  boarding_point: string;
+  bus: number | null;
+  bus_number: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** GET/POST/PATCH /api/attendance/my-bus/ */
+export interface DriverBusResponse {
+  bus: Bus | null;
+}
+
+export type AttendanceStatus = "PRESENT" | "ABSENT";
+
+export interface AttendanceRosterPerson {
+  id: number;
+  name: string;
+  roll_number?: string;
+  staff_id?: string;
+  status: AttendanceStatus | null;
+}
+
+/** GET /api/attendance/roster/ — today's (or a given date's) roster to mark */
+export interface AttendanceRoster {
+  bus_id: number;
+  bus_number: string;
+  date: string;
+  is_holiday: boolean;
+  holiday_reason: string;
+  already_marked: boolean;
+  students: AttendanceRosterPerson[];
+  teachers: AttendanceRosterPerson[];
+}
+
+export interface AttendanceRecordInput {
+  person_type: "STUDENT" | "TEACHER";
+  id: number;
+  status: AttendanceStatus;
+  remarks?: string;
+}
+
+/** Body sent to POST /api/attendance/submit/ */
+export interface AttendanceSubmitInput {
+  date: string;
+  is_holiday?: boolean;
+  holiday_reason?: string;
+  records?: AttendanceRecordInput[];
+}
+
+export interface AttendanceRecord {
+  id: number;
+  person_type: "STUDENT" | "TEACHER";
+  student: number | null;
+  teacher: number | null;
+  status: AttendanceStatus;
+  remarks: string;
+  name: string | null;
+  identifier: string | null;
+}
+
+/** One row of GET /api/attendance/sessions/ — a past day's attendance for a bus */
+export interface AttendanceSession {
+  id: number;
+  bus: number;
+  bus_number: string;
+  date: string;
+  is_holiday: boolean;
+  holiday_reason: string;
+  marked_by_username: string | null;
+  records: AttendanceRecord[];
+  present_count: number;
+  absent_count: number;
+  total_count: number;
   created_at: string;
   updated_at: string;
 }

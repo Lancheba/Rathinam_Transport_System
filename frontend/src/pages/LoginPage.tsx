@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, User, Bus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AuthCardLogo, AuthShell } from "../components/AuthShell";
 import "./AuthPage.css";
@@ -11,6 +11,7 @@ export const LoginPage: React.FC = () => {
   const [params] = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [cabNumber, setCabNumber] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,10 +25,14 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      await login(username.trim(), password.trim());
+      await login(username.trim(), password.trim(), cabNumber.trim() || undefined);
       navigate("/dashboard");
-    } catch {
-      setError("Incorrect username or password.");
+    } catch (err: any) {
+      const detail =
+        err?.response?.data?.cab_number?.[0] ||
+        err?.response?.data?.detail ||
+        "Incorrect username or password.";
+      setError(detail);
     } finally {
       setLoading(false);
     }
@@ -80,6 +85,19 @@ export const LoginPage: React.FC = () => {
             >
               {showPass ? <EyeOff size={20} strokeWidth={1.6} /> : <Eye size={20} strokeWidth={1.6} />}
             </button>
+          </div>
+
+          <div className="auth-field">
+            <Bus size={19} strokeWidth={1.6} className="auth-field__icon" aria-hidden="true" />
+            <input
+              id="login-cab"
+              type="text"
+              autoComplete="off"
+              aria-label="Cab Number (drivers only)"
+              placeholder="Cab Number (drivers only)"
+              value={cabNumber}
+              onChange={(e) => setCabNumber(e.target.value)}
+            />
           </div>
 
           {error && <p className="auth-error" role="alert">{error}</p>}

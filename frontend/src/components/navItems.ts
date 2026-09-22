@@ -1,4 +1,4 @@
-import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning } from "lucide-react";
+﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -15,6 +15,8 @@ export const navItems = [
   // Preview run is harmless, but applying a layout change is staff-only — keep the whole
   // feature out of the student's menu so it doesn't look like something they can do.
   { to: "/dashboard/optimize", label: "Optimisation",      short: "Optimise", icon: Cpu, staffOnly: true },
+  // Marking students/teachers present or absent only makes sense for the driver of that bus.
+  { to: "/dashboard/attendance", label: "Attendance",      short: "Attend",   icon: ClipboardCheck, driverOnly: true },
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },
