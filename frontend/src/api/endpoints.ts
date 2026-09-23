@@ -3,7 +3,7 @@ import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
   Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary,
-  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance,
+  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance, AttendanceSlot,
   MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary
 } from "../types";
 
@@ -93,8 +93,10 @@ export const setMyBus = (data: { bus_number: string; student_capacity?: number; 
   api.post<DriverBusResponse>("/attendance/my-bus/", data).then(r => r.data);
 export const updateMyBusCapacity = (data: { student_capacity?: number; teacher_capacity?: number }) =>
   api.patch<DriverBusResponse>("/attendance/my-bus/", data).then(r => r.data);
-export const getRoster = (date?: string) =>
-  api.get<AttendanceRoster>("/attendance/roster/", { params: date ? { date } : undefined }).then(r => r.data);
+export const getRoster = (date?: string, slot?: AttendanceSlot) =>
+  api.get<AttendanceRoster>("/attendance/roster/", {
+    params: { ...(date ? { date } : {}), ...(slot ? { slot } : {}) },
+  }).then(r => r.data);
 export const submitAttendance = (data: AttendanceSubmitInput) =>
   api.post<AttendanceSession>("/attendance/submit/", data).then(r => r.data);
 export const getAttendanceHistory = (params?: { from?: string; to?: string }) =>

@@ -1,4 +1,4 @@
-from rest_framework.throttling import SimpleRateThrottle
+﻿from rest_framework.throttling import SimpleRateThrottle
 
 
 class _PerIPThrottle(SimpleRateThrottle):
@@ -19,3 +19,12 @@ class RegisterThrottle(_PerIPThrottle):
 class OptimizeThrottle(_PerIPThrottle):
     """Optimisation preview is public but writes a row each time, so cap it."""
     scope = "optimize"
+
+
+class FaceScanThrottle(SimpleRateThrottle):
+    """Caps how often a signed-in user can hit the QR + face-scan endpoint."""
+    scope = "face_scan"
+
+    def get_cache_key(self, request, view):
+        user_id = request.user.pk if request.user.is_authenticated else "anon"
+        return f"face_scan_{user_id}"

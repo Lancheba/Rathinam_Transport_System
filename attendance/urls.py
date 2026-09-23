@@ -10,7 +10,7 @@ from .views import (
     attendance_submit,
     my_attendance,
 )
-from .qr_views import qr_generate, qr_scan
+from .qr_views import qr_generate, qr_scan, qr_tally
 
 router = DefaultRouter()
 router.register("teachers", TeacherViewSet, basename="teacher")
@@ -23,6 +23,7 @@ urlpatterns = [
     path("export/", attendance_export, name="attendance-export"),
     path("my/", my_attendance, name="attendance-my"),
     path("qr/generate/", qr_generate, name="attendance-qr-generate"),
+    path("qr/tally/", qr_tally, name="attendance-qr-tally"),
     path("qr/scan/", qr_scan, name="attendance-qr-scan"),
     path("", include(router.urls)),
 ]

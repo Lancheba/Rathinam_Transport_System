@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import api from "../api/client";
 
 interface QRData {
@@ -11,6 +11,13 @@ interface QRData {
   total_count: number;
 }
 
+interface TallyData {
+  slot: string;
+  session_id: number | null;
+  present_count: number;
+  total_count: number;
+}
+
 export default function QRDisplaySection() {
   const [qrData, setQrData]       = useState<QRData | null>(null);
   const [active, setActive]        = useState(false);
@@ -18,6 +25,7 @@ export default function QRDisplaySection() {
   const [countdown, setCountdown]  = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tallyRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function currentSlotLabel() {
     const h = new Date().getHours();
@@ -37,11 +45,28 @@ export default function QRDisplaySection() {
     }
   }
 
+  // Lightweight tally-only refresh — doesn't touch the QR image/token, so it
+  // can run on a much tighter interval than the 45s QR regeneration cycle.
+  async function fetchTally() {
+    try {
+      const res = await api.get<TallyData>("/attendance/qr/tally/");
+      setQrData(prev =>
+        prev
+          ? { ...prev, present_count: res.data.present_count, total_count: res.data.total_count }
+          : prev
+      );
+    } catch {
+      // Silent — a missed tally tick isn't worth surfacing as an error;
+      // the next 45s QR refresh will resync anyway.
+    }
+  }
+
   function start() {
     setActive(true);
     fetchQR();
     pollRef.current  = setInterval(fetchQR, 45_000);
     timerRef.current = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : 0)), 1_000);
+    tallyRef.current = setInterval(fetchTally, 7_000);
   }
 
   function stop() {
@@ -49,9 +74,14 @@ export default function QRDisplaySection() {
     setQrData(null);
     clearInterval(pollRef.current!);
     clearInterval(timerRef.current!);
+    clearInterval(tallyRef.current!);
   }
 
-  useEffect(() => () => { clearInterval(pollRef.current!); clearInterval(timerRef.current!); }, []);
+  useEffect(() => () => {
+    clearInterval(pollRef.current!);
+    clearInterval(timerRef.current!);
+    clearInterval(tallyRef.current!);
+  }, []);
 
   const label = currentSlotLabel();
 

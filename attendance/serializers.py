@@ -1,4 +1,4 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 
 from .models import AttendanceRecord, AttendanceSession, Teacher
 
@@ -41,6 +41,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
         model = AttendanceRecord
         fields = [
             "id", "person_type", "student", "teacher", "status", "remarks",
+            "source", "marked_at", "face_match_score",
             "name", "identifier",
         ]
 
@@ -67,7 +68,7 @@ class AttendanceSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendanceSession
         fields = [
-            "id", "bus", "bus_number", "date", "is_holiday", "holiday_reason",
+            "id", "bus", "bus_number", "date", "slot", "is_holiday", "holiday_reason",
             "marked_by_username", "records",
             "present_count", "absent_count", "total_count",
             "created_at", "updated_at",
@@ -92,6 +93,7 @@ class AttendanceRecordInputSerializer(serializers.Serializer):
 
 class AttendanceSubmitSerializer(serializers.Serializer):
     date = serializers.DateField()
+    slot = serializers.ChoiceField(choices=["MORNING", "EVENING"], required=False, default="MORNING")
     is_holiday = serializers.BooleanField(required=False, default=False)
     holiday_reason = serializers.CharField(required=False, allow_blank=True, default="")
     records = AttendanceRecordInputSerializer(many=True, required=False, default=list)

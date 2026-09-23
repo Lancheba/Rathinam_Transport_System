@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import io
 from datetime import date as date_cls, datetime, timedelta
 
@@ -126,6 +126,14 @@ def _resolve_bus(request):
         return None, Response({"detail": "Bus not found."}, status=404)
 
 
+def _resolve_slot(request):
+    """?slot=MORNING|EVENING, defaulting to MORNING. Returns (slot, error_response)."""
+    slot = (request.query_params.get("slot") or request.data.get("slot") or "MORNING").upper()
+    if slot not in dict(AttendanceSession.SLOT_CHOICES):
+        return None, Response({"detail": "Invalid slot. Use MORNING or EVENING."}, status=400)
+    return slot, None
+
+
 # ---------------------------------------------------------------------------
 # Today's (or any date's) roster to take attendance against
 # ---------------------------------------------------------------------------
@@ -140,10 +148,14 @@ def attendance_roster(request):
     if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
         return Response({"detail": "Not allowed."}, status=403)
 
+    slot, error = _resolve_slot(request)
+    if error:
+        return error
+
     day = parse_date(request.query_params.get("date", "")) or date_cls.today()
 
     session = (
-        AttendanceSession.objects.filter(bus=bus, date=day)
+        AttendanceSession.objects.filter(bus=bus, date=day, slot=slot)
         .prefetch_related("records")
         .first()
     )
@@ -163,6 +175,7 @@ def attendance_roster(request):
         "bus_id": bus.id,
         "bus_number": bus.bus_number,
         "date": str(day),
+        "slot": slot,
         "is_holiday": session.is_holiday if session else False,
         "holiday_reason": session.holiday_reason if session else "",
         "already_marked": session is not None,
@@ -205,6 +218,7 @@ def attendance_submit(request):
         session, _ = AttendanceSession.objects.update_or_create(
             bus=bus,
             date=data["date"],
+            slot=data["slot"],
             defaults={
                 "is_holiday": data["is_holiday"],
                 "holiday_reason": data.get("holiday_reason", "") if data["is_holiday"] else "",
@@ -363,15 +377,23 @@ def attendance_export(request):
 # A student's own "was I marked present or absent" view — read-only, and only
 # ever about the day their driver already took attendance for, on the roster
 # row *they* linked their account to (see students.views.MyStudentLinkView).
+# Returns separate morning/evening blocks since a bus can run two slots a day.
 # ---------------------------------------------------------------------------
-def _day_status_for_student(bus, student, day):
-    """What the driver's attendance says about `student` on `day`, or None if
-    that day hasn't been marked (yet, or at all)."""
-    base = {"date": str(day), "status": None, "is_holiday": False, "holiday_reason": "", "marked": False}
+def _day_status_for_student(bus, student, day, slot):
+    """What the driver's attendance says about `student` on `day`/`slot`, or
+    the 'not marked yet' shape if that slot hasn't been marked (yet, or at all)."""
+    base = {
+        "date": str(day), "status": None, "is_holiday": False,
+        "holiday_reason": "", "marked": False, "source": None,
+    }
     if not bus:
         return base
 
-    session = AttendanceSession.objects.filter(bus=bus, date=day).prefetch_related("records").first()
+    session = (
+        AttendanceSession.objects.filter(bus=bus, date=day, slot=slot)
+        .prefetch_related("records")
+        .first()
+    )
     if not session:
         return base
 
@@ -381,17 +403,17 @@ def _day_status_for_student(bus, student, day):
     record = next((r for r in session.records.all() if r.student_id == student.id), None)
     if not record:
         return base
-    return {**base, "status": record.status, "marked": True}
+    return {**base, "status": record.status, "marked": True, "source": record.source}
 
 
 @api_view(["GET"])
 @permission_classes([IsStudent])
 def my_attendance(request):
     """
-    For the signed-in student's own linked roster row: today's
-    present/absent status (as taken by their bus's driver), plus a short
-    recent trend so "today" has some context. Shows "not marked yet" until
-    the driver actually submits today's roster.
+    For the signed-in student's own linked roster row: today's present/absent
+    status for each slot (as taken by their bus's driver), plus a short
+    per-slot recent trend so "today" has some context. Shows "not marked
+    yet" until the driver actually submits that slot's roster.
     """
     student = getattr(request.user, "student_profile", None)
     if not student:
@@ -399,12 +421,15 @@ def my_attendance(request):
 
     bus = student.bus
     today = date_cls.today()
-    recent = [_day_status_for_student(bus, student, today - timedelta(days=i)) for i in range(7)]
+
+    def slot_block(slot):
+        recent = [_day_status_for_student(bus, student, today - timedelta(days=i), slot) for i in range(7)]
+        return {"today": recent[0], "recent": recent}
 
     return Response({
         "linked": True,
         "student": {"id": student.id, "name": student.name, "roll_number": student.roll_number},
         "bus_number": bus.bus_number if bus else None,
-        "today": recent[0],
-        "recent": recent,
+        "morning": slot_block("MORNING"),
+        "evening": slot_block("EVENING"),
     })

@@ -1,14 +1,21 @@
-import React, { useCallback, useEffect, useState } from "react";
+﻿import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, XCircle, CalendarOff, Clock, LoaderCircle, IdCard, Bus as BusIcon, LogOut,
 } from "lucide-react";
 import { getMyStudentLink, linkMyStudentProfile, unlinkMyStudentProfile, getMyAttendance } from "../api/endpoints";
-import type { MyStudentLink, MyAttendance, MyAttendanceDay } from "../types";
+import type { MyStudentLink, MyAttendance, MyAttendanceDay, AttendanceSlot, AttendanceSource } from "../types";
 import { inputStyle, labelStyle, primaryBtn, ghostBtn, errorText } from "./DriverAttendancePage";
 
 const dayLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+const sourceLabel = (source: AttendanceSource | null): string => {
+  if (source === "MANUAL") return "Manual";
+  if (source === "QR_FACE") return "QR + Face";
+  if (source === "AUTO_ABSENT") return "Auto-absent";
+  return "";
+};
 
 /** One day's outcome, resolved to an icon + colour + human label. */
 const dayMeaning = (day: MyAttendanceDay) => {
@@ -72,6 +79,7 @@ const LinkAccountForm: React.FC<{ onLinked: (link: MyStudentLink) => void }> = (
 
 const TodayCard: React.FC<{ day: MyAttendanceDay }> = ({ day }) => {
   const { label, color, Icon } = dayMeaning(day);
+  const showSource = day.marked && !day.is_holiday && day.source;
   return (
     <div className="liquid-glass-card no-lift" style={{ padding: 28, display: "flex", alignItems: "center", gap: 20 }}>
       <span
@@ -84,7 +92,20 @@ const TodayCard: React.FC<{ day: MyAttendanceDay }> = ({ day }) => {
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>
           Today · {dayLabel(day.date)}
         </div>
-        <div style={{ fontSize: 26, fontWeight: 800, color, marginTop: 2 }}>{label}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 2 }}>
+          <span style={{ fontSize: 26, fontWeight: 800, color }}>{label}</span>
+          {showSource && (
+            <span
+              style={{
+                fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999,
+                background: "rgb(var(--ov) / 0.06)", border: "1px solid rgb(var(--ov) / 0.12)",
+                color: "var(--text-muted)",
+              }}
+            >
+              {sourceLabel(day.source)}
+            </span>
+          )}
+        </div>
         {day.is_holiday && day.holiday_reason && (
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{day.holiday_reason}</div>
         )}
@@ -108,10 +129,11 @@ const RecentTrend: React.FC<{ days: MyAttendanceDay[] }> = ({ days }) => (
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
       {days.map((day) => {
         const { label, color, Icon } = dayMeaning(day);
+        const src = day.marked && !day.is_holiday ? sourceLabel(day.source) : "";
         return (
           <div
             key={day.date}
-            title={`${dayLabel(day.date)} — ${label}`}
+            title={src ? `${dayLabel(day.date)} — ${label} (${src})` : `${dayLabel(day.date)} — ${label}`}
             style={{
               display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
               padding: "10px 12px", borderRadius: 12, minWidth: 74,
@@ -122,6 +144,11 @@ const RecentTrend: React.FC<{ days: MyAttendanceDay[] }> = ({ days }) => (
             <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>
               {new Date(`${day.date}T00:00:00`).toLocaleDateString("en-US", { weekday: "short" })}
             </span>
+            {src && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-dim)", letterSpacing: 0.3 }}>
+                {src}
+              </span>
+            )}
           </div>
         );
       })}
@@ -136,6 +163,7 @@ export const MyAttendancePage: React.FC = () => {
   const [attendance, setAttendance] = useState<MyAttendance | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [activeSlot, setActiveSlot] = useState<AttendanceSlot>("MORNING");
 
   const load = useCallback(async () => {
     setLoading(true); setLoadError("");
@@ -170,6 +198,16 @@ export const MyAttendancePage: React.FC = () => {
     const h = new Date().getHours();
     return (h >= 5 && h < 10) || (h >= 16 && h < 20);
   })();
+
+  const slotBlock = attendance ? attendance[activeSlot === "MORNING" ? "morning" : "evening"] : null;
+
+  const slotTabStyle = (active: boolean): React.CSSProperties => ({
+    display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, cursor: "pointer",
+    fontSize: 13, fontWeight: 700,
+    color: active ? "var(--text-strong)" : "var(--text-muted)",
+    border: `1px solid ${active ? "var(--accent-indigo)" : "rgba(99,102,241,0.2)"}`,
+    background: active ? "rgba(99,102,241,0.15)" : "transparent",
+  });
 
   return (
     <div style={{ padding: "8px 4px 32px", maxWidth: 720 }}>
@@ -237,8 +275,19 @@ export const MyAttendancePage: React.FC = () => {
             </div>
           )}
 
-          {attendance?.today && <TodayCard day={attendance.today} />}
-          {attendance?.recent && attendance.recent.length > 0 && <RecentTrend days={attendance.recent} />}
+          {attendance?.bus_number && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" style={slotTabStyle(activeSlot === "MORNING")} onClick={() => setActiveSlot("MORNING")}>
+                Morning
+              </button>
+              <button type="button" style={slotTabStyle(activeSlot === "EVENING")} onClick={() => setActiveSlot("EVENING")}>
+                Evening
+              </button>
+            </div>
+          )}
+
+          {slotBlock?.today && <TodayCard day={slotBlock.today} />}
+          {slotBlock?.recent && slotBlock.recent.length > 0 && <RecentTrend days={slotBlock.recent} />}
         </div>
       )}
     </div>

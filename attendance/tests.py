@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+﻿from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
@@ -69,8 +69,8 @@ class MyAttendanceTests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.data["linked"])
-        self.assertEqual(res.data["today"]["status"], "ABSENT")
-        self.assertTrue(res.data["today"]["marked"])
+        self.assertEqual(res.data["morning"]["today"]["status"], "ABSENT")
+        self.assertTrue(res.data["morning"]["today"]["marked"])
 
     def test_present_today_is_reported(self):
         self._link()
@@ -80,7 +80,7 @@ class MyAttendanceTests(APITestCase):
         )
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertEqual(res.data["today"]["status"], "PRESENT")
+        self.assertEqual(res.data["morning"]["today"]["status"], "PRESENT")
 
     def test_holiday_today_is_reported(self):
         self._link()
@@ -89,16 +89,16 @@ class MyAttendanceTests(APITestCase):
         )
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertTrue(res.data["today"]["is_holiday"])
-        self.assertEqual(res.data["today"]["holiday_reason"], "College holiday")
-        self.assertIsNone(res.data["today"]["status"])
+        self.assertTrue(res.data["morning"]["today"]["is_holiday"])
+        self.assertEqual(res.data["morning"]["today"]["holiday_reason"], "College holiday")
+        self.assertIsNone(res.data["morning"]["today"]["status"])
 
     def test_no_session_yet_is_unmarked_not_absent(self):
         self._link()
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertFalse(res.data["today"]["marked"])
-        self.assertIsNone(res.data["today"]["status"])
+        self.assertFalse(res.data["morning"]["today"]["marked"])
+        self.assertIsNone(res.data["morning"]["today"]["status"])
 
     def test_student_with_no_bus_gets_unmarked_days(self):
         self.alice.bus = None
@@ -108,11 +108,24 @@ class MyAttendanceTests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 200)
         self.assertIsNone(res.data["bus_number"])
-        self.assertFalse(res.data["today"]["marked"])
+        self.assertFalse(res.data["morning"]["today"]["marked"])
 
     def test_recent_history_has_seven_days(self):
         self._link()
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertEqual(len(res.data["recent"]), 7)
-        self.assertEqual(res.data["recent"][0]["date"], str(self.today))
+        self.assertEqual(len(res.data["morning"]["recent"]), 7)
+        self.assertEqual(res.data["morning"]["recent"][0]["date"], str(self.today))
+
+    def test_evening_slot_is_independent_of_morning(self):
+        self._link()
+        session = AttendanceSession.objects.create(bus=self.bus, date=self.today, slot="EVENING")
+        AttendanceRecord.objects.create(
+            session=session, person_type="STUDENT", student=self.alice, status="PRESENT",
+            source="QR_FACE",
+        )
+        self.client.force_authenticate(self.student_user)
+        res = self.client.get(self.url)
+        self.assertEqual(res.data["evening"]["today"]["status"], "PRESENT")
+        self.assertEqual(res.data["evening"]["today"]["source"], "QR_FACE")
+        self.assertFalse(res.data["morning"]["today"]["marked"])

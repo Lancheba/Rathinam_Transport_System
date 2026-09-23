@@ -274,6 +274,8 @@ export interface DriverBusResponse {
 }
 
 export type AttendanceStatus = "PRESENT" | "ABSENT";
+export type AttendanceSlot = "MORNING" | "EVENING";
+export type AttendanceSource = "MANUAL" | "QR_FACE" | "AUTO_ABSENT";
 
 export interface AttendanceRosterPerson {
   id: number;
@@ -288,6 +290,7 @@ export interface AttendanceRoster {
   bus_id: number;
   bus_number: string;
   date: string;
+  slot: AttendanceSlot;
   is_holiday: boolean;
   holiday_reason: string;
   already_marked: boolean;
@@ -305,6 +308,7 @@ export interface AttendanceRecordInput {
 /** Body sent to POST /api/attendance/submit/ */
 export interface AttendanceSubmitInput {
   date: string;
+  slot?: AttendanceSlot;
   is_holiday?: boolean;
   holiday_reason?: string;
   records?: AttendanceRecordInput[];
@@ -317,6 +321,9 @@ export interface AttendanceRecord {
   teacher: number | null;
   status: AttendanceStatus;
   remarks: string;
+  source: AttendanceSource;
+  marked_at: string | null;
+  face_match_score: number | null;
   name: string | null;
   identifier: string | null;
 }
@@ -343,15 +350,21 @@ export interface MyAttendanceDay {
   is_holiday: boolean;
   holiday_reason: string;
   marked: boolean;
+  source: AttendanceSource | null;
 }
 
 /** GET /api/attendance/my/ — the signed-in student's own present/absent record */
+export interface MyAttendanceSlotBlock {
+  today: MyAttendanceDay;
+  recent: MyAttendanceDay[];
+}
+
 export interface MyAttendance {
   linked: boolean;
   student: { id: number; name: string; roll_number: string } | null;
   bus_number?: string | null;
-  today?: MyAttendanceDay;
-  recent?: MyAttendanceDay[];
+  morning: MyAttendanceSlotBlock;
+  evening: MyAttendanceSlotBlock;
 }
 
 /* ------------------------------------------------------------ Maintenance */

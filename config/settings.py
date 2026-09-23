@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -84,7 +84,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Falls back to local SQLite when DATABASE_URL isn't set (plain `runserver`
 # development). Set DATABASE_URL in production (Railway's Postgres add-on sets
-# it automatically) — Railway containers don't persist local files like
+# it automatically) â€” Railway containers don't persist local files like
 # db.sqlite3 across deploys, so SQLite alone will silently lose all data.
 DATABASES = {
     "default": dj_database_url.config(
@@ -123,6 +123,7 @@ REST_FRAMEWORK = {
         "login": "10/min",
         "register": "10/hour",
         "optimize": "30/min",
+        "face_scan": "12/min",
         "feedback": "20/hour",
     },
 }
@@ -210,3 +211,4 @@ ATTENDANCE_EVENING_WINDOW  = ('16:30', '19:30')
 FACE_MATCH_THRESHOLD = 0.6
 QR_TOKEN_TTL_SECONDS = 60
 FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5
+

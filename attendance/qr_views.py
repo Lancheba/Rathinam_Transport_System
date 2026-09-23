@@ -1,4 +1,4 @@
-import math
+﻿import math
 import secrets
 import base64
 import io
@@ -11,11 +11,11 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
-from rest_framework.throttling import SimpleRateThrottle
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession
 from attendance.permissions import IsDriver, driver_bus
 from students.models import FaceProfile
+from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
 
 
@@ -54,25 +54,13 @@ def _slot_window_end(slot):
 
 
 def _cosine_distance(a, b):
-    """Cosine distance in [0, 1] — 0 means identical vectors."""
+    """Cosine distance in [0, 1] â€” 0 means identical vectors."""
     dot = sum(x * y for x, y in zip(a, b))
     na  = math.sqrt(sum(x * x for x in a))
     nb  = math.sqrt(sum(x * x for x in b))
     if na == 0 or nb == 0:
         return 1.0
     return 1.0 - dot / (na * nb)
-
-
-# ---------------------------------------------------------------------------
-# Throttle for face-scan attempts
-# ---------------------------------------------------------------------------
-
-class FaceScanThrottle(SimpleRateThrottle):
-    scope = 'face_scan'
-
-    def get_cache_key(self, request, view):
-        user_id = request.user.pk if request.user.is_authenticated else 'anon'
-        return f'face_scan_{user_id}'
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +124,42 @@ def qr_generate(request):
         'expires_at': qr_token.expires_at,
         'session_id': session.pk,
         'slot': slot,
+        'present_count': present,
+        'total_count': total,
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /api/attendance/qr/tally/   (driver only) — lightweight present/total
+# count for the currently open session, meant to be polled every few
+# seconds by the driver's screen without regenerating the QR/token.
+# ---------------------------------------------------------------------------
+
+@api_view(['GET'])
+@permission_classes([IsDriver])
+def qr_tally(request):
+    slot = _current_slot()
+    if not slot:
+        return Response(
+            {'detail': 'No attendance window is open right now.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    bus = driver_bus(request.user)
+    if not bus:
+        return Response(
+            {'detail': 'No bus is assigned to you.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    today = timezone.localdate()
+    session = AttendanceSession.objects.filter(bus=bus, date=today, slot=slot).first()
+    present = session.records.filter(status='PRESENT').count() if session else 0
+    total = session.records.count() if session else 0
+
+    return Response({
+        'slot': slot,
+        'session_id': session.pk if session else None,
         'present_count': present,
         'total_count': total,
     })
@@ -240,3 +264,4 @@ def qr_scan(request):
         'slot': session.slot,
         'marked_at': record.marked_at,
     })
+
