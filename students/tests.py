@@ -109,3 +109,66 @@ class DriverOwnBusStudentTests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data), 2)
+
+
+class MyStudentLinkTests(APITestCase):
+    """A STUDENT-role account linking itself to its own roster row by roll number."""
+
+    url = "/api/students/me/"
+
+    def setUp(self):
+        self.bus = make_bus("B10")
+        self.alice = Student.objects.create(name="Alice", roll_number="R900", bus=self.bus)
+        self.student_user = make_user("alice_login", "STUDENT")
+        self.other_student_user = make_user("mallory_login", "STUDENT")
+        self.driver = make_user("driver10", "DRIVER")
+
+    def test_unlinked_account_gets_linked_false(self):
+        self.client.force_authenticate(self.student_user)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data["linked"])
+        self.assertIsNone(res.data["student"])
+
+    def test_student_can_link_by_roll_number(self):
+        self.client.force_authenticate(self.student_user)
+        res = self.client.post(self.url, {"roll_number": "r900"}, format="json")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data["linked"])
+        self.assertEqual(res.data["student"]["roll_number"], "R900")
+        self.alice.refresh_from_db()
+        self.assertEqual(self.alice.linked_user_id, self.student_user.id)
+
+    def test_unknown_roll_number_is_rejected(self):
+        self.client.force_authenticate(self.student_user)
+        res = self.client.post(self.url, {"roll_number": "NOPE"}, format="json")
+        self.assertEqual(res.status_code, 404)
+
+    def test_roll_number_already_linked_to_someone_else_is_rejected(self):
+        self.alice.linked_user = self.other_student_user
+        self.alice.save(update_fields=["linked_user"])
+        self.client.force_authenticate(self.student_user)
+        res = self.client.post(self.url, {"roll_number": "R900"}, format="json")
+        self.assertEqual(res.status_code, 400)
+
+    def test_already_linked_account_cannot_link_again(self):
+        self.alice.linked_user = self.student_user
+        self.alice.save(update_fields=["linked_user"])
+        self.client.force_authenticate(self.student_user)
+        res = self.client.post(self.url, {"roll_number": "R900"}, format="json")
+        self.assertEqual(res.status_code, 400)
+
+    def test_driver_role_cannot_use_student_self_link(self):
+        self.client.force_authenticate(self.driver)
+        res = self.client.post(self.url, {"roll_number": "R900"}, format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_student_can_unlink(self):
+        self.alice.linked_user = self.student_user
+        self.alice.save(update_fields=["linked_user"])
+        self.client.force_authenticate(self.student_user)
+        res = self.client.delete(self.url)
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data["linked"])
+        self.alice.refresh_from_db()
+        self.assertIsNone(self.alice.linked_user_id)

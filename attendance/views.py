@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date as date_cls, datetime
+from datetime import date as date_cls, datetime, timedelta
 
 from django.db import transaction
 from django.http import HttpResponse
@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import CanManageBuses
+from accounts.permissions import CanManageBuses, IsStudent
 from buses.models import Bus
 from students.models import Student
 
@@ -357,3 +357,53 @@ def attendance_export(request):
     resp = HttpResponse(buf.getvalue(), content_type="text/csv")
     resp["Content-Disposition"] = f'attachment; filename="{filename_base}.csv"'
     return resp
+
+
+# ---------------------------------------------------------------------------
+# A student's own "was I marked present or absent" view — read-only, and only
+# ever about the day their driver already took attendance for, on the roster
+# row *they* linked their account to (see students.views.MyStudentLinkView).
+# ---------------------------------------------------------------------------
+def _day_status_for_student(bus, student, day):
+    """What the driver's attendance says about `student` on `day`, or None if
+    that day hasn't been marked (yet, or at all)."""
+    base = {"date": str(day), "status": None, "is_holiday": False, "holiday_reason": "", "marked": False}
+    if not bus:
+        return base
+
+    session = AttendanceSession.objects.filter(bus=bus, date=day).prefetch_related("records").first()
+    if not session:
+        return base
+
+    if session.is_holiday:
+        return {**base, "is_holiday": True, "holiday_reason": session.holiday_reason, "marked": True}
+
+    record = next((r for r in session.records.all() if r.student_id == student.id), None)
+    if not record:
+        return base
+    return {**base, "status": record.status, "marked": True}
+
+
+@api_view(["GET"])
+@permission_classes([IsStudent])
+def my_attendance(request):
+    """
+    For the signed-in student's own linked roster row: yesterday's
+    present/absent status (as taken by their bus's driver), plus a short
+    recent trend so "yesterday" has some context.
+    """
+    student = getattr(request.user, "student_profile", None)
+    if not student:
+        return Response({"linked": False, "student": None})
+
+    bus = student.bus
+    yesterday = date_cls.today() - timedelta(days=1)
+    recent = [_day_status_for_student(bus, student, yesterday - timedelta(days=i)) for i in range(7)]
+
+    return Response({
+        "linked": True,
+        "student": {"id": student.id, "name": student.name, "roll_number": student.roll_number},
+        "bus_number": bus.bus_number if bus else None,
+        "yesterday": recent[0],
+        "recent": recent,
+    })

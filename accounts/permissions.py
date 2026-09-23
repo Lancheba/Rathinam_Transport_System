@@ -46,6 +46,22 @@ class IsFullAdmin(permissions.BasePermission):
         return is_admin(request.user)
 
 
+def is_student(user):
+    """
+    True for ordinary STUDENT-role accounts only — not admins, staff, drivers,
+    or superusers (who default to the STUDENT profile role too, per
+    can_manage_buses' note above).
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return False
+    profile = getattr(user, "profile", None)
+    if not profile or profile.role != "STUDENT":
+        return False
+    return True
+
+
 def role_label(user):
     """Human-friendly role shown next to an announcement's author."""
     profile = getattr(user, "profile", None)
@@ -79,6 +95,13 @@ class CanPostAnnouncements(permissions.BasePermission):
         self.message = "You can only change announcements you posted."
         return False
 
+
+
+class IsStudent(permissions.BasePermission):
+    message = "Only students can do this."
+
+    def has_permission(self, request, view):
+        return is_student(request.user)
 
 
 class HasDeviceKey(permissions.BasePermission):

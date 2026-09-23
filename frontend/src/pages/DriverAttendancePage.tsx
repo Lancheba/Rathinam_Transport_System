@@ -139,7 +139,7 @@ const RosterRow: React.FC<{
 
 /* --------------------------------------------------------- Mark tab */
 
-const MarkTab: React.FC<{ bus: Bus }> = ({ bus }) => {
+const MarkTab: React.FC<{ bus: Bus }> = ({ bus: _bus }) => {
   const [date, setDate] = useState(todayStr());
   const [roster, setRoster] = useState<AttendanceRoster | null>(null);
   const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>({});

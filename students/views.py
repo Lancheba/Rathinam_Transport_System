@@ -1,13 +1,14 @@
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from accounts.permissions import CanManageBuses, can_manage_buses
+from rest_framework.views import APIView
+from accounts.permissions import CanManageBuses, can_manage_buses, IsStudent
 from attendance.permissions import driver_bus, is_driver
 from buses.models import Bus
 from .models import Student
 from .permissions import CanManageOwnBusStudents
-from .serializers import StudentSerializer, StudentBriefSerializer
+from .serializers import StudentSerializer, StudentBriefSerializer, StudentSelfSerializer
 
 
 class StudentViewSet(viewsets.ModelViewSet):
@@ -84,6 +85,56 @@ class StudentViewSet(viewsets.ModelViewSet):
             for bus in buses
         ]
         return Response(data)
+
+
+class MyStudentLinkView(APIView):
+    """
+    Self-service link between a STUDENT-role login and their own row in the
+    roster, by roll number — this is what lets a student's "am I marked
+    present/absent" screen know which roster row is theirs without an admin
+    having to set it up for every account by hand.
+
+    GET    -> the roster row linked to this account, or null if not linked yet.
+    POST   -> link this account to a roll number (one-time; fails if that
+              roll number is already linked to a different account).
+    DELETE -> unlink, e.g. if the wrong roll number was entered by mistake.
+    """
+
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        student = getattr(request.user, "student_profile", None)
+        return Response({"linked": student is not None, "student": StudentSelfSerializer(student).data if student else None})
+
+    def post(self, request):
+        if getattr(request.user, "student_profile", None):
+            return Response({"detail": "Your account is already linked to a roster row. Unlink it first."}, status=400)
+
+        roll_number = (request.data.get("roll_number") or "").strip()
+        if not roll_number:
+            return Response({"roll_number": "Enter your roll number."}, status=400)
+
+        try:
+            student = Student.objects.get(roll_number__iexact=roll_number)
+        except Student.DoesNotExist:
+            return Response(
+                {"roll_number": "No student found with that roll number. Check it, or ask transport staff to add you."},
+                status=404,
+            )
+
+        if student.linked_user_id and student.linked_user_id != request.user.id:
+            return Response({"roll_number": "This roll number is already linked to another account."}, status=400)
+
+        student.linked_user = request.user
+        student.save(update_fields=["linked_user"])
+        return Response({"linked": True, "student": StudentSelfSerializer(student).data}, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        student = getattr(request.user, "student_profile", None)
+        if student:
+            student.linked_user = None
+            student.save(update_fields=["linked_user"])
+        return Response({"linked": False, "student": None})
 
 
 @api_view(["GET"])

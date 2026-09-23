@@ -321,6 +321,39 @@ export interface AttendanceRecord {
   identifier: string | null;
 }
 
+// ---- Student self-service: link my login to my roster row, and my own attendance ----
+
+/** GET/POST/DELETE /api/students/me/ */
+export interface MyStudentLink {
+  linked: boolean;
+  student: {
+    id: number;
+    name: string;
+    roll_number: string;
+    department: string;
+    year: 1 | 2 | 3 | 4 | null;
+    bus_number: string | null;
+    boarding_point: string;
+  } | null;
+}
+
+export interface MyAttendanceDay {
+  date: string;
+  status: AttendanceStatus | null;
+  is_holiday: boolean;
+  holiday_reason: string;
+  marked: boolean;
+}
+
+/** GET /api/attendance/my/ — the signed-in student's own present/absent record */
+export interface MyAttendance {
+  linked: boolean;
+  student: { id: number; name: string; roll_number: string } | null;
+  bus_number?: string | null;
+  yesterday?: MyAttendanceDay;
+  recent?: MyAttendanceDay[];
+}
+
 /** One row of GET /api/attendance/sessions/ — a past day's attendance for a bus */
 export interface AttendanceSession {
   id: number;
@@ -337,39 +370,3 @@ export interface AttendanceSession {
   created_at: string;
   updated_at: string;
 }
-
-/** GET/POST/PATCH /api/maintenance/logs/ — a bus's service or fuel history */
-export type MaintenanceLogType = "SERVICE" | "FUEL";
-
-export interface MaintenanceLog {
-  id: number;
-  bus: number;
-  bus_number: string;
-  log_type: MaintenanceLogType;
-  date: string;
-  odometer_km: number | null;
-  cost: string | null;
-  fuel_liters: string | null;
-  notes: string;
-  logged_by_username: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MaintenanceLogInput {
-  bus?: number | null;
-  log_type: MaintenanceLogType;
-  date: string;
-  odometer_km?: number | null;
-  cost?: string | null;
-  fuel_liters?: string | null;
-  notes?: string;
-}
-
-/** GET /api/maintenance/logs/summary/ — headline cards for the "My Bus" page */
-export interface MaintenanceSummary {
-  bus: number | null;
-  last_service: MaintenanceLog | null;
-  last_fuel: MaintenanceLog | null;
-}
-

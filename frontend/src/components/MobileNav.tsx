@@ -15,7 +15,10 @@ export const MobileNav: React.FC = () => {
   // Staff-only links (e.g. Students) never take one of the precious mobile tab
   // slots for a signed-out or student user — they're filtered before slicing.
   const visible = navItems.filter(
-    (item) => (!item.staffOnly || canManageBuses) && (!item.driverOnly || role === "DRIVER")
+    (item) =>
+      (!item.staffOnly || canManageBuses) &&
+      (!item.driverOnly || role === "DRIVER") &&
+      (!item.studentOnly || (role === "STUDENT" && !canManageBuses))
   );
   const tabs = visible.slice(0, MOBILE_TAB_COUNT);
   const more = [

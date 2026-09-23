@@ -8,6 +8,7 @@ from .views import (
     attendance_history,
     attendance_roster,
     attendance_submit,
+    my_attendance,
 )
 
 router = DefaultRouter()
@@ -19,5 +20,6 @@ urlpatterns = [
     path("submit/", attendance_submit, name="attendance-submit"),
     path("sessions/", attendance_history, name="attendance-history"),
     path("export/", attendance_export, name="attendance-export"),
+    path("my/", my_attendance, name="attendance-my"),
     path("", include(router.urls)),
 ]

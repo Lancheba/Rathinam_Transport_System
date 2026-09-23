@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -29,6 +30,18 @@ class Student(models.Model):
     boarding_point = models.CharField(
         max_length=150, blank=True,
         help_text="Stop where this student gets on the bus."
+    )
+
+    # The student's own login account, once they've linked it to this roster
+    # row (self-service, by roll number — see StudentViewSet.link_me). Lets a
+    # STUDENT-role user look up their own attendance without exposing anyone
+    # else's roll number, phone or email to them.
+    linked_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="student_profile",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

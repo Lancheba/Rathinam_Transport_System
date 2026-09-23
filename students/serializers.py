@@ -42,3 +42,17 @@ class StudentBriefSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ["id", "name", "roll_number", "department", "year", "phone", "boarding_point"]
+
+
+class StudentSelfSerializer(serializers.ModelSerializer):
+    """
+    What a STUDENT-role account sees about *their own* linked roster row —
+    just enough to confirm who they're linked as and which bus, none of the
+    admin-facing detail (no other student's data ever reaches this shape).
+    """
+
+    bus_number = serializers.CharField(source="bus.bus_number", read_only=True, allow_null=True)
+
+    class Meta:
+        model = Student
+        fields = ["id", "name", "roll_number", "department", "year", "bus_number", "boarding_point"]
