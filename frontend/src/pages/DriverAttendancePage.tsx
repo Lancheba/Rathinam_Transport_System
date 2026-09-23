@@ -4,6 +4,7 @@ import {
   Bus as BusIcon, ClipboardCheck, Download, LoaderCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { ExportButton } from "../components/ExportButton";
 import {
   getMyBus, setMyBus, getAttendanceHistory, exportAttendance,
 } from "../api/endpoints";
@@ -186,7 +187,10 @@ const DriverAttendancePage: React.FC = () => {
       ) : bus === null ? (
         <ClaimBusForm onClaimed={setBus} />
       ) : (
-        <HistoryTab />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <ExportButton />
+          <HistoryTab />
+        </div>
       )}
     </div>
   );

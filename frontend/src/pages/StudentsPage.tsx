@@ -3,6 +3,7 @@ import { Users, Search, Bus as BusIcon, Plus, Trash2, X, ShieldAlert, ArrowLeft 
 import axios from "axios";
 import { getBuses, getBusRoster, searchStudents, deleteStudent } from "../api/endpoints";
 import { AddStudentModal } from "../components/AddStudentModal";
+import { ExportButton } from "../components/ExportButton";
 import { useAuth } from "../context/AuthContext";
 import type { Bus, BusRoster, Student } from "../types";
 
@@ -177,6 +178,10 @@ const StudentsPage: React.FC = () => {
             <Plus size={15} strokeWidth={2.4} /> Add student
           </button>
         )}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <ExportButton params={{ bus: selectedBusId }} />
       </div>
 
       {notice && (

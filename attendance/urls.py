@@ -14,7 +14,7 @@ from .views import (
     my_attendance,
 )
 from .qr_views import qr_generate, qr_scan, qr_tally
-
+from .report_views import attendance_report
 router = DefaultRouter()
 router.register("teachers", TeacherViewSet, basename="teacher")
 
@@ -25,6 +25,7 @@ urlpatterns = [
     path("records/<int:record_id>/correct/", attendance_correct, name="attendance-correct"),
     path("sessions/", attendance_history, name="attendance-history"),
     path("export/", attendance_export, name="attendance-export"),
+    path("report/", attendance_report, name="attendance-report"),
     path("my/", my_attendance, name="attendance-my"),
     path("analytics/overview/", attendance_analytics_overview, name="attendance-analytics-overview"),
     path("analytics/student/<int:student_id>/", attendance_analytics_student, name="attendance-analytics-student"),

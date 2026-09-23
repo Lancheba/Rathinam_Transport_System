@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, XCircle, CalendarOff, Clock, LoaderCircle, IdCard, Bus as BusIcon, LogOut,
@@ -7,6 +7,7 @@ import { getMyStudentLink, linkMyStudentProfile, unlinkMyStudentProfile, getMyAt
 import type { MyStudentLink, MyAttendance, MyAttendanceDay, AttendanceSlot, AttendanceSource } from "../types";
 import { inputStyle, labelStyle, primaryBtn, ghostBtn, errorText } from "./DriverAttendancePage";
 import MyAttendanceAnalytics from "../components/MyAttendanceAnalytics";
+import { ExportButton } from "../components/ExportButton";
 
 const dayLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -289,6 +290,7 @@ export const MyAttendancePage: React.FC = () => {
 
           {slotBlock?.today && <TodayCard day={slotBlock.today} />}
           {slotBlock?.recent && slotBlock.recent.length > 0 && <RecentTrend days={slotBlock.recent} />}
+          <ExportButton />
           <MyAttendanceAnalytics studentId={link.student.id} />
         </div>
       )}
