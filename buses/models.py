@@ -25,6 +25,14 @@ class Bus(models.Model):
         related_name="driven_bus",
     )
 
+    incharge = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="incharge_bus",
+    )
+
     # How many students / teachers the driver has said normally ride this cab.
     # This is a headcount the driver maintains, separate from (and usually
     # close to, but not required to match) the number of roster rows actually

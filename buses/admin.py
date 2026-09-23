@@ -13,9 +13,10 @@ class BusAdmin(admin.ModelAdmin):
         "width_m",
         "is_active",
         "driver",
+        "incharge",
         "student_capacity",
         "teacher_capacity",
     )
 
-    search_fields = ("bus_number", "rfid_uid", "route", "driver__username")
+    search_fields = ("bus_number", "rfid_uid", "route", "driver__username", "incharge__username")
     list_filter = ("is_active",)

@@ -21,14 +21,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    identity = serializers.CharField(source="profile.identity", read_only=True)
     role = serializers.CharField(source="profile.role", read_only=True)
     can_manage_buses = serializers.SerializerMethodField()
     is_admin = serializers.SerializerMethodField()
     driven_bus_number = serializers.SerializerMethodField()
+    incharge_bus_number = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "can_manage_buses", "is_admin", "driven_bus_number"]
+        fields = ["id", "username", "email", "role", "identity", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number"]
 
     def get_can_manage_buses(self, obj):
         return can_manage_buses(obj)
@@ -39,6 +41,21 @@ class UserSerializer(serializers.ModelSerializer):
     def get_driven_bus_number(self, obj):
         bus = getattr(obj, "driven_bus", None)
         return bus.bus_number if bus else None
+
+    def get_incharge_bus_number(self, obj):
+        bus = getattr(obj, "incharge_bus", None)
+        return bus.bus_number if bus else None
+
+
+class SetIdentitySerializer(serializers.Serializer):
+    identity = serializers.ChoiceField(choices=["STUDENT", "TEACHER"])
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        profile = user.profile
+        profile.identity = self.validated_data["identity"]
+        profile.save(update_fields=["identity"])
+        return profile
 
 
 class DriverLoginSerializer(TokenObtainPairSerializer):

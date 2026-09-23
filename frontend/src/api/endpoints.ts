@@ -1,4 +1,4 @@
-ï»¿import api from "./client";
+import api from "./client";
 import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
@@ -44,6 +44,8 @@ export const applyOptimization = (result_id: number) =>
 export const login = (username: string, password: string, cab_number?: string) =>
   api.post<{ access: string; refresh: string }>("/auth/login/", { username, password, cab_number }).then(r => r.data);
 export const getMe = () => api.get<CurrentUser>("/auth/me/").then(r => r.data);
+export const setIdentity = (identity: "STUDENT" | "TEACHER") =>
+  api.patch<CurrentUser>("/auth/me/identity/", { identity }).then(r => r.data);
 
 // Sensors: create / delete
 export const createSensor = (data: SensorInput) => api.post<Sensor>("/sensors/", data).then(r => r.data);
@@ -55,7 +57,7 @@ export const createAnnouncement = (data: AnnouncementInput) =>
   api.post<Announcement>("/announcements/", data).then(r => r.data);
 export const deleteAnnouncement = (id: number) => api.delete(`/announcements/${id}/`);
 
-// Students (transport staff / admins only â€” roll numbers, phone numbers etc. are personal data)
+// Students (transport staff / admins only — roll numbers, phone numbers etc. are personal data)
 export const getStudents = (params?: Record<string, string>) =>
   api.get<Student[]>("/students/", { params }).then(r => r.data);
 export const getStudentsByBus = (busId: number) =>
@@ -102,7 +104,7 @@ export const submitAttendance = (data: AttendanceSubmitInput) =>
   api.post<AttendanceSession>("/attendance/submit/", data).then(r => r.data);
 export const getAttendanceHistory = (params?: { from?: string; to?: string }) =>
   api.get<AttendanceSession[]>("/attendance/sessions/", { params }).then(r => r.data);
-// JWT auth is a header, not a cookie, so export can't be a plain <a href> link â€”
+// JWT auth is a header, not a cookie, so export can't be a plain <a href> link —
 // fetch it as a blob (the interceptor attaches the token) and save it client-side.
 export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?: { from?: string; to?: string }) => {
   const res = await api.get("/attendance/export/", {

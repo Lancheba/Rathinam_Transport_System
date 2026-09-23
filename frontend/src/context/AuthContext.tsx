@@ -1,6 +1,6 @@
-﻿import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import axios from "axios";
-import { login as loginAPI, getMe } from "../api/endpoints";
+import { login as loginAPI, getMe, setIdentity as setIdentityAPI } from "../api/endpoints";
 import type { CurrentUser } from "../types";
 
 interface AuthContextType {
@@ -12,13 +12,18 @@ interface AuthContextType {
   isAdmin: boolean;
   /** Bus number this driver is linked to, if role is DRIVER and a bus has been claimed */
   drivenBusNumber: string | null;
+  identity: CurrentUser["identity"];
+  /** Bus number this in-charge is linked to, if role is INCHARGE and a bus has been assigned */
+  inchargeBusNumber: string | null;
+  setUserIdentity: (identity: "STUDENT" | "TEACHER") => Promise<void>;
   login: (u: string, p: string, cabNumber?: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false, username: null, role: null, roleLabel: null, canManageBuses: false, isAdmin: false,
-  drivenBusNumber: null,
+  drivenBusNumber: null, identity: null, inchargeBusNumber: null,
+  setUserIdentity: async () => {},
   login: async () => {}, logout: () => {},
 });
 
@@ -40,6 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [canManageBuses, setCanManageBuses] = useState(localStorage.getItem("can_manage_buses") === "1");
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem("is_admin") === "1");
   const [drivenBusNumber, setDrivenBusNumber] = useState<string | null>(localStorage.getItem("driven_bus_number"));
+  const [identity, setIdentityState] = useState<CurrentUser["identity"]>(
+    localStorage.getItem("identity") as CurrentUser["identity"] | null
+  );
+  const [inchargeBusNumber, setInchargeBusNumber] = useState<string | null>(localStorage.getItem("incharge_bus_number"));
 
   const applyUser = useCallback((me: CurrentUser | null) => {
     if (me) {
@@ -48,16 +57,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem("is_admin", me.is_admin ? "1" : "0");
       if (me.driven_bus_number) localStorage.setItem("driven_bus_number", me.driven_bus_number);
       else localStorage.removeItem("driven_bus_number");
+      if (me.identity) localStorage.setItem("identity", me.identity);
+      else localStorage.removeItem("identity");
+      if (me.incharge_bus_number) localStorage.setItem("incharge_bus_number", me.incharge_bus_number);
+      else localStorage.removeItem("incharge_bus_number");
     } else {
       localStorage.removeItem("role");
       localStorage.removeItem("can_manage_buses");
       localStorage.removeItem("is_admin");
       localStorage.removeItem("driven_bus_number");
+      localStorage.removeItem("identity");
+      localStorage.removeItem("incharge_bus_number");
     }
     setRole(me?.role ?? null);
     setCanManageBuses(me?.can_manage_buses ?? false);
     setIsAdmin(me?.is_admin ?? false);
     setDrivenBusNumber(me?.driven_bus_number ?? null);
+    setIdentityState(me?.identity ?? null);
+    setInchargeBusNumber(me?.incharge_bus_number ?? null);
   }, []);
 
   // Refresh role on page load in case it changed since the last visit
@@ -92,6 +109,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCanManageBuses(false);
     setIsAdmin(false);
     setDrivenBusNumber(null);
+    setIdentityState(null);
+    setInchargeBusNumber(null);
+  };
+
+  const setUserIdentity = async (value: "STUDENT" | "TEACHER") => {
+    const me = await setIdentityAPI(value);
+    applyUser(me);
   };
 
   return (
@@ -99,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         isLoggedIn, username, role, roleLabel: labelFor(role, canManageBuses),
         canManageBuses: isLoggedIn && canManageBuses, isAdmin: isLoggedIn && isAdmin,
-        drivenBusNumber, login, logout,
+        drivenBusNumber, identity, inchargeBusNumber, setUserIdentity, login, logout,
       }}
     >
       {children}

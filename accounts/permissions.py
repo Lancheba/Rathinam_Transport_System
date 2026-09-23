@@ -69,6 +69,8 @@ def role_label(user):
         return "Transport Staff"
     if can_manage_buses(user):
         return "Administrator"
+    if profile and profile.role == "INCHARGE":
+        return "Cab In-Charge"
     if profile and profile.role == "DRIVER":
         return "Driver"
     return "Student"
@@ -102,6 +104,23 @@ class IsStudent(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return is_student(request.user)
+
+
+def is_incharge(user):
+    """True for accounts tagged as Cab In-Charge (the INCHARGE role)."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return False
+    profile = getattr(user, "profile", None)
+    return bool(profile and profile.role == "INCHARGE")
+
+
+class IsCabInCharge(permissions.BasePermission):
+    message = "Only the cab in-charge can do this."
+
+    def has_permission(self, request, view):
+        return is_incharge(request.user)
 
 
 class HasDeviceKey(permissions.BasePermission):

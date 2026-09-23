@@ -23,7 +23,7 @@ class UserCreateForm(BaseUserAdmin.add_form):
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
-    fields = ("role",)
+    fields = ("role", "identity")
 
 
 def _add_role_after_username(fieldsets):

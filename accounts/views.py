@@ -1,7 +1,8 @@
 from rest_framework import generics, permissions
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from config.throttles import LoginThrottle, RegisterThrottle
-from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer
+from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer, SetIdentitySerializer
 from django.contrib.auth.models import User
 
 
@@ -23,3 +24,14 @@ class MeView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class SetIdentityView(generics.GenericAPIView):
+    serializer_class = SetIdentitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)

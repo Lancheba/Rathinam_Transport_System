@@ -25,6 +25,7 @@ import MyAttendancePage from "./pages/MyAttendancePage";
 import FaceEnrollmentPage from "./pages/FaceEnrollmentPage";
 import ScanAttendancePage from "./pages/ScanAttendancePage";
 import AttendanceAnalyticsPage from "./pages/AttendanceAnalyticsPage";
+import { IdentityPromptModal } from "./components/IdentityPromptModal";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
@@ -37,6 +38,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const { roleLabel } = useAuth();
+  const { role, identity } = useAuth();
   const isMobile = useIsMobile();
 
   const onFindPage = pathname === "/dashboard/find";
@@ -71,6 +73,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="app-shell">
+      {role === "INCHARGE" && !identity && <IdentityPromptModal />}
       {/* Background Liquid Glass Fluid Waveforms — Strictly fixed, never in-flow */}
       <div className="liquid-bg-waves" />
       <svg
