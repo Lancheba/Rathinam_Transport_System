@@ -4,6 +4,7 @@ import {
   Bus as BusIcon, CalendarDays, CheckCircle2, XCircle, Download, ClipboardCheck,
   LoaderCircle, History as HistoryIcon, Save,
 } from "lucide-react";
+import QRDisplaySection from "../components/QRDisplaySection";
 import { useAuth } from "../context/AuthContext";
 import {
   getMyBus, setMyBus, getRoster, submitAttendance, getAttendanceHistory, exportAttendance,
@@ -384,6 +385,7 @@ const DriverAttendancePage: React.FC = () => {
         <ClaimBusForm onClaimed={setBus} />
       ) : (
         <>
+          <QRDisplaySection />
           <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
             <button type="button" style={tabStyle(tab === "mark")} onClick={() => setTab("mark")}>
               <CalendarDays size={14} /> Mark attendance

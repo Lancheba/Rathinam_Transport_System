@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, XCircle, CalendarOff, Clock, LoaderCircle, IdCard, Bus as BusIcon, LogOut,
 } from "lucide-react";
@@ -162,12 +163,34 @@ export const MyAttendancePage: React.FC = () => {
     setAttendance(null);
   };
 
+  const navigate = useNavigate();
+
+  // Show Scan button only when a window is open
+  const windowOpen = (() => {
+    const h = new Date().getHours();
+    return (h >= 5 && h < 10) || (h >= 16 && h < 20);
+  })();
+
   return (
     <div style={{ padding: "8px 4px 32px", maxWidth: 720 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-strong)", margin: "0 0 4px" }}>My Attendance</h1>
-      <p style={{ fontSize: 14, color: "var(--text-muted)", margin: "0 0 20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 4 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-strong)", margin: 0 }}>My Attendance</h1>
+        {windowOpen && (
+          <button onClick={() => navigate("/dashboard/scan-attendance")}
+            style={{ padding: "8px 16px", background: "#2563eb", color: "#fff",
+                     borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 700 }}>
+            📷 Scan QR Attendance
+          </button>
+        )}
+      </div>
+      <p style={{ fontSize: 14, color: "var(--text-muted)", margin: "0 0 12px" }}>
         Whether you were marked present or absent on your bus, straight from your driver's attendance sheet.
       </p>
+      <button onClick={() => navigate("/dashboard/face-enrollment")}
+        style={{ fontSize: 13, color: "var(--accent-indigo, #6366f1)", background: "none",
+                 border: "none", cursor: "pointer", padding: 0, marginBottom: 16 }}>
+        🪪 Update my Face ID
+      </button>
 
       {loading && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 14 }}>

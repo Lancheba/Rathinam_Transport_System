@@ -203,3 +203,10 @@ if not DEBUG:
         SECURE_HSTS_SECONDS = 3600          # raise (e.g. 31536000) after confirming HTTPS is stable
         if _env_bool("DJANGO_BEHIND_PROXY"):  # only if a proxy you control sets X-Forwarded-Proto
             SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# --- Smart Attendance Feature ---
+ATTENDANCE_MORNING_WINDOW = ('05:00', '09:30')
+ATTENDANCE_EVENING_WINDOW  = ('16:30', '19:30')
+FACE_MATCH_THRESHOLD = 0.6
+QR_TOKEN_TTL_SECONDS = 60
+FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5

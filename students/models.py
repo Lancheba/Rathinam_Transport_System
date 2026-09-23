@@ -17,8 +17,6 @@ class Student(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
 
-    # A student without a bus yet (new admission, walks/self-transport) is fine.
-    # If the bus is deleted the student record stays, just unassigned.
     bus = models.ForeignKey(
         "buses.Bus",
         on_delete=models.SET_NULL,
@@ -32,10 +30,6 @@ class Student(models.Model):
         help_text="Stop where this student gets on the bus."
     )
 
-    # The student's own login account, once they've linked it to this roster
-    # row (self-service, by roll number — see StudentViewSet.link_me). Lets a
-    # STUDENT-role user look up their own attendance without exposing anyone
-    # else's roll number, phone or email to them.
     linked_user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -52,3 +46,20 @@ class Student(models.Model):
 
     def __str__(self):
         return f"{self.roll_number} - {self.name}"
+
+
+class FaceProfile(models.Model):
+    student = models.OneToOneField(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="face_profile",
+    )
+    embedding = models.JSONField()
+    embedding_model = models.CharField(max_length=50, default="face-api-128d")
+    consent_given = models.BooleanField(default=False)
+    consent_at = models.DateTimeField(null=True, blank=True)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"FaceProfile({self.student.roll_number})"

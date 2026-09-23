@@ -1,0 +1,100 @@
+import { useState, useEffect, useRef } from "react";
+import api from "../api/client";
+
+interface QRData {
+  qr_image_base64: string;
+  token: string;
+  expires_at: string;
+  session_id: number;
+  slot: string;
+  present_count: number;
+  total_count: number;
+}
+
+export default function QRDisplaySection() {
+  const [qrData, setQrData]       = useState<QRData | null>(null);
+  const [active, setActive]        = useState(false);
+  const [error, setError]          = useState("");
+  const [countdown, setCountdown]  = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function currentSlotLabel() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 10)  return "Morning";
+    if (h >= 16 && h < 20)  return "Evening";
+    return null;
+  }
+
+  async function fetchQR() {
+    try {
+      const res = await api.post<QRData>("/attendance/qr/generate/");
+      setQrData(res.data);
+      setError("");
+      setCountdown(45);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail ?? "Failed to generate QR.");
+    }
+  }
+
+  function start() {
+    setActive(true);
+    fetchQR();
+    pollRef.current  = setInterval(fetchQR, 45_000);
+    timerRef.current = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : 0)), 1_000);
+  }
+
+  function stop() {
+    setActive(false);
+    setQrData(null);
+    clearInterval(pollRef.current!);
+    clearInterval(timerRef.current!);
+  }
+
+  useEffect(() => () => { clearInterval(pollRef.current!); clearInterval(timerRef.current!); }, []);
+
+  const label = currentSlotLabel();
+
+  return (
+    <div style={{ border: "1px solid var(--border, #e5e7eb)", borderRadius: 12,
+                  padding: "1.25rem", marginBottom: "1.5rem" }}>
+      <h3 style={{ marginTop: 0 }}>🟢 Smart QR Attendance {label ? `— ${label}` : ""}</h3>
+
+      {!label && !active && (
+        <p style={{ color: "#6b7280" }}>No attendance window is open right now.</p>
+      )}
+
+      {!active ? (
+        <button onClick={start} disabled={!label}
+          style={{ padding: "0.65rem 1.3rem", background: "#2563eb", color: "#fff",
+                   borderRadius: 8, border: "none", cursor: label ? "pointer" : "not-allowed" }}>
+          Start {label ?? "Attendance"}
+        </button>
+      ) : (
+        <button onClick={stop}
+          style={{ padding: "0.65rem 1.3rem", background: "#dc2626", color: "#fff",
+                   borderRadius: 8, border: "none", cursor: "pointer" }}>
+          Stop
+        </button>
+      )}
+
+      {error && <p style={{ color: "#dc2626", marginTop: "0.75rem" }}>{error}</p>}
+
+      {qrData && (
+        <div style={{ marginTop: "1rem", textAlign: "center" }}>
+          <img
+            src={`data:image/png;base64,${qrData.qr_image_base64}`}
+            alt="Attendance QR"
+            style={{ width: 220, height: 220, borderRadius: 8 }}
+          />
+          <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: "0.4rem 0 0" }}>
+            Refreshing in {countdown}s
+          </p>
+          <p style={{ fontWeight: 600, margin: "0.5rem 0 0" }}>
+            {qrData.present_count} / {qrData.total_count} present
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
