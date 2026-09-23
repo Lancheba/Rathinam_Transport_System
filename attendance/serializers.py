@@ -36,12 +36,14 @@ class TeacherSerializer(serializers.ModelSerializer):
 class AttendanceRecordSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     identifier = serializers.SerializerMethodField()
+    locked = serializers.SerializerMethodField()
 
     class Meta:
         model = AttendanceRecord
         fields = [
             "id", "person_type", "student", "teacher", "status", "remarks",
             "source", "marked_at", "face_match_score",
+            "locked", "is_correction", "corrected_at",
             "name", "identifier",
         ]
 
@@ -55,6 +57,9 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
         if obj.teacher_id:
             return obj.teacher.staff_id
         return None
+
+    def get_locked(self, obj):
+        return obj.status == "PRESENT"
 
 
 class AttendanceSessionSerializer(serializers.ModelSerializer):

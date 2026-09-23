@@ -2,7 +2,7 @@
 import axios from "axios";
 import {
   Bus as BusIcon, CalendarDays, CheckCircle2, XCircle, Download, ClipboardCheck,
-  LoaderCircle, History as HistoryIcon, Save,
+  LoaderCircle, History as HistoryIcon, Save, Lock,
 } from "lucide-react";
 import QRDisplaySection from "../components/QRDisplaySection";
 import { useAuth } from "../context/AuthContext";
@@ -95,26 +95,33 @@ export const ClaimBusForm: React.FC<{ onClaimed: (bus: Bus) => void }> = ({ onCl
 
 const StatusButtons: React.FC<{
   value: AttendanceStatus | null;
+  locked: boolean;
   onChange: (s: AttendanceStatus) => void;
-}> = ({ value, onChange }) => (
+}> = ({ value, locked, onChange }) => (
   <div style={{ display: "flex", gap: 6 }}>
-    <button type="button" onClick={() => onChange("PRESENT")}
+    <button type="button" onClick={() => !locked && onChange("PRESENT")}
       aria-pressed={value === "PRESENT"}
+      disabled={locked}
+      title={locked ? "Already marked Present — locked. Ask an admin to correct it if this is wrong." : undefined}
       style={{
         display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
         border: `1px solid ${value === "PRESENT" ? "var(--accent-green)" : "rgba(99,102,241,0.2)"}`,
         background: value === "PRESENT" ? "rgba(34,197,94,0.15)" : "transparent",
-        color: value === "PRESENT" ? "var(--accent-green)" : "var(--text-muted)", cursor: "pointer",
+        color: value === "PRESENT" ? "var(--accent-green)" : "var(--text-muted)",
+        cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.65 : 1,
       }}>
-      <CheckCircle2 size={13} /> Present
+      {locked ? <Lock size={13} /> : <CheckCircle2 size={13} />} Present
     </button>
-    <button type="button" onClick={() => onChange("ABSENT")}
+    <button type="button" onClick={() => !locked && onChange("ABSENT")}
       aria-pressed={value === "ABSENT"}
+      disabled={locked}
+      title={locked ? "Present is locked — Absent can't be re-toggled here either." : undefined}
       style={{
         display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
         border: `1px solid ${value === "ABSENT" ? "var(--accent-red)" : "rgba(99,102,241,0.2)"}`,
         background: value === "ABSENT" ? "rgba(248,113,113,0.15)" : "transparent",
-        color: value === "ABSENT" ? "var(--accent-red)" : "var(--text-muted)", cursor: "pointer",
+        color: value === "ABSENT" ? "var(--accent-red)" : "var(--text-muted)",
+        cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.65 : 1,
       }}>
       <XCircle size={13} /> Absent
     </button>
@@ -134,7 +141,7 @@ const RosterRow: React.FC<{
       <div style={{ color: "var(--text-strong)", fontWeight: 600, fontSize: 14 }}>{person.name}</div>
       <div style={{ color: "var(--text-dim)", fontSize: 12 }}>{person.roll_number ?? person.staff_id ?? ""}</div>
     </div>
-    <StatusButtons value={value} onChange={onChange} />
+    <StatusButtons value={value} locked={person.locked} onChange={onChange} />
   </div>
 );
 
@@ -176,10 +183,12 @@ const MarkTab: React.FC<{ bus: Bus }> = ({ bus: _bus }) => {
 
   const markAll = (s: AttendanceStatus) => {
     if (!roster) return;
-    const next: Record<string, AttendanceStatus> = {};
-    roster.students.forEach(p => { next[key("STUDENT", p.id)] = s; });
-    roster.teachers.forEach(p => { next[key("TEACHER", p.id)] = s; });
-    setStatuses(next);
+    setStatuses(prev => {
+      const next: Record<string, AttendanceStatus> = {};
+      roster.students.forEach(p => { next[key("STUDENT", p.id)] = p.locked ? "PRESENT" : s; });
+      roster.teachers.forEach(p => { next[key("TEACHER", p.id)] = p.locked ? "PRESENT" : s; });
+      return { ...prev, ...next };
+    });
   };
 
   const submit = async () => {

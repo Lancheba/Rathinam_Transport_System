@@ -129,3 +129,122 @@ class MyAttendanceTests(APITestCase):
         self.assertEqual(res.data["evening"]["today"]["status"], "PRESENT")
         self.assertEqual(res.data["evening"]["today"]["source"], "QR_FACE")
         self.assertFalse(res.data["morning"]["today"]["marked"])
+
+
+class AttendanceLockAndCorrectionTests(APITestCase):
+    """Phase 1: a driver can never un-mark Present, and can never self-correct
+    Absent -> Present. Only the admin/staff correct endpoint can do that,
+    and only once."""
+
+    def setUp(self):
+        self.bus = make_bus("B21")
+        self.driver_user = make_user("driver21", "DRIVER")
+        self.bus.driver = self.driver_user
+        self.bus.save(update_fields=["driver"])
+        self.admin = make_user("admin21", "ADMIN")
+        self.alice = Student.objects.create(name="Alice", roll_number="R921", bus=self.bus)
+        self.today = date.today()
+        self.submit_url = "/api/attendance/submit/"
+
+    def _submit(self, status_value):
+        self.client.force_authenticate(self.driver_user)
+        return self.client.post(self.submit_url, {
+            "date": str(self.today), "slot": "MORNING", "is_holiday": False,
+            "records": [{"person_type": "STUDENT", "id": self.alice.id, "status": status_value}],
+        }, format="json")
+
+    def _record(self):
+        return AttendanceRecord.objects.get(student=self.alice, session__date=self.today, session__slot="MORNING")
+
+    def test_driver_cannot_unmark_present(self):
+        self._submit("PRESENT")
+        self.assertEqual(self._record().status, "PRESENT")
+        self._submit("ABSENT")
+        self.assertEqual(self._record().status, "PRESENT")
+
+    def test_driver_cannot_self_correct_absent_to_present(self):
+        self._submit("ABSENT")
+        self.assertEqual(self._record().status, "ABSENT")
+        self._submit("PRESENT")
+        self.assertEqual(self._record().status, "ABSENT")
+
+    def test_fresh_present_submission_still_works(self):
+        res = self._submit("PRESENT")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(self._record().status, "PRESENT")
+
+    def test_admin_correction_flips_absent_to_present_once(self):
+        self._submit("ABSENT")
+        record = self._record()
+        self.client.force_authenticate(self.admin)
+        url = f"/api/attendance/records/{record.id}/correct/"
+        res = self.client.patch(url, {"remark": "Sick note verified"}, format="json")
+        self.assertEqual(res.status_code, 200)
+        record.refresh_from_db()
+        self.assertEqual(record.status, "PRESENT")
+        self.assertTrue(record.is_correction)
+        self.assertEqual(record.corrected_by_id, self.admin.id)
+
+        # Second correction attempt is rejected — already Present and locked.
+        res2 = self.client.patch(url, {}, format="json")
+        self.assertEqual(res2.status_code, 400)
+
+    def test_driver_cannot_call_correct_endpoint(self):
+        self._submit("ABSENT")
+        record = self._record()
+        self.client.force_authenticate(self.driver_user)
+        res = self.client.patch(f"/api/attendance/records/{record.id}/correct/", {}, format="json")
+        self.assertEqual(res.status_code, 403)
+
+
+class AttendanceAnalyticsTests(APITestCase):
+    """Phase 2: cohort-wide analytics aggregation for a small seeded dataset."""
+
+    def setUp(self):
+        self.bus = make_bus("B22")
+        self.admin = make_user("admin22", "ADMIN")
+        self.driver = make_user("driver22", "DRIVER")
+        self.alice = Student.objects.create(name="Alice", roll_number="R922A", bus=self.bus, department="CSE")
+        self.bob = Student.objects.create(name="Bob", roll_number="R922B", bus=self.bus, department="CSE")
+        self.today = date.today()
+
+        # Day 1: both present.
+        s1 = AttendanceSession.objects.create(bus=self.bus, date=self.today - timedelta(days=1))
+        AttendanceRecord.objects.create(session=s1, person_type="STUDENT", student=self.alice, status="PRESENT")
+        AttendanceRecord.objects.create(session=s1, person_type="STUDENT", student=self.bob, status="PRESENT")
+
+        # Day 2: Alice absent, Bob present.
+        s2 = AttendanceSession.objects.create(bus=self.bus, date=self.today)
+        AttendanceRecord.objects.create(session=s2, person_type="STUDENT", student=self.alice, status="ABSENT")
+        AttendanceRecord.objects.create(session=s2, person_type="STUDENT", student=self.bob, status="PRESENT")
+
+        self.url = "/api/attendance/analytics/overview/"
+
+    def test_overview_percentages(self):
+        self.client.force_authenticate(self.admin)
+        res = self.client.get(self.url, {"period": "monthly", "year": self.today.year, "month": self.today.month})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["total_count"], 4)
+        self.assertEqual(res.data["present_count"], 3)
+        self.assertEqual(res.data["absent_count"], 1)
+        self.assertEqual(res.data["overall_pct"], 75.0)
+
+    def test_top_absentees_lists_alice(self):
+        self.client.force_authenticate(self.admin)
+        res = self.client.get(self.url, {"period": "monthly", "year": self.today.year, "month": self.today.month})
+        names = [a["name"] for a in res.data["top_absentees"]]
+        self.assertIn("Alice", names)
+
+    def test_driver_cannot_access_overview(self):
+        self.client.force_authenticate(self.driver)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, 403)
+
+    def test_student_analytics_endpoint(self):
+        self.client.force_authenticate(self.admin)
+        res = self.client.get(f"/api/attendance/analytics/student/{self.alice.id}/", {"year": self.today.year})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["present_count"], 1)
+        self.assertEqual(res.data["absent_count"], 1)
+        self.assertEqual(res.data["attendance_pct"], 50.0)
+        self.assertEqual(res.data["longest_absence_streak"], 1)

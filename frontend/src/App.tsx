@@ -24,6 +24,7 @@ import DriverStudentsPage from "./pages/DriverStudentsPage";
 import MyAttendancePage from "./pages/MyAttendancePage";
 import FaceEnrollmentPage from "./pages/FaceEnrollmentPage";
 import ScanAttendancePage from "./pages/ScanAttendancePage";
+import AttendanceAnalyticsPage from "./pages/AttendanceAnalyticsPage";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
@@ -157,6 +158,7 @@ export const App: React.FC = () => {
                   <Route path="my-attendance" element={<MyAttendancePage />} />
                   <Route path="face-enrollment" element={<FaceEnrollmentPage />} />
                   <Route path="scan-attendance" element={<ScanAttendancePage />} />
+                  <Route path="attendance-analytics" element={<AttendanceAnalyticsPage />} />
                 </Routes>
               </MainLayout>
             }

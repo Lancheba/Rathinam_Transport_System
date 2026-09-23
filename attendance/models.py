@@ -95,6 +95,15 @@ class AttendanceRecord(models.Model):
     source = models.CharField(max_length=15, choices=SOURCE_CHOICES, default="MANUAL")
     marked_at = models.DateTimeField(null=True, blank=True)
     face_match_score = models.FloatField(null=True, blank=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    corrected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="attendance_corrections",
+    )
+    corrected_at = models.DateTimeField(null=True, blank=True)
+    is_correction = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

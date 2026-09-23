@@ -1,4 +1,4 @@
-﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck } from "lucide-react";
+﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -24,6 +24,8 @@ export const navItems = [
   // makes sense for STUDENT-role accounts (staff/admin/driver see the real roster instead).
   { to: "/dashboard/my-attendance", label: "My Attendance", short: "Attend",  icon: UserCheck, studentOnly: true },
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
+  // Attendance analytics (cohort trend, per-student drill-down) is a management view, not a driver task.
+  { to: "/dashboard/attendance-analytics", label: "Attendance Analytics", short: "Attend. Analytics", icon: LineChart, staffOnly: true },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },
   // Everyone signed in can send a complaint or feedback; only admins see the inbox inside the page.

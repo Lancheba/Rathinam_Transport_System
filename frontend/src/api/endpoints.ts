@@ -4,7 +4,8 @@ import type {
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
   Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary,
   DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance, AttendanceSlot,
-  MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary
+  MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary,
+  AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
 } from "../types";
 
 // Buses
@@ -123,6 +124,18 @@ export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?
 
 // Student's own attendance (yesterday + a short recent trend)
 export const getMyAttendance = () => api.get<MyAttendance>("/attendance/my/").then(r => r.data);
+
+// Admin/staff correction: the only way to flip an Absent record to Present after submission
+export const correctAttendanceRecord = (recordId: number, remark?: string) =>
+  api.patch<AttendanceRecord>(`/attendance/records/${recordId}/correct/`, { remark }).then(r => r.data);
+
+// Attendance analytics (admin/staff)
+export const getAttendanceAnalyticsOverview = (params: {
+  period?: AnalyticsPeriod; year?: number; month?: number; bus?: number; department?: string;
+}) => api.get<AttendanceAnalyticsOverview>("/attendance/analytics/overview/", { params }).then(r => r.data);
+
+export const getStudentAttendanceAnalytics = (studentId: number, params?: { year?: number; month?: number }) =>
+  api.get<AttendanceStudentAnalytics>(`/attendance/analytics/student/${studentId}/`, { params }).then(r => r.data);
 
 // Maintenance (driver's own bus: service + fuel logs)
 export const getMaintenanceSummary = (params?: { bus?: number }) =>

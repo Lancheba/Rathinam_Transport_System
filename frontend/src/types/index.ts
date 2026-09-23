@@ -283,6 +283,7 @@ export interface AttendanceRosterPerson {
   roll_number?: string;
   staff_id?: string;
   status: AttendanceStatus | null;
+  locked: boolean;
 }
 
 /** GET /api/attendance/roster/ — today's (or a given date's) roster to mark */
@@ -324,8 +325,72 @@ export interface AttendanceRecord {
   source: AttendanceSource;
   marked_at: string | null;
   face_match_score: number | null;
+  locked: boolean;
+  is_correction: boolean;
+  corrected_at: string | null;
   name: string | null;
   identifier: string | null;
+}
+
+/* ------------------------------------------------------------ Attendance analytics */
+
+export type AnalyticsPeriod = "monthly" | "yearly";
+
+export interface AttendanceTrendPoint {
+  label: string;
+  present: number;
+  total: number;
+  pct: number;
+}
+
+export interface AttendanceBusBreakdown {
+  bus_id: number;
+  bus_number: string;
+  present: number;
+  total: number;
+  pct: number;
+}
+
+export interface AttendanceTopAbsentee {
+  student_id: number;
+  name: string;
+  roll_number: string;
+  absences: number;
+}
+
+/** GET /api/attendance/analytics/overview/ */
+export interface AttendanceAnalyticsOverview {
+  period: AnalyticsPeriod;
+  year: number;
+  month: number | null;
+  overall_pct: number;
+  present_count: number;
+  absent_count: number;
+  total_count: number;
+  trend: AttendanceTrendPoint[];
+  by_bus: AttendanceBusBreakdown[];
+  top_absentees: AttendanceTopAbsentee[];
+}
+
+export interface AttendanceCalendarDay {
+  id: number;
+  date: string;
+  status: AttendanceStatus;
+  is_correction: boolean;
+  locked: boolean;
+}
+
+/** GET /api/attendance/analytics/student/<id>/ */
+export interface AttendanceStudentAnalytics {
+  student: { id: number; name: string; roll_number: string };
+  year: number;
+  month: number | null;
+  present_count: number;
+  absent_count: number;
+  total_count: number;
+  attendance_pct: number;
+  calendar: AttendanceCalendarDay[];
+  longest_absence_streak: number;
 }
 
 // ---- Student self-service: link my login to my roster row, and my own attendance ----
