@@ -1,10 +1,13 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from .models import Bus
 
 
 class BusSerializer(serializers.ModelSerializer):
     parking_slot_info = serializers.SerializerMethodField()
     driver_username = serializers.CharField(source="driver.username", read_only=True, allow_null=True)
+    incharge_username = serializers.CharField(source="incharge.username", read_only=True, allow_null=True)
+    driver_phone = serializers.SerializerMethodField()
+    incharge_phone = serializers.SerializerMethodField()
 
     # Bus dimensions are stored as DecimalField(5, 2): reject zero/negative values
     length_m = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=1)
@@ -16,7 +19,7 @@ class BusSerializer(serializers.ModelSerializer):
             "id", "bus_number", "rfid_uid", "route",
             "departure_time", "length_m", "width_m",
             "is_active", "parking_slot_info",
-            "driver_username", "student_capacity", "teacher_capacity",
+            "driver_username", "driver_phone", "incharge_username", "incharge_phone", "student_capacity", "teacher_capacity",
             "created_at", "updated_at",
         ]
         # Uniqueness is checked in validate_bus_number / validate_rfid_uid
@@ -66,3 +69,11 @@ class BusSerializer(serializers.ModelSerializer):
             }
         except Exception:
             return None
+
+    def get_driver_phone(self, obj):
+        profile = getattr(obj.driver, "profile", None) if obj.driver_id else None
+        return profile.phone if profile else ""
+
+    def get_incharge_phone(self, obj):
+        profile = getattr(obj.incharge, "profile", None) if obj.incharge_id else None
+        return profile.phone if profile else ""

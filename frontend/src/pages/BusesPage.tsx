@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CircleCheck, X, Trash2, Bus as BusIcon, Route as RouteIcon, Clock, Radio, MapPin, TriangleAlert } from "lucide-react";
 import { getBuses, deleteBus } from "../api/endpoints";
 import { AddBusButton } from "../components/AddBusButton";
+import { BusDetailModal } from "../components/BusDetailModal";
 import { useAuth } from "../context/AuthContext";
 import type { Bus } from "../types";
 
@@ -10,6 +11,7 @@ const BusesPage: React.FC = () => {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
   const { canManageBuses } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -105,7 +107,8 @@ const BusesPage: React.FC = () => {
           const slot = bus.parking_slot_info;
           const borderColor = slot?.is_blocked ? "rgba(251,191,36,0.4)" : "rgba(96,165,250,0.2)";
           return (
-            <div key={bus.id} className="liquid-glass-card" style={{
+            <div key={bus.id} className="liquid-glass-card" role="button" tabIndex={0} onClick={() => setSelectedBus(bus)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedBus(bus); } }} style={{
+              cursor: "pointer",
               padding: 18,
               borderColor,
               boxShadow: slot?.is_blocked
@@ -124,7 +127,7 @@ const BusesPage: React.FC = () => {
                     padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
                   }}>{bus.is_active ? "ACTIVE" : "INACTIVE"}</span>
                   {canManageBuses && (
-                    <button type="button" className="icon-btn" onClick={() => handleDelete(bus)} disabled={deletingId === bus.id}
+                    <button type="button" className="icon-btn" onClick={(e) => { e.stopPropagation(); handleDelete(bus); }} disabled={deletingId === bus.id}
                       aria-label={`Remove bus ${bus.bus_number}`}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "center",
@@ -166,6 +169,7 @@ const BusesPage: React.FC = () => {
           );
         })}
       </div>
+      {selectedBus && <BusDetailModal bus={selectedBus} onClose={() => setSelectedBus(null)} />}
     </div>
   );
 };

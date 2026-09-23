@@ -22,6 +22,7 @@ class UserProfile(models.Model):
         max_length=10, choices=IDENTITY_CHOICES, null=True, blank=True,
         help_text="Underlying Student/Teacher identity, separate from role.",
     )
+    phone = models.CharField(max_length=20, blank=True, help_text="Contact number shown to riders.")
 
     def __str__(self):
         return f"{self.user.username} ({self.role})"

@@ -16,6 +16,9 @@ export interface Bus {
   } | null;
   /** Username of the driver linked to this bus, if any (set via the driver's "My Bus" setup) */
   driver_username?: string | null;
+  driver_phone?: string | null;
+  incharge_username?: string | null;
+  incharge_phone?: string | null;
   student_capacity?: number;
   teacher_capacity?: number;
 }
