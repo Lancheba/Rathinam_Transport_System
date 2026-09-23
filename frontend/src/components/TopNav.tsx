@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAnnouncements } from "../hooks/useAnnouncements";
+import { useFeedback } from "../hooks/useFeedback";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface TopNavProps {
@@ -21,8 +22,10 @@ export const TopNav: React.FC<TopNavProps> = ({
   roleTitle = "Administrator",
 }) => {
   // Admins and transport staff (the people who manage buses) are the ones who post announcements
-  const { isLoggedIn, username, logout, canManageBuses: canPostAnnouncements } = useAuth();
+  const { isLoggedIn, username, logout, role, canManageBuses: canPostAnnouncements } = useAuth();
+  const isAdmin = role === "ADMIN";
   const announcements = useAnnouncements();
+  const feedback = useFeedback();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   // Phones show the search field only when asked for it, to keep the bar to one row
@@ -219,7 +222,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             }}
           >
             <Bell size={16} />
-            {announcements.unread > 0 && (
+            {(announcements.unread > 0 || (isAdmin && feedback.unreadCount > 0)) && (
               <span
                 aria-label={`${announcements.unread} unread announcements`}
                 style={{
@@ -243,6 +246,9 @@ export const TopNav: React.FC<TopNavProps> = ({
             canPost={canPostAnnouncements}
             onReloadAnnouncements={announcements.reload}
             onSeenAnnouncements={announcements.markSeen}
+            isAdmin={isAdmin}
+            unreadFeedback={feedback.unreadCount}
+            onReloadFeedback={feedback.reload}
           />
         </div>
 

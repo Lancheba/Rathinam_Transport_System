@@ -15,6 +15,7 @@ import { getEvents } from "../api/endpoints";
 import type { Announcement, ParkingEvent } from "../types";
 import { relativeTime } from "../utils/time";
 import { AnnouncementsTab } from "./AnnouncementsTab";
+import { ComplaintsTab } from "./ComplaintsTab";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ function getMetaForEvent(ev: ParkingEvent) {
 
 // ── component ──────────────────────────────────────────────────────────────────
 
-type Tab = "announcements" | "activity";
+type Tab = "announcements" | "activity" | "complaints";
 
 interface NotificationPanelProps {
   open: boolean;
@@ -47,6 +48,12 @@ interface NotificationPanelProps {
   canPost: boolean;
   /** Re-fetch announcements (after posting, deleting or pressing refresh) */
   onReloadAnnouncements: () => void;
+  /** Number of NEW feedback/complaint items (admins only) */
+  unreadFeedback?: number;
+  /** True when the viewer is an admin (shows Complaints tab) */
+  isAdmin?: boolean;
+  /** Re-fetch feedback count */
+  onReloadFeedback?: () => void;
   /** Called while the announcements tab is on screen, to clear the unread dot */
   onSeenAnnouncements: () => void;
 }
@@ -59,6 +66,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   canPost,
   onReloadAnnouncements,
   onSeenAnnouncements,
+  unreadFeedback = 0,
+  isAdmin = false,
+  onReloadFeedback,
 }) => {
   const [tab, setTab] = useState<Tab>("announcements");
   const [events, setEvents] = useState<ParkingEvent[]>([]);
@@ -104,6 +114,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   const refresh = () => {
     onReloadAnnouncements();
     if (tab === "activity") fetchEvents();
+    onReloadFeedback?.();
   };
 
   if (!open) return null;
@@ -198,6 +209,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
             [
               ["announcements", "Announcements", unreadAnnouncements],
               ["activity", "Activity", 0],
+              ...(isAdmin ? [["complaints", "Complaints", unreadFeedback] as const] : []),
             ] as const
           ).map(([id, label, count]) => {
             const active = tab === id;
@@ -255,7 +267,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
         {/* list */}
         <div style={{ overflowY: "auto", flex: 1, padding: "10px 12px 12px" }}>
-          {tab === "announcements" ? (
+          {tab === "complaints" ? (
+            <ComplaintsTab unreadCount={unreadFeedback} />
+          ) : tab === "announcements" ? (
             <AnnouncementsTab items={announcements} canPost={canPost} onChanged={onReloadAnnouncements} />
           ) : loading && events.length === 0 ? (
             <div style={{ color: "var(--text-dim)", fontSize: 12, textAlign: "center", padding: "24px 0" }}>
