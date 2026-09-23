@@ -42,7 +42,7 @@ class MyAttendanceTests(APITestCase):
         self.student_user = make_user("alice_att", "STUDENT")
         self.unlinked_user = make_user("bob_att", "STUDENT")
         self.driver = make_user("driver20", "DRIVER")
-        self.yesterday = date.today() - timedelta(days=1)
+        self.today = date.today()
 
     def _link(self):
         self.alice.linked_user = self.student_user
@@ -59,9 +59,9 @@ class MyAttendanceTests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 403)
 
-    def test_absent_yesterday_is_reported(self):
+    def test_absent_today_is_reported(self):
         self._link()
-        session = AttendanceSession.objects.create(bus=self.bus, date=self.yesterday)
+        session = AttendanceSession.objects.create(bus=self.bus, date=self.today)
         AttendanceRecord.objects.create(
             session=session, person_type="STUDENT", student=self.alice, status="ABSENT",
         )
@@ -69,36 +69,36 @@ class MyAttendanceTests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.data["linked"])
-        self.assertEqual(res.data["yesterday"]["status"], "ABSENT")
-        self.assertTrue(res.data["yesterday"]["marked"])
+        self.assertEqual(res.data["today"]["status"], "ABSENT")
+        self.assertTrue(res.data["today"]["marked"])
 
-    def test_present_yesterday_is_reported(self):
+    def test_present_today_is_reported(self):
         self._link()
-        session = AttendanceSession.objects.create(bus=self.bus, date=self.yesterday)
+        session = AttendanceSession.objects.create(bus=self.bus, date=self.today)
         AttendanceRecord.objects.create(
             session=session, person_type="STUDENT", student=self.alice, status="PRESENT",
         )
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertEqual(res.data["yesterday"]["status"], "PRESENT")
+        self.assertEqual(res.data["today"]["status"], "PRESENT")
 
-    def test_holiday_yesterday_is_reported(self):
+    def test_holiday_today_is_reported(self):
         self._link()
         AttendanceSession.objects.create(
-            bus=self.bus, date=self.yesterday, is_holiday=True, holiday_reason="College holiday",
+            bus=self.bus, date=self.today, is_holiday=True, holiday_reason="College holiday",
         )
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertTrue(res.data["yesterday"]["is_holiday"])
-        self.assertEqual(res.data["yesterday"]["holiday_reason"], "College holiday")
-        self.assertIsNone(res.data["yesterday"]["status"])
+        self.assertTrue(res.data["today"]["is_holiday"])
+        self.assertEqual(res.data["today"]["holiday_reason"], "College holiday")
+        self.assertIsNone(res.data["today"]["status"])
 
     def test_no_session_yet_is_unmarked_not_absent(self):
         self._link()
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
-        self.assertFalse(res.data["yesterday"]["marked"])
-        self.assertIsNone(res.data["yesterday"]["status"])
+        self.assertFalse(res.data["today"]["marked"])
+        self.assertIsNone(res.data["today"]["status"])
 
     def test_student_with_no_bus_gets_unmarked_days(self):
         self.alice.bus = None
@@ -108,11 +108,11 @@ class MyAttendanceTests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 200)
         self.assertIsNone(res.data["bus_number"])
-        self.assertFalse(res.data["yesterday"]["marked"])
+        self.assertFalse(res.data["today"]["marked"])
 
     def test_recent_history_has_seven_days(self):
         self._link()
         self.client.force_authenticate(self.student_user)
         res = self.client.get(self.url)
         self.assertEqual(len(res.data["recent"]), 7)
-        self.assertEqual(res.data["recent"][0]["date"], str(self.yesterday))
+        self.assertEqual(res.data["recent"][0]["date"], str(self.today))

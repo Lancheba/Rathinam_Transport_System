@@ -67,9 +67,9 @@ const LinkAccountForm: React.FC<{ onLinked: (link: MyStudentLink) => void }> = (
   );
 };
 
-/* --------------------------------------------------------- Yesterday card */
+/* ------------------------------------------------------------ Today card */
 
-const YesterdayCard: React.FC<{ day: MyAttendanceDay }> = ({ day }) => {
+const TodayCard: React.FC<{ day: MyAttendanceDay }> = ({ day }) => {
   const { label, color, Icon } = dayMeaning(day);
   return (
     <div className="liquid-glass-card no-lift" style={{ padding: 28, display: "flex", alignItems: "center", gap: 20 }}>
@@ -81,7 +81,7 @@ const YesterdayCard: React.FC<{ day: MyAttendanceDay }> = ({ day }) => {
       </span>
       <div>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>
-          Yesterday · {dayLabel(day.date)}
+          Today · {dayLabel(day.date)}
         </div>
         <div style={{ fontSize: 26, fontWeight: 800, color, marginTop: 2 }}>{label}</div>
         {day.is_holiday && day.holiday_reason && (
@@ -89,7 +89,7 @@ const YesterdayCard: React.FC<{ day: MyAttendanceDay }> = ({ day }) => {
         )}
         {!day.marked && !day.is_holiday && (
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
-            Your driver hasn't taken attendance for that day yet.
+            Your driver hasn't taken attendance for today yet.
           </div>
         )}
       </div>
@@ -214,7 +214,7 @@ export const MyAttendancePage: React.FC = () => {
             </div>
           )}
 
-          {attendance?.yesterday && <YesterdayCard day={attendance.yesterday} />}
+          {attendance?.today && <TodayCard day={attendance.today} />}
           {attendance?.recent && attendance.recent.length > 0 && <RecentTrend days={attendance.recent} />}
         </div>
       )}

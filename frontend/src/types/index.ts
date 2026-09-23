@@ -350,7 +350,7 @@ export interface MyAttendance {
   linked: boolean;
   student: { id: number; name: string; roll_number: string } | null;
   bus_number?: string | null;
-  yesterday?: MyAttendanceDay;
+  today?: MyAttendanceDay;
   recent?: MyAttendanceDay[];
 }
 

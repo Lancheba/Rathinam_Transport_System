@@ -388,22 +388,23 @@ def _day_status_for_student(bus, student, day):
 @permission_classes([IsStudent])
 def my_attendance(request):
     """
-    For the signed-in student's own linked roster row: yesterday's
+    For the signed-in student's own linked roster row: today's
     present/absent status (as taken by their bus's driver), plus a short
-    recent trend so "yesterday" has some context.
+    recent trend so "today" has some context. Shows "not marked yet" until
+    the driver actually submits today's roster.
     """
     student = getattr(request.user, "student_profile", None)
     if not student:
         return Response({"linked": False, "student": None})
 
     bus = student.bus
-    yesterday = date_cls.today() - timedelta(days=1)
-    recent = [_day_status_for_student(bus, student, yesterday - timedelta(days=i)) for i in range(7)]
+    today = date_cls.today()
+    recent = [_day_status_for_student(bus, student, today - timedelta(days=i)) for i in range(7)]
 
     return Response({
         "linked": True,
         "student": {"id": student.id, "name": student.name, "roll_number": student.roll_number},
         "bus_number": bus.bus_number if bus else None,
-        "yesterday": recent[0],
+        "today": recent[0],
         "recent": recent,
     })
