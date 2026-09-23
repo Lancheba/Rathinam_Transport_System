@@ -1,4 +1,4 @@
-import math
+﻿import math
 import secrets
 import base64
 import io
@@ -235,6 +235,9 @@ def qr_scan(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    if not face_profile.embedding:
+        return Response({'detail': 'Face not enrolled yet.'}, status=status.HTTP_400_BAD_REQUEST)
+
     threshold = getattr(settings, 'FACE_MATCH_THRESHOLD', 0.6)
     distance  = _cosine_distance(embedding, face_profile.embedding)
 
@@ -265,4 +268,5 @@ def qr_scan(request):
         'slot': session.slot,
         'marked_at': record.marked_at,
     })
+
 

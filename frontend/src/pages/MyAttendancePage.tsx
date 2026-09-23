@@ -6,6 +6,7 @@ import {
 import { getMyStudentLink, linkMyStudentProfile, unlinkMyStudentProfile, getMyAttendance } from "../api/endpoints";
 import type { MyStudentLink, MyAttendance, MyAttendanceDay, AttendanceSlot, AttendanceSource } from "../types";
 import { inputStyle, labelStyle, primaryBtn, ghostBtn, errorText } from "./DriverAttendancePage";
+import MyAttendanceAnalytics from "../components/MyAttendanceAnalytics";
 
 const dayLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -288,6 +289,7 @@ export const MyAttendancePage: React.FC = () => {
 
           {slotBlock?.today && <TodayCard day={slotBlock.today} />}
           {slotBlock?.recent && slotBlock.recent.length > 0 && <RecentTrend days={slotBlock.recent} />}
+          <MyAttendanceAnalytics studentId={link.student.id} />
         </div>
       )}
     </div>
@@ -295,3 +297,5 @@ export const MyAttendancePage: React.FC = () => {
 };
 
 export default MyAttendancePage;
+
+

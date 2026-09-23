@@ -1,4 +1,4 @@
-from django.conf import settings
+﻿from django.conf import settings
 from django.db import models
 
 
@@ -56,6 +56,7 @@ class FaceProfile(models.Model):
     )
     embedding = models.JSONField()
     embedding_model = models.CharField(max_length=50, default="face-api-128d")
+    retake_count = models.PositiveSmallIntegerField(default=0)
     consent_given = models.BooleanField(default=False)
     consent_at = models.DateTimeField(null=True, blank=True)
     enrolled_at = models.DateTimeField(auto_now_add=True)
@@ -63,3 +64,4 @@ class FaceProfile(models.Model):
 
     def __str__(self):
         return f"FaceProfile({self.student.roll_number})"
+
