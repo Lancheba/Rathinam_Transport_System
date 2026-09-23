@@ -337,3 +337,39 @@ export interface AttendanceSession {
   created_at: string;
   updated_at: string;
 }
+
+/** GET/POST/PATCH /api/maintenance/logs/ — a bus's service or fuel history */
+export type MaintenanceLogType = "SERVICE" | "FUEL";
+
+export interface MaintenanceLog {
+  id: number;
+  bus: number;
+  bus_number: string;
+  log_type: MaintenanceLogType;
+  date: string;
+  odometer_km: number | null;
+  cost: string | null;
+  fuel_liters: string | null;
+  notes: string;
+  logged_by_username: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaintenanceLogInput {
+  bus?: number | null;
+  log_type: MaintenanceLogType;
+  date: string;
+  odometer_km?: number | null;
+  cost?: string | null;
+  fuel_liters?: string | null;
+  notes?: string;
+}
+
+/** GET /api/maintenance/logs/summary/ — headline cards for the "My Bus" page */
+export interface MaintenanceSummary {
+  bus: number | null;
+  last_service: MaintenanceLog | null;
+  last_fuel: MaintenanceLog | null;
+}
+

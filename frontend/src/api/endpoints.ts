@@ -3,7 +3,8 @@ import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
   Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary,
-  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession
+  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession,
+  MaintenanceLog, MaintenanceLogInput, MaintenanceSummary
 } from "../types";
 
 // Buses
@@ -92,6 +93,18 @@ export const submitAttendance = (data: AttendanceSubmitInput) =>
   api.post<AttendanceSession>("/attendance/submit/", data).then(r => r.data);
 export const getAttendanceHistory = (params?: { from?: string; to?: string }) =>
   api.get<AttendanceSession[]>("/attendance/sessions/", { params }).then(r => r.data);
+
+// Maintenance: service & fuel log for a driver's own bus (staff get read-only cross-bus access)
+export const getMaintenanceLogs = (params?: { bus?: string; log_type?: string }) =>
+  api.get<MaintenanceLog[]>("/maintenance/logs/", { params }).then(r => r.data);
+export const getMaintenanceSummary = (params?: { bus?: string }) =>
+  api.get<MaintenanceSummary>("/maintenance/logs/summary/", { params }).then(r => r.data);
+export const createMaintenanceLog = (data: MaintenanceLogInput) =>
+  api.post<MaintenanceLog>("/maintenance/logs/", data).then(r => r.data);
+export const updateMaintenanceLog = (id: number, data: Partial<MaintenanceLogInput>) =>
+  api.patch<MaintenanceLog>(`/maintenance/logs/${id}/`, data).then(r => r.data);
+export const deleteMaintenanceLog = (id: number) => api.delete(`/maintenance/logs/${id}/`);
+
 // JWT auth is a header, not a cookie, so export can't be a plain <a href> link —
 // fetch it as a blob (the interceptor attaches the token) and save it client-side.
 export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?: { from?: string; to?: string }) => {

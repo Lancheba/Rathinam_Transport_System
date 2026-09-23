@@ -1,4 +1,4 @@
-﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck } from "lucide-react";
+﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, Wrench } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -20,6 +20,9 @@ export const navItems = [
   // A driver's own cab roster — separate from the staff-wide "Students" link above,
   // and scoped by the API to their own bus only.
   { to: "/dashboard/my-students", label: "My Students",    short: "Roster",   icon: Users, driverOnly: true },
+  // Service/fuel history for the driver's own bus — staff can read every bus's
+  // history too (see maintenance app), but this link itself is driver-only.
+  { to: "/dashboard/my-bus",   label: "My Bus",            short: "My Bus",   icon: Wrench, driverOnly: true },
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },
