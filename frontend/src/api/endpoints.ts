@@ -57,7 +57,7 @@ export const createAnnouncement = (data: AnnouncementInput) =>
   api.post<Announcement>("/announcements/", data).then(r => r.data);
 export const deleteAnnouncement = (id: number) => api.delete(`/announcements/${id}/`);
 
-// Students (transport staff / admins only — roll numbers, phone numbers etc. are personal data)
+// Students (transport staff / admins only â€” roll numbers, phone numbers etc. are personal data)
 export const getStudents = (params?: Record<string, string>) =>
   api.get<Student[]>("/students/", { params }).then(r => r.data);
 export const getStudentsByBus = (busId: number) =>
@@ -104,7 +104,7 @@ export const submitAttendance = (data: AttendanceSubmitInput) =>
   api.post<AttendanceSession>("/attendance/submit/", data).then(r => r.data);
 export const getAttendanceHistory = (params?: { from?: string; to?: string }) =>
   api.get<AttendanceSession[]>("/attendance/sessions/", { params }).then(r => r.data);
-// JWT auth is a header, not a cookie, so export can't be a plain <a href> link —
+// JWT auth is a header, not a cookie, so export can't be a plain <a href> link â€”
 // fetch it as a blob (the interceptor attaches the token) and save it client-side.
 export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?: { from?: string; to?: string }) => {
   const res = await api.get("/attendance/export/", {
