@@ -14,24 +14,24 @@ import type {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-const inputStyle: React.CSSProperties = {
+export const inputStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px", marginTop: 4, fontSize: 14, outline: "none",
   background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)",
   borderRadius: 8, color: "var(--text-strong)", fontFamily: "inherit", boxSizing: "border-box",
 };
-const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, color: "var(--text-muted)", fontWeight: 600 };
-const primaryBtn: React.CSSProperties = {
+export const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, color: "var(--text-muted)", fontWeight: 600 };
+export const primaryBtn: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8,
   border: "1px solid var(--accent-indigo)", background: "rgba(99,102,241,0.15)",
   color: "var(--text-strong)", fontWeight: 700, fontSize: 14, cursor: "pointer",
 };
-const ghostBtn: React.CSSProperties = {
+export const ghostBtn: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8,
   border: "1px solid rgba(99,102,241,0.2)", background: "transparent",
   color: "var(--text-muted)", fontWeight: 600, fontSize: 13, cursor: "pointer",
 };
 
-const errorText = (err: unknown, fallback: string): string => {
+export const errorText = (err: unknown, fallback: string): string => {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data;
     if (data && typeof data === "object") {
@@ -45,7 +45,7 @@ const errorText = (err: unknown, fallback: string): string => {
 
 /* --------------------------------------------------- Claim-a-bus setup form */
 
-const ClaimBusForm: React.FC<{ onClaimed: (bus: Bus) => void }> = ({ onClaimed }) => {
+export const ClaimBusForm: React.FC<{ onClaimed: (bus: Bus) => void }> = ({ onClaimed }) => {
   const [busNumber, setBusNumber] = useState("");
   const [studentCap, setStudentCap] = useState("");
   const [teacherCap, setTeacherCap] = useState("");

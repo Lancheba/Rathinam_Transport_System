@@ -20,6 +20,7 @@ import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
 import SignUpPage from "./pages/SignUpPage";
 import DriverAttendancePage from "./pages/DriverAttendancePage";
+import DriverStudentsPage from "./pages/DriverStudentsPage";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
@@ -149,6 +150,7 @@ export const App: React.FC = () => {
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="find" element={<BusFinder />} />
                   <Route path="attendance" element={<DriverAttendancePage />} />
+                  <Route path="my-students" element={<DriverStudentsPage />} />
                 </Routes>
               </MainLayout>
             }

@@ -17,6 +17,9 @@ export const navItems = [
   { to: "/dashboard/optimize", label: "Optimisation",      short: "Optimise", icon: Cpu, staffOnly: true },
   // Marking students/teachers present or absent only makes sense for the driver of that bus.
   { to: "/dashboard/attendance", label: "Attendance",      short: "Attend",   icon: ClipboardCheck, driverOnly: true },
+  // A driver's own cab roster — separate from the staff-wide "Students" link above,
+  // and scoped by the API to their own bus only.
+  { to: "/dashboard/my-students", label: "My Students",    short: "Roster",   icon: Users, driverOnly: true },
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },

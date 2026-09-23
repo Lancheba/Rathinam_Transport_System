@@ -1,9 +1,12 @@
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from accounts.permissions import CanManageBuses
+from accounts.permissions import CanManageBuses, can_manage_buses
+from attendance.permissions import driver_bus, is_driver
 from buses.models import Bus
 from .models import Student
+from .permissions import CanManageOwnBusStudents
 from .serializers import StudentSerializer, StudentBriefSerializer
 
 
@@ -11,20 +14,30 @@ class StudentViewSet(viewsets.ModelViewSet):
     """
     Student roster, keyed to a bus.
 
-    Student names, phone numbers and roll numbers are personal data, so every
-    action here — including plain reads — is restricted to admins and
-    transport staff (the same people who manage buses), not the public
-    AllowAny the Bus/ParkingSlot endpoints use.
+    Student names, phone numbers and roll numbers are personal data. Admins
+    and transport staff can see and manage every student, the same as
+    before. A driver can also see, add, edit and delete students — but only
+    on their own bus: get_queryset below is what actually enforces that
+    boundary (a driver requesting another bus's student by id just won't
+    find it), the permission class alone is not enough.
     """
 
     queryset = Student.objects.select_related("bus").all()
     serializer_class = StudentSerializer
-    permission_classes = [CanManageBuses]
+    permission_classes = [CanManageOwnBusStudents]
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "roll_number", "department"]
 
+    def _driver_only(self):
+        """True when the caller is a driver acting on their own bus, not staff/admin."""
+        return is_driver(self.request.user) and not can_manage_buses(self.request.user)
+
     def get_queryset(self):
         qs = super().get_queryset()
+        if self._driver_only():
+            bus = driver_bus(self.request.user)
+            return qs.filter(bus=bus) if bus else qs.none()
+
         bus_id = self.request.query_params.get("bus")
         unassigned = self.request.query_params.get("unassigned")
         if bus_id:
@@ -33,7 +46,24 @@ class StudentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(bus__isnull=True)
         return qs
 
-    @action(detail=False, methods=["get"], url_path="roster")
+    def perform_create(self, serializer):
+        if self._driver_only():
+            bus = driver_bus(self.request.user)
+            if not bus:
+                raise ValidationError({"detail": "Link your bus before adding students."})
+            # Whatever "bus" was submitted (if any) is ignored — a driver can only add to their own cab.
+            serializer.save(bus=bus)
+        else:
+            serializer.save()
+
+    def perform_update(self, serializer):
+        if self._driver_only():
+            # Edits are allowed, but a driver can never move a student onto a different bus.
+            serializer.save(bus=driver_bus(self.request.user))
+        else:
+            serializer.save()
+
+    @action(detail=False, methods=["get"], url_path="roster", permission_classes=[CanManageBuses])
     def roster(self, request):
         """
         One row per bus with its student count and the full student list,

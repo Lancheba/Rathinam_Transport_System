@@ -208,6 +208,24 @@ code, .mono {
   font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* Native <select> dropdown popups don't inherit our custom colours — the
+   closed box picks up whatever background/color an author sets inline, but
+   the open options list is drawn by the OS/browser chrome. Without this,
+   Chrome on Windows can render that popup with a light background while
+   still using our (light) text colour, making every unselected option
+   nearly invisible. Pinning color-scheme + explicit option colours keeps
+   the dropdown readable in both themes. */
+select {
+  color-scheme: dark;
+}
+:root[data-theme="light"] select {
+  color-scheme: light;
+}
+select option {
+  background-color: var(--surface-solid);
+  color: var(--text-strong);
+}
+
 /* Colorful ambient background waves — glass only reads as glass when there's
    something saturated behind it to refract, so this layer drifts slowly to
    keep every blurred surface feeling alive rather than a flat tint. */
