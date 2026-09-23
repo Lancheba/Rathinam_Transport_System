@@ -1,4 +1,4 @@
-from django.urls import include, path
+﻿from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
@@ -13,7 +13,7 @@ from .views import (
     attendance_submit,
     my_attendance,
 )
-from .qr_views import qr_generate, qr_scan, qr_tally
+from .qr_views import qr_generate, qr_scan, qr_stop, qr_status, qr_tally
 from .report_views import attendance_report
 router = DefaultRouter()
 router.register("teachers", TeacherViewSet, basename="teacher")
@@ -31,6 +31,8 @@ urlpatterns = [
     path("analytics/student/<int:student_id>/", attendance_analytics_student, name="attendance-analytics-student"),
     path("qr/generate/", qr_generate, name="attendance-qr-generate"),
     path("qr/tally/", qr_tally, name="attendance-qr-tally"),
+    path("qr/stop/", qr_stop, name="attendance-qr-stop"),
+    path("qr/status/", qr_status, name="attendance-qr-status"),
     path("qr/scan/", qr_scan, name="attendance-qr-scan"),
     path("", include(router.urls)),
 ]

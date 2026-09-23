@@ -13,16 +13,11 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession
-from attendance.permissions import IsDriver, driver_bus
-from accounts.permissions import CanManageBuses
+from attendance.permissions import IsInCharge, incharge_bus
 from students.models import FaceProfile
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _current_slot():
     """Return 'MORNING', 'EVENING', or None based on Asia/Kolkata time."""
@@ -55,7 +50,7 @@ def _slot_window_end(slot):
 
 
 def _cosine_distance(a, b):
-    """Cosine distance in [0, 1] — 0 means identical vectors."""
+    """Cosine distance in [0, 1] - 0 means identical vectors."""
     dot = sum(x * y for x, y in zip(a, b))
     na  = math.sqrt(sum(x * x for x in a))
     nb  = math.sqrt(sum(x * x for x in b))
@@ -64,13 +59,10 @@ def _cosine_distance(a, b):
     return 1.0 - dot / (na * nb)
 
 
-# ---------------------------------------------------------------------------
-# POST /api/attendance/qr/generate/   (temporarily admin/staff only - Phase 1
-# removed driver access; Phase 7 will hand this to the Cab In-Charge role)
-# ---------------------------------------------------------------------------
+# POST /api/attendance/qr/generate/   (Cab In-Charge only)
 
 @api_view(['POST'])
-@permission_classes([CanManageBuses])
+@permission_classes([IsInCharge])
 def qr_generate(request):
     slot = _current_slot()
     if not slot:
@@ -79,7 +71,7 @@ def qr_generate(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    bus = driver_bus(request.user)
+    bus = incharge_bus(request.user)
     if not bus:
         return Response(
             {'detail': 'No bus is assigned to you.'},
@@ -87,13 +79,21 @@ def qr_generate(request):
         )
 
     today = timezone.localdate()
-    session, _ = AttendanceSession.objects.get_or_create(
+    session, _created = AttendanceSession.objects.get_or_create(
         bus=bus, date=today, slot=slot,
         defaults={'marked_by': request.user},
     )
+
+    changed_fields = []
     if not session.opened_at:
         session.opened_at = timezone.now()
-        session.save(update_fields=['opened_at'])
+        changed_fields.append('opened_at')
+    if session.closed_at or session.auto_finalized:
+        session.closed_at = None
+        session.auto_finalized = False
+        changed_fields += ['closed_at', 'auto_finalized']
+    if changed_fields:
+        session.save(update_fields=changed_fields)
 
     ttl = getattr(settings, 'QR_TOKEN_TTL_SECONDS', 60)
     token_str = secrets.token_urlsafe(32)
@@ -131,13 +131,10 @@ def qr_generate(request):
     })
 
 
-# ---------------------------------------------------------------------------
-# GET /api/attendance/qr/tally/   (temporarily admin/staff only - Phase 1
-# removed driver access; Phase 7 will hand this to the Cab In-Charge role)
-# ---------------------------------------------------------------------------
+# GET /api/attendance/qr/tally/   (Cab In-Charge only)
 
 @api_view(['GET'])
-@permission_classes([CanManageBuses])
+@permission_classes([IsInCharge])
 def qr_tally(request):
     slot = _current_slot()
     if not slot:
@@ -146,7 +143,7 @@ def qr_tally(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    bus = driver_bus(request.user)
+    bus = incharge_bus(request.user)
     if not bus:
         return Response(
             {'detail': 'No bus is assigned to you.'},
@@ -166,9 +163,80 @@ def qr_tally(request):
     })
 
 
-# ---------------------------------------------------------------------------
+# POST /api/attendance/qr/stop/   (Cab In-Charge only) - actually closes the
+# session server-side, instead of just hiding the QR on screen.
+
+@api_view(['POST'])
+@permission_classes([IsInCharge])
+def qr_stop(request):
+    bus = incharge_bus(request.user)
+    if not bus:
+        return Response(
+            {'detail': 'No bus is assigned to you.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    today = timezone.localdate()
+    session = (
+        AttendanceSession.objects
+        .filter(bus=bus, date=today, opened_at__isnull=False, closed_at__isnull=True)
+        .order_by('-id')
+        .first()
+    )
+    if not session:
+        return Response(
+            {'detail': 'No open attendance session to stop.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    session.closed_at = timezone.now()
+    session.auto_finalized = True
+    session.save(update_fields=['closed_at', 'auto_finalized'])
+
+    present = session.records.filter(status='PRESENT').count()
+    total   = session.records.count()
+
+    return Response({
+        'session_id': session.pk,
+        'slot': session.slot,
+        'present_count': present,
+        'total_count': total,
+        'closed_at': session.closed_at,
+    })
+
+
+# GET /api/attendance/qr/status/   (student only) - polled by the student's
+# own page to auto-show "Attendance is open" / "Closed".
+
+@api_view(['GET'])
+@permission_classes([IsStudent])
+def qr_status(request):
+    student = getattr(request.user, 'student_profile', None)
+    if not student or not student.bus_id:
+        return Response({'open': False, 'slot': None})
+
+    slot = _current_slot()
+    if not slot:
+        return Response({'open': False, 'slot': None})
+
+    session = AttendanceSession.objects.filter(
+        bus_id=student.bus_id, date=timezone.localdate(), slot=slot,
+    ).first()
+
+    if not session or not session.opened_at or session.closed_at or session.auto_finalized:
+        return Response({'open': False, 'slot': slot})
+
+    already_marked = session.records.filter(student=student, status='PRESENT').exists()
+
+    return Response({
+        'open': True,
+        'slot': slot,
+        'session_id': session.pk,
+        'already_marked': already_marked,
+    })
+
+
 # POST /api/attendance/qr/scan/   (student only)
-# ---------------------------------------------------------------------------
 
 @api_view(['POST'])
 @permission_classes([IsStudent])
@@ -268,5 +336,3 @@ def qr_scan(request):
         'slot': session.slot,
         'marked_at': record.marked_at,
     })
-
-
