@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "vision",
     "feedback",
     "attendance",
+    "maintenance",
 ]
 
 MIDDLEWARE = [

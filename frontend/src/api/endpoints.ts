@@ -3,7 +3,8 @@ import type {
   Bus, BusInput, CurrentUser, ParkingSlot, ParkingGround, Sensor,
   ParkingEvent, ParkingSummary, OptimizationResult, SensorInput,
   Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary,
-  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance
+  DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance,
+  MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary
 } from "../types";
 
 // Buses
@@ -120,3 +121,14 @@ export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?
 
 // Student's own attendance (yesterday + a short recent trend)
 export const getMyAttendance = () => api.get<MyAttendance>("/attendance/my/").then(r => r.data);
+
+// Maintenance (driver's own bus: service + fuel logs)
+export const getMaintenanceSummary = (params?: { bus?: number }) =>
+  api.get<MaintenanceSummary>("/maintenance/logs/summary/", { params }).then(r => r.data);
+export const getMaintenanceLogs = (params?: { log_type?: MaintenanceLogType; bus?: number }) =>
+  api.get<MaintenanceLog[]>("/maintenance/logs/", { params }).then(r => r.data);
+export const createMaintenanceLog = (data: MaintenanceLogInput) =>
+  api.post<MaintenanceLog>("/maintenance/logs/", data).then(r => r.data);
+export const updateMaintenanceLog = (id: number, data: MaintenanceLogInput) =>
+  api.put<MaintenanceLog>(`/maintenance/logs/${id}/`, data).then(r => r.data);
+export const deleteMaintenanceLog = (id: number) => api.delete(`/maintenance/logs/${id}/`);
