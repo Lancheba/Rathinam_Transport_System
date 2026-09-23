@@ -157,6 +157,7 @@ Interactive docs: `/api/docs/`
 - ⚡ **Optimisation Engine** — recommends departure-time-sorted layout
 - 📡 **Sensor Monitoring** — RFID gate, camera, ultrasonic status
 - 💬 **Complaints & Feedback** — student submission system
+-  **Attendance** — Checks absence or presence. 
 - 👤 **Role-based access** — Admin / Staff / Student
 
 ---
