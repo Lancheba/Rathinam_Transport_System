@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, XCircle, CalendarOff, Clock, LoaderCircle, IdCard, Bus as BusIcon, LogOut,
 } from "lucide-react";
-import { getMyStudentLink, linkMyStudentProfile, unlinkMyStudentProfile, getMyAttendance } from "../api/endpoints";
+import { getMyStudentLink, linkMyStudentProfile, unlinkMyStudentProfile, getMyAttendance, getQrStatus } from "../api/endpoints";
+import type { QrStatus } from "../api/endpoints";
 import type { MyStudentLink, MyAttendance, MyAttendanceDay, AttendanceSlot, AttendanceSource } from "../types";
 import { inputStyle, labelStyle, primaryBtn, ghostBtn, errorText } from "./DriverAttendancePage";
 import MyAttendanceAnalytics from "../components/MyAttendanceAnalytics";
@@ -195,11 +196,26 @@ export const MyAttendancePage: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // Show Scan button only when a window is open
-  const windowOpen = (() => {
-    const h = new Date().getHours();
-    return (h >= 5 && h < 10) || (h >= 16 && h < 20);
-  })();
+  // Live session state from the server, polled every few seconds (paused while the tab is hidden).
+  const [qrStatus, setQrStatus] = useState<QrStatus | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      if (document.hidden) return;
+      try {
+        const s = await getQrStatus();
+        if (!cancelled) setQrStatus(s);
+      } catch { /* keep last known state */ }
+    };
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+  const sessionOpen = !!qrStatus?.open;
+  const alreadyMarked = !!qrStatus?.already_marked;
+
+  // When the session opens/closes or this student gets marked, refresh the attendance table.
+  useEffect(() => { if (qrStatus) load(); }, [qrStatus?.open, qrStatus?.already_marked]);
 
   const slotBlock = attendance ? attendance[activeSlot === "MORNING" ? "morning" : "evening"] : null;
 
@@ -215,7 +231,7 @@ export const MyAttendancePage: React.FC = () => {
     <div style={{ padding: "8px 4px 32px", maxWidth: 720 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 4 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-strong)", margin: 0 }}>My Attendance</h1>
-        {windowOpen && (
+        {sessionOpen && !alreadyMarked && (
           <button onClick={() => navigate("/dashboard/scan-attendance")}
             style={{ padding: "8px 16px", background: "#2563eb", color: "#fff",
                      borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 700 }}>
@@ -226,6 +242,19 @@ export const MyAttendancePage: React.FC = () => {
       <p style={{ fontSize: 14, color: "var(--text-muted)", margin: "0 0 12px" }}>
         Whether you were marked present or absent on your bus, straight from your driver's attendance sheet.
       </p>
+      {qrStatus && (
+        <div role="status" style={{
+          marginBottom: 14, padding: "10px 14px", borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+          color: sessionOpen ? (alreadyMarked ? "var(--accent-green, #22c55e)" : "var(--accent-amber, #f59e0b)") : "var(--text-muted)",
+          border: "1px solid rgba(99,102,241,0.25)", background: "rgba(99,102,241,0.08)",
+        }}>
+          {sessionOpen
+            ? (alreadyMarked
+                ? "You are marked present for this session."
+                : "Attendance is open for the " + (qrStatus.slot ?? "").toLowerCase() + " session. Tap Scan QR Attendance.")
+            : "Attendance is closed right now."}
+        </div>
+      )}
       <button onClick={() => navigate("/dashboard/face-enrollment")}
         style={{ fontSize: 13, color: "var(--accent-indigo, #6366f1)", background: "none",
                  border: "none", cursor: "pointer", padding: 0, marginBottom: 16 }}>

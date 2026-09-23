@@ -15,7 +15,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     (item) =>
       (!item.staffOnly || canManageBuses) &&
       (!item.driverOnly || role === "DRIVER") &&
-      (!item.studentOnly || (role === "STUDENT" && !canManageBuses))
+      (!item.studentOnly || (role === "STUDENT" && !canManageBuses)) &&
+      (!item.inchargeOnly || role === "INCHARGE")
   );
   return (
     <aside

@@ -1,4 +1,4 @@
-﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart } from "lucide-react";
+﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -20,6 +20,10 @@ export const navItems = [
   // A driver's own cab roster — separate from the staff-wide "Students" link above,
   // and scoped by the API to their own bus only.
   { to: "/dashboard/my-students", label: "My Students",    short: "Roster",   icon: Users, driverOnly: true },
+  // The driver's own cab: full bus details plus maintenance/fuel log.
+  { to: "/dashboard/my-bus", label: "My Bus", short: "My Bus", icon: Bus, driverOnly: true },
+  // Cab In-Charge runs QR attendance for their own bus.
+  { to: "/dashboard/incharge-attendance", label: "Take Attendance", short: "Attend", icon: QrCode, inchargeOnly: true },
   // A student's own present/absent record, taken by their bus's driver — only
   // makes sense for STUDENT-role accounts (staff/admin/driver see the real roster instead).
   { to: "/dashboard/my-attendance", label: "My Attendance", short: "Attend",  icon: UserCheck, studentOnly: true },

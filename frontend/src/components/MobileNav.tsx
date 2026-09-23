@@ -18,7 +18,8 @@ export const MobileNav: React.FC = () => {
     (item) =>
       (!item.staffOnly || canManageBuses) &&
       (!item.driverOnly || role === "DRIVER") &&
-      (!item.studentOnly || (role === "STUDENT" && !canManageBuses))
+      (!item.studentOnly || (role === "STUDENT" && !canManageBuses)) &&
+      (!item.inchargeOnly || role === "INCHARGE")
   );
   const tabs = visible.slice(0, MOBILE_TAB_COUNT);
   const more = [

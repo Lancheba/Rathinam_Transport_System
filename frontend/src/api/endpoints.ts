@@ -127,6 +127,14 @@ export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?
 // Student's own attendance (yesterday + a short recent trend)
 export const getMyAttendance = () => api.get<MyAttendance>("/attendance/my/").then(r => r.data);
 
+export interface QrStatus {
+  open: boolean;
+  slot: string | null;
+  session_id?: number;
+  already_marked?: boolean;
+}
+export const getQrStatus = () => api.get<QrStatus>("/attendance/qr/status/").then(r => r.data);
+
 // Admin/staff correction: the only way to flip an Absent record to Present after submission
 export const correctAttendanceRecord = (recordId: number, remark?: string) =>
   api.patch<AttendanceRecord>(`/attendance/records/${recordId}/correct/`, { remark }).then(r => r.data);

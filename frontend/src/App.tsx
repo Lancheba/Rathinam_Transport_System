@@ -21,6 +21,8 @@ import LandingPage from "./pages/LandingPage";
 import SignUpPage from "./pages/SignUpPage";
 import DriverAttendancePage from "./pages/DriverAttendancePage";
 import DriverStudentsPage from "./pages/DriverStudentsPage";
+import InchargeAttendancePage from "./pages/InchargeAttendancePage";
+import MyBusPage from "./pages/MyBusPage";
 import MyAttendancePage from "./pages/MyAttendancePage";
 import FaceEnrollmentPage from "./pages/FaceEnrollmentPage";
 import ScanAttendancePage from "./pages/ScanAttendancePage";
@@ -158,6 +160,8 @@ export const App: React.FC = () => {
                   <Route path="find" element={<BusFinder />} />
                   <Route path="attendance" element={<DriverAttendancePage />} />
                   <Route path="my-students" element={<DriverStudentsPage />} />
+                  <Route path="incharge-attendance" element={<InchargeAttendancePage />} />
+                  <Route path="my-bus" element={<MyBusPage />} />
                   <Route path="my-attendance" element={<MyAttendancePage />} />
                   <Route path="face-enrollment" element={<FaceEnrollmentPage />} />
                   <Route path="scan-attendance" element={<ScanAttendancePage />} />
