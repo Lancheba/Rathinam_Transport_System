@@ -194,8 +194,8 @@ const StudentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Cross-bus search results take over the view while there's a query */}
-      {search.trim() ? (
+      {/* Search results stack above the roster view instead of replacing it */}
+      {search.trim() && (
         <div>
           <div style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 10 }}>
             {searching ? "Searching…" : `${searchResults?.length ?? 0} student(s) match "${search.trim()}"`}
@@ -224,7 +224,9 @@ const StudentsPage: React.FC = () => {
             </div>
           )}
         </div>
-      ) : selectedRoster ? (
+      )}
+
+      {selectedRoster ? (
         // A single bus's roster
         <div>
           <button
