@@ -1,4 +1,4 @@
-ï»¿import csv
+import csv
 import io
 from datetime import date as date_cls, datetime, timedelta
 
@@ -351,7 +351,7 @@ def _export_rows(bus, date_from, date_to):
     rows = [["Date", "Bus", "Type", "ID/Roll No.", "Name", "Status"]]
     for session in qs:
         if session.is_holiday:
-            rows.append([str(session.date), bus.bus_number, "-", "-", "-", f"HOLIDAY ({session.holiday_reason or '-'})"])
+            rows.append([str(session.date), bus.bus_number, "—", "—", "—", f"HOLIDAY ({session.holiday_reason or '—'})"])
             continue
         for r in session.records.all():
             who = r.student or r.teacher
@@ -426,7 +426,7 @@ def attendance_export(request):
         resp["Content-Disposition"] = f'attachment; filename="{filename_base}.pdf"'
         return resp
 
-    # Default: CSV - no extra dependency needed.
+    # Default: CSV — no extra dependency needed.
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerows(rows)
@@ -436,7 +436,7 @@ def attendance_export(request):
 
 
 # ---------------------------------------------------------------------------
-# A student's own "was I marked present or absent" view - read-only, and only
+# A student's own "was I marked present or absent" view — read-only, and only
 # ever about the day their driver already took attendance for, on the roster
 # row *they* linked their account to (see students.views.MyStudentLinkView).
 # Returns separate morning/evening blocks since a bus can run two slots a day.

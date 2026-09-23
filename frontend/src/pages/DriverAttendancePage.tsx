@@ -1,19 +1,13 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
-  Bus as BusIcon, CalendarDays, CheckCircle2, XCircle, Download, ClipboardCheck,
-  LoaderCircle, History as HistoryIcon, Save, Lock,
+  Bus as BusIcon, ClipboardCheck, Download, LoaderCircle,
 } from "lucide-react";
-import QRDisplaySection from "../components/QRDisplaySection";
 import { useAuth } from "../context/AuthContext";
 import {
-  getMyBus, setMyBus, getRoster, submitAttendance, getAttendanceHistory, exportAttendance,
+  getMyBus, setMyBus, getAttendanceHistory, exportAttendance,
 } from "../api/endpoints";
-import type {
-  Bus, AttendanceRoster, AttendanceRosterPerson, AttendanceRecordInput, AttendanceStatus, AttendanceSession,
-} from "../types";
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
+import type { Bus, AttendanceSession } from "../types";
 
 export const inputStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px", marginTop: 4, fontSize: 14, outline: "none",
@@ -91,200 +85,6 @@ export const ClaimBusForm: React.FC<{ onClaimed: (bus: Bus) => void }> = ({ onCl
   );
 };
 
-/* --------------------------------------------------------- Roster row */
-
-const StatusButtons: React.FC<{
-  value: AttendanceStatus | null;
-  locked: boolean;
-  onChange: (s: AttendanceStatus) => void;
-}> = ({ value, locked, onChange }) => (
-  <div style={{ display: "flex", gap: 6 }}>
-    <button type="button" onClick={() => !locked && onChange("PRESENT")}
-      aria-pressed={value === "PRESENT"}
-      disabled={locked}
-      title={locked ? "Already marked Present — locked. Ask an admin to correct it if this is wrong." : undefined}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-        border: `1px solid ${value === "PRESENT" ? "var(--accent-green)" : "rgba(99,102,241,0.2)"}`,
-        background: value === "PRESENT" ? "rgba(34,197,94,0.15)" : "transparent",
-        color: value === "PRESENT" ? "var(--accent-green)" : "var(--text-muted)",
-        cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.65 : 1,
-      }}>
-      {locked ? <Lock size={13} /> : <CheckCircle2 size={13} />} Present
-    </button>
-    <button type="button" onClick={() => !locked && onChange("ABSENT")}
-      aria-pressed={value === "ABSENT"}
-      disabled={locked}
-      title={locked ? "Present is locked — Absent can't be re-toggled here either." : undefined}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-        border: `1px solid ${value === "ABSENT" ? "var(--accent-red)" : "rgba(99,102,241,0.2)"}`,
-        background: value === "ABSENT" ? "rgba(248,113,113,0.15)" : "transparent",
-        color: value === "ABSENT" ? "var(--accent-red)" : "var(--text-muted)",
-        cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.65 : 1,
-      }}>
-      <XCircle size={13} /> Absent
-    </button>
-  </div>
-);
-
-const RosterRow: React.FC<{
-  person: AttendanceRosterPerson;
-  value: AttendanceStatus | null;
-  onChange: (s: AttendanceStatus) => void;
-}> = ({ person, value, onChange }) => (
-  <div style={{
-    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10,
-    border: "1px solid rgba(99,102,241,0.14)", background: "rgba(99,102,241,0.04)",
-  }}>
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ color: "var(--text-strong)", fontWeight: 600, fontSize: 14 }}>{person.name}</div>
-      <div style={{ color: "var(--text-dim)", fontSize: 12 }}>{person.roll_number ?? person.staff_id ?? ""}</div>
-    </div>
-    <StatusButtons value={value} locked={person.locked} onChange={onChange} />
-  </div>
-);
-
-/* --------------------------------------------------------- Mark tab */
-
-const MarkTab: React.FC<{ bus: Bus }> = ({ bus: _bus }) => {
-  const [date, setDate] = useState(todayStr());
-  const [roster, setRoster] = useState<AttendanceRoster | null>(null);
-  const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>({});
-  const [isHoliday, setIsHoliday] = useState(false);
-  const [holidayReason, setHolidayReason] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [savedMsg, setSavedMsg] = useState("");
-
-  const key = (type: "STUDENT" | "TEACHER", id: number) => `${type}:${id}`;
-
-  const load = useCallback((d: string) => {
-    setLoading(true); setError(""); setSavedMsg("");
-    getRoster(d)
-      .then((r) => {
-        setRoster(r);
-        setIsHoliday(r.is_holiday);
-        setHolidayReason(r.holiday_reason ?? "");
-        const initial: Record<string, AttendanceStatus> = {};
-        r.students.forEach(s => { if (s.status) initial[key("STUDENT", s.id)] = s.status; });
-        r.teachers.forEach(t => { if (t.status) initial[key("TEACHER", t.id)] = t.status; });
-        setStatuses(initial);
-      })
-      .catch(() => setError("Couldn't load the roster for this date."))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(date); }, [date, load]);
-
-  const setStatus = (type: "STUDENT" | "TEACHER", id: number, s: AttendanceStatus) =>
-    setStatuses(prev => ({ ...prev, [key(type, id)]: s }));
-
-  const markAll = (s: AttendanceStatus) => {
-    if (!roster) return;
-    setStatuses(prev => {
-      const next: Record<string, AttendanceStatus> = {};
-      roster.students.forEach(p => { next[key("STUDENT", p.id)] = p.locked ? "PRESENT" : s; });
-      roster.teachers.forEach(p => { next[key("TEACHER", p.id)] = p.locked ? "PRESENT" : s; });
-      return { ...prev, ...next };
-    });
-  };
-
-  const submit = async () => {
-    if (!roster) return;
-    setSaving(true); setError(""); setSavedMsg("");
-    try {
-      const records: AttendanceRecordInput[] = isHoliday ? [] : [
-        ...roster.students.map(p => ({ person_type: "STUDENT" as const, id: p.id, status: statuses[key("STUDENT", p.id)] ?? "PRESENT" })),
-        ...roster.teachers.map(p => ({ person_type: "TEACHER" as const, id: p.id, status: statuses[key("TEACHER", p.id)] ?? "PRESENT" })),
-      ];
-      await submitAttendance({ date, is_holiday: isHoliday, holiday_reason: isHoliday ? holidayReason.trim() : "", records });
-      setSavedMsg("Attendance saved.");
-      load(date);
-    } catch (err) {
-      setError(errorText(err, "Couldn't save attendance."));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) return <div style={{ color: "var(--text-dim)" }}>Loading roster...</div>;
-  if (!roster) return <div role="alert" style={{ color: "var(--accent-red)" }}>{error || "No roster available."}</div>;
-
-  const total = roster.students.length + roster.teachers.length;
-
-  return (
-    <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 16 }}>
-        <label style={{ ...labelStyle, width: "auto" }}>Date
-          <input type="date" value={date} max={todayStr()} onChange={e => setDate(e.target.value)}
-            style={{ ...inputStyle, width: "auto" }} />
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", fontWeight: 600, marginTop: 18 }}>
-          <input type="checkbox" checked={isHoliday} onChange={e => setIsHoliday(e.target.checked)} />
-          Mark as holiday / no service
-        </label>
-        {roster.already_marked && (
-          <span style={{ marginTop: 18, fontSize: 12, color: "var(--accent-amber)", fontWeight: 700 }}>
-            Already submitted for this date — saving again will update it.
-          </span>
-        )}
-      </div>
-
-      {isHoliday ? (
-        <label style={{ ...labelStyle, maxWidth: 420, display: "block", marginBottom: 16 }}>Reason (optional)
-          <input style={inputStyle} value={holidayReason} onChange={e => setHolidayReason(e.target.value)}
-            placeholder="e.g. Public holiday" />
-        </label>
-      ) : (
-        <>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            <button type="button" style={ghostBtn} onClick={() => markAll("PRESENT")}>Mark all present</button>
-            <button type="button" style={ghostBtn} onClick={() => markAll("ABSENT")}>Mark all absent</button>
-            <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-dim)" }}>{total} on this bus</span>
-          </div>
-
-          {roster.students.length > 0 && (
-            <>
-              <h4 style={{ color: "var(--text-strong)", margin: "14px 0 8px" }}>Students</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {roster.students.map(p => (
-                  <RosterRow key={`s-${p.id}`} person={p}
-                    value={statuses[key("STUDENT", p.id)] ?? null}
-                    onChange={s => setStatus("STUDENT", p.id, s)} />
-                ))}
-              </div>
-            </>
-          )}
-
-          {roster.teachers.length > 0 && (
-            <>
-              <h4 style={{ color: "var(--text-strong)", margin: "18px 0 8px" }}>Teachers</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {roster.teachers.map(p => (
-                  <RosterRow key={`t-${p.id}`} person={p}
-                    value={statuses[key("TEACHER", p.id)] ?? null}
-                    onChange={s => setStatus("TEACHER", p.id, s)} />
-                ))}
-              </div>
-            </>
-          )}
-
-          {total === 0 && <div style={{ color: "var(--text-dim)" }}>No students or teachers are assigned to this bus yet.</div>}
-        </>
-      )}
-
-      {error && <div role="alert" style={{ color: "var(--accent-red)", marginTop: 14 }}>{error}</div>}
-      {savedMsg && <div role="status" style={{ color: "var(--accent-green)", marginTop: 14 }}>{savedMsg}</div>}
-
-      <button type="button" onClick={submit} disabled={saving} style={{ ...primaryBtn, marginTop: 18, opacity: saving ? 0.6 : 1 }}>
-        {saving ? <LoaderCircle size={16} className="spin" /> : <Save size={16} />} {roster.already_marked ? "Update attendance" : "Submit attendance"}
-      </button>
-    </div>
-  );
-};
-
 /* --------------------------------------------------------- History tab */
 
 const HistoryTab: React.FC = () => {
@@ -331,7 +131,7 @@ const HistoryTab: React.FC = () => {
             }}>
               <span style={{ color: "var(--text-strong)", fontWeight: 700, width: 100 }}>{s.date}</span>
               {s.is_holiday ? (
-                <span style={{ color: "var(--accent-amber)" }}>Holiday{s.holiday_reason ? ` — ${s.holiday_reason}` : ""}</span>
+                <span style={{ color: "var(--accent-amber)" }}>Holiday{s.holiday_reason ? ` - ${s.holiday_reason}` : ""}</span>
               ) : (
                 <>
                   <span style={{ color: "var(--accent-green)" }}>{s.present_count} present</span>
@@ -352,7 +152,6 @@ const HistoryTab: React.FC = () => {
 const DriverAttendancePage: React.FC = () => {
   const { isLoggedIn, role } = useAuth();
   const [bus, setBus] = useState<Bus | null | undefined>(undefined);
-  const [tab, setTab] = useState<"mark" | "history">("mark");
 
   useEffect(() => {
     if (role !== "DRIVER") return;
@@ -365,19 +164,11 @@ const DriverAttendancePage: React.FC = () => {
         <ClipboardCheck size={32} style={{ color: "var(--accent-amber)" }} />
         <h2 style={{ color: "var(--text-strong)", margin: 0 }}>Driver attendance</h2>
         <p style={{ color: "var(--text-muted)", maxWidth: 420, fontSize: 14, margin: 0 }}>
-          This page is for signed-in drivers to mark student and teacher attendance on their bus.
+          This page is for signed-in drivers to view student and teacher attendance history on their bus.
         </p>
       </div>
     );
   }
-
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, cursor: "pointer",
-    fontSize: 14, fontWeight: 700,
-    color: active ? "var(--text-strong)" : "var(--text-muted)",
-    border: `1px solid ${active ? "var(--accent-indigo)" : "rgba(99,102,241,0.2)"}`,
-    background: active ? "rgba(99,102,241,0.15)" : "transparent",
-  });
 
   return (
     <div>
@@ -385,7 +176,9 @@ const DriverAttendancePage: React.FC = () => {
         <ClipboardCheck size={20} strokeWidth={1.9} /> Attendance
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 18px" }}>
-        {bus ? `Marking attendance for bus ${bus.bus_number}.` : "Link your bus to start marking attendance."}
+        {bus
+          ? `Attendance for bus ${bus.bus_number} is taken via QR/face check-in - this is your submission history.`
+          : "Link your bus to view its attendance history."}
       </p>
 
       {bus === undefined ? (
@@ -393,18 +186,7 @@ const DriverAttendancePage: React.FC = () => {
       ) : bus === null ? (
         <ClaimBusForm onClaimed={setBus} />
       ) : (
-        <>
-          <QRDisplaySection />
-          <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-            <button type="button" style={tabStyle(tab === "mark")} onClick={() => setTab("mark")}>
-              <CalendarDays size={14} /> Mark attendance
-            </button>
-            <button type="button" style={tabStyle(tab === "history")} onClick={() => setTab("history")}>
-              <HistoryIcon size={14} /> History
-            </button>
-          </div>
-          {tab === "mark" ? <MarkTab bus={bus} /> : <HistoryTab />}
-        </>
+        <HistoryTab />
       )}
     </div>
   );

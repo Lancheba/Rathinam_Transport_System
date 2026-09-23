@@ -1,4 +1,4 @@
-﻿import math
+import math
 import secrets
 import base64
 import io
@@ -14,6 +14,7 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession
 from attendance.permissions import IsDriver, driver_bus
+from accounts.permissions import CanManageBuses
 from students.models import FaceProfile
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
@@ -54,7 +55,7 @@ def _slot_window_end(slot):
 
 
 def _cosine_distance(a, b):
-    """Cosine distance in [0, 1] â€” 0 means identical vectors."""
+    """Cosine distance in [0, 1] — 0 means identical vectors."""
     dot = sum(x * y for x, y in zip(a, b))
     na  = math.sqrt(sum(x * x for x in a))
     nb  = math.sqrt(sum(x * x for x in b))
@@ -64,11 +65,12 @@ def _cosine_distance(a, b):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/attendance/qr/generate/   (driver only)
+# POST /api/attendance/qr/generate/   (temporarily admin/staff only - Phase 1
+# removed driver access; Phase 7 will hand this to the Cab In-Charge role)
 # ---------------------------------------------------------------------------
 
 @api_view(['POST'])
-@permission_classes([IsDriver])
+@permission_classes([CanManageBuses])
 def qr_generate(request):
     slot = _current_slot()
     if not slot:
@@ -130,13 +132,12 @@ def qr_generate(request):
 
 
 # ---------------------------------------------------------------------------
-# GET /api/attendance/qr/tally/   (driver only) — lightweight present/total
-# count for the currently open session, meant to be polled every few
-# seconds by the driver's screen without regenerating the QR/token.
+# GET /api/attendance/qr/tally/   (temporarily admin/staff only - Phase 1
+# removed driver access; Phase 7 will hand this to the Cab In-Charge role)
 # ---------------------------------------------------------------------------
 
 @api_view(['GET'])
-@permission_classes([IsDriver])
+@permission_classes([CanManageBuses])
 def qr_tally(request):
     slot = _current_slot()
     if not slot:
