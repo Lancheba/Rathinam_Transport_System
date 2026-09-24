@@ -14,7 +14,7 @@ from .views import (
     attendance_window_config,
     my_attendance,
 )
-from .qr_views import qr_generate, qr_scan, qr_stop, qr_status, qr_tally
+from .qr_views import qr_generate, qr_manual_mark, qr_scan, qr_stop, qr_status, qr_tally
 from .report_views import attendance_report
 router = DefaultRouter()
 router.register("teachers", TeacherViewSet, basename="teacher")
@@ -36,5 +36,6 @@ urlpatterns = [
     path("qr/stop/", qr_stop, name="attendance-qr-stop"),
     path("qr/status/", qr_status, name="attendance-qr-status"),
     path("qr/scan/", qr_scan, name="attendance-qr-scan"),
+    path("qr/manual/", qr_manual_mark, name="attendance-qr-manual"),
     path("", include(router.urls)),
 ]

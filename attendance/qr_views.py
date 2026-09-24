@@ -343,7 +343,7 @@ def qr_scan(request):
         except ValueError:
             cache.set(lockout_key, 1, timeout=ttl)
         return Response(
-            {'detail': 'Face did not match. Try again with better lighting, or ask your driver to mark you manually.'},
+            {'detail': 'Face did not match. Try again with better lighting, or ask your cab in-charge to mark you manually.'},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -365,3 +365,86 @@ def qr_scan(request):
         'slot': session.slot,
         'marked_at': record.marked_at,
     })
+
+
+# POST /api/attendance/qr/manual/   (Cab In-Charge only)
+# Lets the in-charge mark a student PRESENT manually when face scan fails.
+# Requires: student_id (int), remark (str, min 10 chars).
+# Only works while the session is open (not auto_finalized).
+@api_view(['POST'])
+@permission_classes([IsInCharge])
+def qr_manual_mark(request):
+    bus = incharge_bus(request.user)
+    if not bus:
+        return Response(
+            {'detail': 'No bus is assigned to you.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    student_id = request.data.get('student_id')
+    remark = (request.data.get('remark') or '').strip()
+
+    if not student_id:
+        return Response(
+            {'detail': 'student_id is required.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if len(remark) < 10:
+        return Response(
+            {'detail': 'remark must be at least 10 characters.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from students.models import Student
+    try:
+        student = Student.objects.get(pk=student_id, bus=bus)
+    except Student.DoesNotExist:
+        return Response(
+            {'detail': 'Student not found on your bus.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    today = timezone.localdate()
+    session = (
+        AttendanceSession.objects
+        .filter(bus=bus, date=today, opened_at__isnull=False,
+                closed_at__isnull=True, auto_finalized=False)
+        .order_by('-id')
+        .first()
+    )
+    if not session:
+        return Response(
+            {'detail': 'No open attendance session. Start a QR session first.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    existing = AttendanceRecord.objects.filter(session=session, student=student).first()
+    if existing and existing.status == 'PRESENT':
+        return Response(
+            {'detail': 'Student is already marked PRESENT.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    record, _ = AttendanceRecord.objects.update_or_create(
+        session=session,
+        student=student,
+        defaults={
+            'status': 'PRESENT',
+            'person_type': 'STUDENT',
+            'source': 'MANUAL',
+            'marked_at': timezone.now(),
+            'remarks': remark,
+            'is_correction': True,
+            'corrected_by': request.user,
+            'corrected_at': timezone.now(),
+        },
+    )
+
+    return Response({
+        'status': 'PRESENT',
+        'source': 'MANUAL',
+        'session_id': session.pk,
+        'student_id': student.pk,
+        'remark': remark,
+        'marked_at': record.marked_at,
+    }, status=status.HTTP_200_OK)
