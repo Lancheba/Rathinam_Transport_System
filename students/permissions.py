@@ -15,7 +15,7 @@ class CanManageOwnBusStudents(permissions.BasePermission):
     that's what controls which rows a driver can see or reach by id at all.
     """
 
-    message = "Only admins, transport staff, or the bus's own driver can manage students."
+    message = "Only admins and transport staff can manage students; drivers have read-only access to their own bus."
 
     def has_permission(self, request, view):
         if can_manage_buses(request.user):

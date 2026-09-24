@@ -31,8 +31,8 @@ def make_bus(bus_number, driver=None):
 
 class DriverOwnBusStudentTests(APITestCase):
     """
-    A driver may list, add, edit and delete students on their own bus only —
-    never see, touch, or even detect the existence of another bus's roster.
+    A driver has read-only access to their own bus's roster: they can list it,
+    but can never write to it, and never see or detect another bus's roster.
     """
 
     url = "/api/students/"
@@ -56,42 +56,43 @@ class DriverOwnBusStudentTests(APITestCase):
         res = self.client.get(f"{self.url}{self.bob.id}/")
         self.assertEqual(res.status_code, 404)
 
-    def test_driver_create_is_forced_onto_own_bus_even_if_another_bus_is_submitted(self):
+    def test_driver_cannot_create_students(self):
         self.client.force_authenticate(self.driver1)
-        res = self.client.post(self.url, {"name": "Carol", "roll_number": "C1", "bus": self.bus2.id}, format="json")
-        self.assertEqual(res.status_code, 201, res.data)
-        self.assertEqual(res.data["bus"], self.bus1.id)
+        res = self.client.post(self.url, {"name": "Carol", "roll_number": "C1", "bus": self.bus1.id}, format="json")
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(Student.objects.count(), 2)
 
     def test_driver_without_a_linked_bus_cannot_add_students(self):
         lone_driver = make_user("driver3", "DRIVER")
         self.client.force_authenticate(lone_driver)
         res = self.client.post(self.url, {"name": "Dan", "roll_number": "D1"}, format="json")
-        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(Student.objects.count(), 2)
 
-    def test_driver_can_edit_own_student_but_not_move_them_to_another_bus(self):
+    def test_driver_cannot_edit_own_student(self):
         self.client.force_authenticate(self.driver1)
-        res = self.client.patch(
-            f"{self.url}{self.alice.id}/", {"phone": "9999999999", "bus": self.bus2.id}, format="json"
-        )
-        self.assertEqual(res.status_code, 200, res.data)
-        self.assertEqual(res.data["phone"], "9999999999")
-        self.assertEqual(res.data["bus"], self.bus1.id)
+        res = self.client.patch(f"{self.url}{self.alice.id}/", {"phone": "9999999999"}, format="json")
+        self.assertEqual(res.status_code, 403)
+        self.alice.refresh_from_db()
+        self.assertNotEqual(self.alice.phone, "9999999999")
 
     def test_driver_cannot_edit_other_bus_student(self):
         self.client.force_authenticate(self.driver1)
         res = self.client.patch(f"{self.url}{self.bob.id}/", {"phone": "111"}, format="json")
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
+        self.bob.refresh_from_db()
+        self.assertNotEqual(self.bob.phone, "111")
 
-    def test_driver_can_delete_own_student(self):
+    def test_driver_cannot_delete_own_student(self):
         self.client.force_authenticate(self.driver1)
         res = self.client.delete(f"{self.url}{self.alice.id}/")
-        self.assertEqual(res.status_code, 204)
-        self.assertFalse(Student.objects.filter(id=self.alice.id).exists())
+        self.assertEqual(res.status_code, 403)
+        self.assertTrue(Student.objects.filter(id=self.alice.id).exists())
 
     def test_driver_cannot_delete_other_bus_student(self):
         self.client.force_authenticate(self.driver1)
         res = self.client.delete(f"{self.url}{self.bob.id}/")
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
         self.assertTrue(Student.objects.filter(id=self.bob.id).exists())
 
     def test_all_bus_roster_view_stays_staff_only(self):

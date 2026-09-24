@@ -21,3 +21,5 @@ staticfiles/
 .env
 .env.*
 !.env.example
+
+test_results.txt

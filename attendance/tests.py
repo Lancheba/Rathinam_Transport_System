@@ -132,9 +132,9 @@ class MyAttendanceTests(APITestCase):
 
 
 class AttendanceLockAndCorrectionTests(APITestCase):
-    """Phase 1: a driver can never un-mark Present, and can never self-correct
-    Absent -> Present. Only the admin/staff correct endpoint can do that,
-    and only once."""
+    """Attendance submit is staff/admin only (drivers and students mark via QR/face).
+    Even so, a submit can never un-mark a Present record or flip Absent -> Present.
+    Only the admin/staff correct endpoint can do that, and only once."""
 
     def setUp(self):
         self.bus = make_bus("B21")
@@ -144,10 +144,10 @@ class AttendanceLockAndCorrectionTests(APITestCase):
         self.admin = make_user("admin21", "ADMIN")
         self.alice = Student.objects.create(name="Alice", roll_number="R921", bus=self.bus)
         self.today = date.today()
-        self.submit_url = "/api/attendance/submit/"
+        self.submit_url = f"/api/attendance/submit/?bus={self.bus.id}"
 
-    def _submit(self, status_value):
-        self.client.force_authenticate(self.driver_user)
+    def _submit(self, status_value, user=None):
+        self.client.force_authenticate(user or self.admin)
         return self.client.post(self.submit_url, {
             "date": str(self.today), "slot": "MORNING", "is_holiday": False,
             "records": [{"person_type": "STUDENT", "id": self.alice.id, "status": status_value}],
@@ -156,13 +156,19 @@ class AttendanceLockAndCorrectionTests(APITestCase):
     def _record(self):
         return AttendanceRecord.objects.get(student=self.alice, session__date=self.today, session__slot="MORNING")
 
-    def test_driver_cannot_unmark_present(self):
+    def test_driver_cannot_submit_attendance(self):
+        res = self._submit("PRESENT", user=self.driver_user)
+        self.assertEqual(res.status_code, 403)
+        self.assertFalse(AttendanceSession.objects.exists())
+        self.assertFalse(AttendanceRecord.objects.exists())
+
+    def test_submit_cannot_unmark_present(self):
         self._submit("PRESENT")
         self.assertEqual(self._record().status, "PRESENT")
         self._submit("ABSENT")
         self.assertEqual(self._record().status, "PRESENT")
 
-    def test_driver_cannot_self_correct_absent_to_present(self):
+    def test_submit_cannot_self_correct_absent_to_present(self):
         self._submit("ABSENT")
         self.assertEqual(self._record().status, "ABSENT")
         self._submit("PRESENT")
@@ -185,7 +191,7 @@ class AttendanceLockAndCorrectionTests(APITestCase):
         self.assertTrue(record.is_correction)
         self.assertEqual(record.corrected_by_id, self.admin.id)
 
-        # Second correction attempt is rejected — already Present and locked.
+        # Second correction attempt is rejected: already Present and locked.
         res2 = self.client.patch(url, {}, format="json")
         self.assertEqual(res2.status_code, 400)
 

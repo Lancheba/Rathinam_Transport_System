@@ -17,10 +17,9 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     Student names, phone numbers and roll numbers are personal data. Admins
     and transport staff can see and manage every student, the same as
-    before. A driver can also see, add, edit and delete students — but only
-    on their own bus: get_queryset below is what actually enforces that
-    boundary (a driver requesting another bus's student by id just won't
-    find it), the permission class alone is not enough.
+    before. Drivers get read-only access to their own bus's roster: get_queryset below
+    enforces that boundary (a driver requesting another bus's student by id just
+    won't find it), and the permission class blocks every driver write.
     """
 
     queryset = Student.objects.select_related("bus").all()
@@ -46,23 +45,6 @@ class StudentViewSet(viewsets.ModelViewSet):
         if unassigned is not None and unassigned.lower() == "true":
             qs = qs.filter(bus__isnull=True)
         return qs
-
-    def perform_create(self, serializer):
-        if self._driver_only():
-            bus = driver_bus(self.request.user)
-            if not bus:
-                raise ValidationError({"detail": "Link your bus before adding students."})
-            # Whatever "bus" was submitted (if any) is ignored — a driver can only add to their own cab.
-            serializer.save(bus=bus)
-        else:
-            serializer.save()
-
-    def perform_update(self, serializer):
-        if self._driver_only():
-            # Edits are allowed, but a driver can never move a student onto a different bus.
-            serializer.save(bus=driver_bus(self.request.user))
-        else:
-            serializer.save()
 
     @action(detail=False, methods=["get"], url_path="roster", permission_classes=[CanManageBuses])
     def roster(self, request):
