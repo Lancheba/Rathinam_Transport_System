@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
 from attendance.services import is_school_day
-from students.models import FaceProfile
+from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
 from students.face_utils import clean_embedding
@@ -50,6 +50,19 @@ def _slot_window_end(slot):
         timezone.datetime.combine(now.date(), end_t),
         timezone.get_current_timezone(),
     )
+
+
+def _tally(bus, session):
+    """
+    (present, total) for the QR screen. Students only, and the total is the
+    bus ROSTER, so it matches the Students page instead of counting only the
+    records created so far.
+    """
+    total = Student.objects.filter(bus=bus).count()
+    if not session:
+        return 0, total
+    present = session.records.filter(status='PRESENT', student__isnull=False).count()
+    return present, total
 
 
 def _cosine_distance(a, b):
@@ -125,8 +138,7 @@ def qr_generate(request):
     img.save(buf, format='PNG')
     qr_b64 = base64.b64encode(buf.getvalue()).decode()
 
-    present = session.records.filter(status='PRESENT').count()
-    total   = session.records.count()
+    present, total = _tally(bus, session)
 
     return Response({
         'qr_image_base64': qr_b64,
@@ -160,8 +172,7 @@ def qr_tally(request):
 
     today = timezone.localdate()
     session = AttendanceSession.objects.filter(bus=bus, date=today, slot=slot).first()
-    present = session.records.filter(status='PRESENT').count() if session else 0
-    total = session.records.count() if session else 0
+    present, total = _tally(bus, session)
 
     return Response({
         'slot': slot,
@@ -200,8 +211,7 @@ def qr_stop(request):
     from attendance.services import finalize_session
     finalize_session(session)
 
-    present = session.records.filter(status='PRESENT').count()
-    total   = session.records.count()
+    present, total = _tally(bus, session)
 
     return Response({
         'session_id': session.pk,
