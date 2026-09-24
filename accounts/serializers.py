@@ -67,13 +67,15 @@ class DriverLoginSerializer(TokenObtainPairSerializer):
         profile = getattr(user, "profile", None)
 
         if profile and profile.role == "DRIVER":
-            cab_number = (attrs.get("cab_number") or "").strip()
-            if not cab_number:
-                raise serializers.ValidationError({"cab_number": "Cab number is required for drivers."})
+            # item 2.9: a driver with no bus yet must still be able to log in,
+            # so they can reach the My Bus screen and claim one. Once a bus IS
+            # assigned, the cab number is checked as a sanity confirmation.
             bus = getattr(user, "driven_bus", None)
-            if not bus:
-                raise serializers.ValidationError({"cab_number": "You have not been assigned a bus yet. Contact admin."})
-            if bus.bus_number.upper() != cab_number.upper():
-                raise serializers.ValidationError({"cab_number": "Cab number does not match your assigned bus."})
+            if bus:
+                cab_number = (attrs.get("cab_number") or "").strip()
+                if not cab_number:
+                    raise serializers.ValidationError({"cab_number": "Cab number is required for drivers."})
+                if bus.bus_number.upper() != cab_number.upper():
+                    raise serializers.ValidationError({"cab_number": "Cab number does not match your assigned bus."})
 
         return data
