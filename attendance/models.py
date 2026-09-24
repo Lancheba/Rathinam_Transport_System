@@ -203,3 +203,67 @@ class AttendanceQRToken(models.Model):
 
     def __str__(self):
         return f"QRToken({self.bus.bus_number} {self.date} {self.slot})"
+
+
+class AttendanceAudit(models.Model):
+    """
+    Append-only log of every change to an AttendanceRecord.
+    Written by the service layer; never updated or deleted.
+    Audit item 2.4.
+    """
+    ACTION_CHOICES = [
+        ('CREATE',      'Created'),
+        ('SCAN',        'QR/Face scan'),
+        ('MANUAL',      'Manual mark by in-charge'),
+        ('CORRECT',     'Corrected by staff/admin'),
+        ('AUTO_ABSENT', 'Auto-marked absent'),
+    ]
+
+    record     = models.ForeignKey(
+        AttendanceRecord, on_delete=models.CASCADE, related_name='audit_trail'
+    )
+    action     = models.CharField(max_length=15, choices=ACTION_CHOICES)
+    old_status = models.CharField(max_length=10, blank=True)
+    new_status = models.CharField(max_length=10)
+    actor      = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='attendance_audit_entries'
+    )
+    reason     = models.CharField(max_length=500, blank=True)
+    source     = models.CharField(max_length=15, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'Audit({self.record_id} {self.action} {self.created_at:%Y-%m-%d %H:%M})'
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValueError('AttendanceAudit rows are append-only and cannot be updated.')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError('AttendanceAudit rows cannot be deleted.')
+
+
+class Holiday(models.Model):
+    """A no-attendance day for ALL buses. Admins add these once."""
+
+    date = models.DateField(unique=True)
+    reason = models.CharField(max_length=200, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="holidays_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.date} - {self.reason or 'Holiday'}"

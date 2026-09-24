@@ -1,4 +1,8 @@
+from django.conf import settings
+from django.utils import timezone
 from rest_framework import serializers
+
+from accounts.permissions import is_admin
 
 from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
 
@@ -117,17 +121,30 @@ class AttendanceSessionSerializer(serializers.ModelSerializer):
 
 class AttendanceRecordInputSerializer(serializers.Serializer):
     person_type = serializers.ChoiceField(choices=["STUDENT", "TEACHER"])
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(min_value=1, max_value=2147483647)
     status = serializers.ChoiceField(choices=["PRESENT", "ABSENT"])
-    remarks = serializers.CharField(required=False, allow_blank=True, default="")
+    remarks = serializers.CharField(required=False, allow_blank=True, default="", max_length=200)
 
 
 class AttendanceSubmitSerializer(serializers.Serializer):
     date = serializers.DateField()
     slot = serializers.ChoiceField(choices=["MORNING", "EVENING"], required=False, default="MORNING")
     is_holiday = serializers.BooleanField(required=False, default=False)
-    holiday_reason = serializers.CharField(required=False, allow_blank=True, default="")
+    holiday_reason = serializers.CharField(required=False, allow_blank=True, default="", max_length=200)
     records = AttendanceRecordInputSerializer(many=True, required=False, default=list)
+
+    def validate_date(self, value):
+        today = timezone.localdate()
+        if value > today:
+            raise serializers.ValidationError("Date cannot be in the future.")
+        limit = getattr(settings, "ATTENDANCE_BACKFILL_DAYS", 30)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if (today - value).days > limit and not is_admin(user):
+            raise serializers.ValidationError(
+                f"Date is older than the {limit}-day back-fill limit. Ask an admin to make this change."
+            )
+        return value
 
     def validate(self, data):
         if not data.get("is_holiday") and not data.get("records"):

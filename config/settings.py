@@ -273,3 +273,14 @@ FACE_MATCH_THRESHOLD = 0.6
 QR_TOKEN_TTL_SECONDS = 60
 FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5
 
+
+# Max days back a non-admin may submit/edit attendance for.
+ATTENDANCE_BACKFILL_DAYS = 30
+
+# Weekdays (Mon=0 ... Sun=6) on which sessions are created and absentees marked.
+ATTENDANCE_WORKING_WEEKDAYS = (0, 1, 2, 3, 4, 5)
+
+# Tests must not depend on which weekday they run on.
+import sys as _sys
+if "test" in _sys.argv:
+    ATTENDANCE_WORKING_WEEKDAYS = tuple(range(7))

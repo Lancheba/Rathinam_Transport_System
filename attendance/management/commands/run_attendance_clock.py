@@ -1,60 +1,48 @@
-import time
-from datetime import timedelta
+﻿import time
 
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
-from django.utils import timezone
+from django.db import close_old_connections
 
-from attendance.models import AttendanceWindowConfig
+from attendance.services import run_due_finalizations
 
 
 class Command(BaseCommand):
     help = (
-        "Long-running 'clock' process: every day, one minute after each "
-        "slot's configured end time, it fires "
-        "`finalize_attendance --slot=MORNING` / `--slot=EVENING`. "
-        "The end times are read fresh from AttendanceWindowConfig on every "
-        "loop, so admins/staff can change them from Settings without "
-        "restarting this process. Railway doesn't run cron jobs inside a "
-        "normal web service, so this is meant to run as its own always-on "
-        "process (see Procfile's `clock` entry) — or, alternatively, "
-        "replace it with a Railway Cron Job that runs "
-        "`python manage.py finalize_attendance --slot=...` directly on a "
-        "schedule, if you'd rather not keep a process alive."
+        "Attendance clock. Each pass finalizes every slot whose window has "
+        "ended and is not finalized yet (today plus the last few days), so a "
+        "restart after downtime catches up automatically. "
+        "Default: loop forever (Procfile 'clock' process). "
+        "With --once: run a single pass and exit - use this from a Railway "
+        "Cron Job or any scheduler, e.g. every 5 minutes."
     )
 
+    def add_arguments(self, parser):
+        parser.add_argument("--once", action="store_true",
+                            help="Run one pass and exit (for cron-style schedulers).")
+        parser.add_argument("--interval", type=int, default=30,
+                            help="Seconds between passes when looping (default 30, minimum 5).")
+
+    def _tick(self):
+        for r in run_due_finalizations():
+            self.stdout.write(
+                f"{r['date']} {r['slot']}: {r['sessions_created']} session(s) created, "
+                f"{r['sessions_finalized']} finalized, {r['absent_created']} auto-absent."
+            )
+
     def handle(self, *args, **options):
-        last_run = {}  # slot -> date.date() it last fired on, so we never double-fire
+        if options["once"]:
+            self._tick()
+            return
+
+        interval = max(options["interval"], 5)
         self.stdout.write(self.style.SUCCESS(
-            "Attendance clock started. Watching the configured MORNING/EVENING "
-            "window end times (Asia/Kolkata), refreshed every loop."
+            f"Attendance clock started (checking every {interval}s, with catch-up)."
         ))
         while True:
-            now = timezone.localtime(timezone.now())
-            today = now.date()
-            cfg = AttendanceWindowConfig.get_solo()
-
-            checks = [
-                ("MORNING", cfg.morning_end),
-                ("EVENING", cfg.evening_end),
-            ]
-
-            for slot, end_t in checks:
-                # Fire one minute after the configured window end.
-                fire_at = (
-                    timezone.datetime.combine(today, end_t) + timedelta(minutes=1)
-                ).time()
-                if now.hour == fire_at.hour and now.minute == fire_at.minute and last_run.get(slot) != today:
-                    self.stdout.write(
-                        f"[{now.isoformat()}] Firing finalize_attendance --slot={slot}"
-                    )
-                    try:
-                        call_command("finalize_attendance", slot=slot)
-                    except Exception as exc:
-                        # A bad run should never kill the clock process itself.
-                        self.stderr.write(self.style.ERROR(
-                            f"finalize_attendance --slot={slot} failed: {exc}"
-                        ))
-                    last_run[slot] = today
-
-            time.sleep(30)
+            try:
+                close_old_connections()
+                self._tick()
+            except Exception as exc:
+                # A bad pass must never kill the clock process.
+                self.stderr.write(self.style.ERROR(f"clock pass failed: {exc}"))
+            time.sleep(interval)

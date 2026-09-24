@@ -79,3 +79,19 @@ class FaceProfileAdmin(admin.ModelAdmin):
             return "Not enrolled"
         return f"Enrolled \u2713 ({len(obj.embedding)}-dim vector, hidden)"
     embedding_preview.short_description = "Embedding"
+
+
+from .models import Holiday  # noqa: E402
+
+
+@admin.register(Holiday)
+class HolidayAdmin(admin.ModelAdmin):
+    list_display = ("date", "reason", "created_by", "created_at")
+    search_fields = ("reason",)
+    date_hierarchy = "date"
+    readonly_fields = ("created_by", "created_at")
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)

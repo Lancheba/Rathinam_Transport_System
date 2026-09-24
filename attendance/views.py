@@ -242,9 +242,27 @@ def attendance_submit(request):
     if not CanManageBuses().has_permission(request, None):
         return Response({"detail": "Not allowed. Attendance is now taken via QR/face check-in."}, status=403)
 
-    serializer = AttendanceSubmitSerializer(data=request.data)
+    serializer = AttendanceSubmitSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
+
+    # Every person in the payload must exist AND belong to this bus.
+    if not data["is_holiday"]:
+        student_ids = {r["id"] for r in data["records"] if r["person_type"] == "STUDENT"}
+        teacher_ids = {r["id"] for r in data["records"] if r["person_type"] == "TEACHER"}
+        ok_students = set(Student.objects.filter(pk__in=student_ids, bus=bus).values_list("pk", flat=True))
+        ok_teachers = set(Teacher.objects.filter(pk__in=teacher_ids, bus=bus).values_list("pk", flat=True))
+        bad_students = sorted(student_ids - ok_students)
+        bad_teachers = sorted(teacher_ids - ok_teachers)
+        if bad_students or bad_teachers:
+            return Response(
+                {
+                    "detail": "Some people are not on this bus's roster.",
+                    "invalid_student_ids": bad_students,
+                    "invalid_teacher_ids": bad_teachers,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     with transaction.atomic():
         session, _ = AttendanceSession.objects.update_or_create(
@@ -334,18 +352,36 @@ def attendance_correct(request, record_id):
         return Response({"detail": "This record is already marked Present and is locked."}, status=400)
 
     remark = (request.data.get("remark") or "").strip()
+    if not 10 <= len(remark) <= 200:
+        return Response(
+            {"detail": "remark is required and must be between 10 and 200 characters."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
+    old_status = record.status
     record.status = "PRESENT"
     record.source = "MANUAL"
     record.is_correction = True
     record.corrected_by = request.user
     record.corrected_at = timezone.now()
     record.locked_at = timezone.now()
-    if remark:
-        record.remarks = remark
+    record.remarks = remark
     record.save(update_fields=[
         "status", "source", "is_correction", "corrected_by", "corrected_at", "locked_at", "remarks",
     ])
+
+    from attendance.models import AttendanceAudit
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    AttendanceAudit.objects.create(
+        record=record,
+        action='CORRECT',
+        old_status=old_status,
+        new_status='PRESENT',
+        actor=request.user,
+        reason=remark,
+        source='MANUAL',
+        ip_address=ip.split(',')[0].strip() or None,
+    )
 
     return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
 

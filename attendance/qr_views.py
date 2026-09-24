@@ -16,6 +16,7 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
+from attendance.services import is_school_day
 from students.models import FaceProfile
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
@@ -81,6 +82,11 @@ def qr_generate(request):
         )
 
     today = timezone.localdate()
+    if not is_school_day(today):
+        return Response(
+            {'detail': 'Attendance is not taken today (weekend or holiday).'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     session, _created = AttendanceSession.objects.get_or_create(
         bus=bus, date=today, slot=slot,
         defaults={'marked_by': request.user},
@@ -297,6 +303,12 @@ def qr_scan(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    if session.is_holiday or not is_school_day(session.date):
+        return Response(
+            {'detail': 'Attendance is not taken today (holiday or non-school day).'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     if session.auto_finalized or timezone.now() > _slot_window_end(session.slot):
         return Response(
             {'detail': 'Attendance for this session is already closed.'},
@@ -389,9 +401,9 @@ def qr_manual_mark(request):
             {'detail': 'student_id is required.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    if len(remark) < 10:
+    if not 10 <= len(remark) <= 200:
         return Response(
-            {'detail': 'remark must be at least 10 characters.'},
+            {'detail': 'remark must be between 10 and 200 characters.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -405,10 +417,15 @@ def qr_manual_mark(request):
         )
 
     today = timezone.localdate()
+    if not is_school_day(today):
+        return Response(
+            {'detail': 'Attendance is not taken today (weekend or holiday).'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     session = (
         AttendanceSession.objects
         .filter(bus=bus, date=today, opened_at__isnull=False,
-                closed_at__isnull=True, auto_finalized=False)
+                closed_at__isnull=True, auto_finalized=False, is_holiday=False)
         .order_by('-id')
         .first()
     )
@@ -438,6 +455,19 @@ def qr_manual_mark(request):
             'corrected_by': request.user,
             'corrected_at': timezone.now(),
         },
+    )
+
+    from attendance.models import AttendanceAudit
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    AttendanceAudit.objects.create(
+        record=record,
+        action='MANUAL',
+        old_status=existing.status if existing else '',
+        new_status='PRESENT',
+        actor=request.user,
+        reason=remark,
+        source='MANUAL',
+        ip_address=ip.split(',')[0].strip() or None,
     )
 
     return Response({
