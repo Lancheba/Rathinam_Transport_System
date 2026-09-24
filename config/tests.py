@@ -84,15 +84,27 @@ class ThrottleTests(APITestCase):
 
 
 class ProductionGuardTests(TestCase):
-    """With DJANGO_DEBUG=0, refuse to start on the built-in dev secrets."""
+    """With DJANGO_DEBUG=0 (the default), refuse to start on unsafe settings."""
+
+    GOOD = dict(
+        DJANGO_SECRET_KEY="x" * 60,
+        DEVICE_API_KEY="y" * 30,
+        DJANGO_ALLOWED_HOSTS="app.example.com",
+    )
 
     def import_settings(self, **env):
         base = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "DEVICE_API_KEY"))}
+        base["DJANGO_SKIP_DOTENV"] = "1"  # a developer's local .env must not affect these tests
         base.update(env)
         return subprocess.run(
             [sys.executable, "-c", "import config.settings"],
             env=base, cwd=Path(__file__).resolve().parent.parent, capture_output=True, text=True,
         )
+
+    def test_no_environment_variables_refuses_to_boot(self):
+        r = self.import_settings()
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("DJANGO_SECRET_KEY", r.stderr)
 
     def test_default_secret_key_is_refused_when_debug_is_off(self):
         r = self.import_settings(DJANGO_DEBUG="0")
@@ -104,6 +116,21 @@ class ProductionGuardTests(TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("DEVICE_API_KEY", r.stderr)
 
+    def test_missing_allowed_hosts_is_refused_when_debug_is_off(self):
+        good = {k: v for k, v in self.GOOD.items() if k != "DJANGO_ALLOWED_HOSTS"}
+        r = self.import_settings(**good)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("DJANGO_ALLOWED_HOSTS", r.stderr)
+
+    def test_wildcard_allowed_hosts_is_refused_when_debug_is_off(self):
+        r = self.import_settings(**{**self.GOOD, "DJANGO_ALLOWED_HOSTS": "*"})
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("DJANGO_ALLOWED_HOSTS", r.stderr)
+
     def test_properly_configured_production_starts(self):
-        r = self.import_settings(DJANGO_DEBUG="0", DJANGO_SECRET_KEY="x" * 60, DEVICE_API_KEY="y" * 30)
+        r = self.import_settings(**self.GOOD)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_debug_can_still_be_turned_on_explicitly(self):
+        r = self.import_settings(DJANGO_DEBUG="1")
         self.assertEqual(r.returncode, 0, r.stderr)

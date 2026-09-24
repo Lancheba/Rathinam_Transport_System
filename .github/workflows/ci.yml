@@ -42,6 +42,8 @@ jobs:
           DJANGO_ALLOWED_HOSTS: localhost
         run: python manage.py check --deploy
       - name: Run tests
+        env:
+          DJANGO_DEBUG: "1"   # debug is off by default now; tests run in development mode
         run: python manage.py test --noinput
 
   frontend:

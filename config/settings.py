@@ -12,9 +12,29 @@ def _env_bool(name, default="0"):
     return os.environ.get(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 
-# Development defaults keep `runserver` working with no setup.
+def _load_dotenv(path):
+    """Tiny .env loader for local development (no extra dependency).
+
+    Real environment variables always win. Production hosts (Railway, Render)
+    have no .env file, so this does nothing there. Set DJANGO_SKIP_DOTENV=1
+    to ignore the file (the settings tests do this).
+    """
+    if _env_bool("DJANGO_SKIP_DOTENV") or not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+_load_dotenv(BASE_DIR / ".env")
+
+# SAFE BY DEFAULT: debug is OFF unless you explicitly turn it on.
+# For local development copy .env.example to .env (it sets DJANGO_DEBUG=1).
 # For a real deployment set the DJANGO_* variables in README section "Deployment".
-DEBUG = _env_bool("DJANGO_DEBUG", "1")
+DEBUG = _env_bool("DJANGO_DEBUG", "0")
 
 _DEV_SECRET_KEY = "django-insecure-dev-only-not-for-deployment-change-me"
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _DEV_SECRET_KEY)
@@ -84,7 +104,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Falls back to local SQLite when DATABASE_URL isn't set (plain `runserver`
 # development). Set DATABASE_URL in production (Railway's Postgres add-on sets
-# it automatically) â€” Railway containers don't persist local files like
+# it automatically) - Railway containers don't persist local files like
 # db.sqlite3 across deploys, so SQLite alone will silently lose all data.
 DATABASES = {
     "default": dj_database_url.config(
@@ -194,6 +214,12 @@ if not DEBUG:
         raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value when DJANGO_DEBUG=0.")
     if DEVICE_API_KEY == "dev-device-key":
         raise ImproperlyConfigured("Set DEVICE_API_KEY to a long random value when DJANGO_DEBUG=0.")
+    if not os.environ.get("DJANGO_ALLOWED_HOSTS", "").strip():
+        raise ImproperlyConfigured(
+            "Set DJANGO_ALLOWED_HOSTS (comma-separated hostnames) when DJANGO_DEBUG=0."
+        )
+    if "*" in ALLOWED_HOSTS:
+        raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must list real hostnames, not '*', when DJANGO_DEBUG=0.")
 
     # HTTPS hardening. Off by default so a plain-HTTP campus server keeps working;
     # switch on with DJANGO_HTTPS=1 once the site really is served over HTTPS.
