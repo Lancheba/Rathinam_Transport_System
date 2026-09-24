@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
@@ -97,6 +98,26 @@ class FaceScanSecurityTests(APITestCase):
         self.assertEqual(res.status_code, 401)
         self.assertNotIn("score", res.data)
         self.assertEqual(AttendanceRecord.objects.count(), 0)
+
+    def test_lockout_after_max_failed_attempts(self):
+        # Post directly here instead of via self._scan(): that helper clears the
+        # whole cache before every call (to dodge the request-rate throttle), which
+        # would also wipe the lockout counter between attempts. Four requests here
+        # are well under the 12/min throttle, so no manual cache clearing is needed.
+        with override_settings(FACE_SCAN_MAX_ATTEMPTS_PER_SESSION=3):
+            for _ in range(3):
+                res = self.client.post(
+                    SCAN_URL, {"token": self.token.token, "embedding": DIFFERENT_FACE}, format="json"
+                )
+                self.assertEqual(res.status_code, 401)
+
+            # One more attempt, even with the correct face, must now be locked out.
+            res = self.client.post(
+                SCAN_URL, {"token": self.token.token, "embedding": STORED}, format="json"
+            )
+            self.assertEqual(res.status_code, 403)
+            self.assertNotIn("score", res.data)
+            self.assertEqual(AttendanceRecord.objects.filter(status="PRESENT").count(), 0)
 
 
 class FaceEnrollmentSecurityTests(APITestCase):

@@ -8,6 +8,7 @@ from datetime import timedelta
 import qrcode
 import json
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -302,6 +303,14 @@ def qr_scan(request):
             {'detail': 'Attendance for this session is already closed.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    lockout_key = f'face_scan_fail_{student.pk}_{session.pk}'
+    max_attempts = getattr(settings, 'FACE_SCAN_MAX_ATTEMPTS_PER_SESSION', 5)
+    if cache.get(lockout_key, 0) >= max_attempts:
+        logger.warning('Face scan locked out for student %s session %s', student.pk, session.pk)
+        return Response(
+            {'detail': 'Too many failed face scans for this session. Ask your cab in-charge to mark you manually.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     try:
         face_profile = student.face_profile
@@ -328,6 +337,12 @@ def qr_scan(request):
     # The score is logged server-side only: returning it lets an attacker tune a fake vector.
     if not math.isfinite(distance) or distance > threshold:
         logger.warning('Face scan rejected for student %s (distance=%s)', student.pk, distance)
+        window_end = _slot_window_end(session.slot)
+        ttl = max(int((window_end - timezone.now()).total_seconds()), 60)
+        try:
+            cache.incr(lockout_key)
+        except ValueError:
+            cache.set(lockout_key, 1, timeout=ttl)
         return Response(
             {'detail': 'Face did not match. Try again with better lighting, or ask your driver to mark you manually.'},
             status=status.HTTP_401_UNAUTHORIZED,
