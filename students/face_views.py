@@ -1,9 +1,10 @@
-﻿from django.utils import timezone
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from accounts.permissions import IsStudent
+from students.face_utils import clean_embedding
 from students.models import FaceProfile
 
 MAX_RETAKES = 3
@@ -55,7 +56,9 @@ def face_enrollment(request):
             {'detail': 'Explicit consent is required to enroll your face.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    if not isinstance(embedding, list) or len(embedding) != 128:
+    try:
+        embedding = clean_embedding(embedding)
+    except ValueError:
         return Response(
             {'detail': 'A valid 128-value embedding array is required.'},
             status=status.HTTP_400_BAD_REQUEST,
