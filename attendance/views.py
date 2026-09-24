@@ -1,3 +1,4 @@
+from .net import client_ip
 import csv
 import io
 from datetime import date as date_cls, datetime, timedelta
@@ -321,7 +322,7 @@ def attendance_submit(request):
                     actor=request.user,
                     remarks=row.get("remarks", ""),
                     reason=row.get("remarks", ""),
-                    ip_address=(request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip() or None),
+                    ip_address=client_ip(request),
                 )
                 if person_type == "STUDENT":
                     seen_student_ids.add(row["id"])
@@ -355,7 +356,7 @@ def attendance_correct(request, record_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    ip = client_ip(request) or ''
     record = set_attendance(
         session=record.session,
         person_type=record.person_type,

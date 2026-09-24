@@ -1,3 +1,4 @@
+from .net import client_ip
 import logging
 import math
 import numpy as np
@@ -368,7 +369,7 @@ def qr_scan(request):
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
-    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    ip = client_ip(request) or ''
     record = set_attendance(
         session=session,
         person_type='STUDENT',
@@ -451,7 +452,7 @@ def qr_manual_mark(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    ip = client_ip(request) or ''
     record = set_attendance(
         session=session,
         person_type='STUDENT',
