@@ -113,6 +113,13 @@ def qr_generate(request):
         session.save(update_fields=changed_fields)
 
     ttl = getattr(settings, 'QR_TOKEN_TTL_SECONDS', 60)
+
+    # 2.8: a session should only ever have one live token; refreshing
+    # (or re-opening) must not leave older tokens scannable.
+    AttendanceQRToken.objects.filter(
+        bus=bus, date=today, slot=slot, expires_at__gt=timezone.now(),
+    ).delete()
+
     token_str = secrets.token_urlsafe(32)
     qr_token = AttendanceQRToken.objects.create(
         bus=bus,
