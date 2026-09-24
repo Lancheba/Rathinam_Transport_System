@@ -146,9 +146,11 @@ const BusesPage: React.FC = () => {
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <Clock size={13} style={{ color: "var(--accent-cyan)" }} /> Departs: <strong style={{ color: "var(--text-soft)" }}>{bus.departure_time}</strong>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <Radio size={13} style={{ color: "var(--accent-cyan)" }} /> RFID: <code style={{ color: "var(--text-soft)", fontSize: 11 }}>{bus.rfid_uid}</code>
-                </div>
+                {bus.rfid_uid !== undefined && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <Radio size={13} style={{ color: "var(--accent-cyan)" }} /> RFID: <code style={{ color: "var(--text-soft)", fontSize: 11 }}>{bus.rfid_uid}</code>
+                  </div>
+                )}
                 {slot ? (
                   <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 7 }}>
                     <MapPin size={13} style={{ color: "var(--accent-green)" }} />

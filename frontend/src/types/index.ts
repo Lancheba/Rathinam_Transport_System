@@ -3,7 +3,8 @@
 export interface Bus {
   id: number;
   bus_number: string;
-  rfid_uid: string;
+  /** Only sent to admins and transport staff; undefined for everyone else. */
+  rfid_uid?: string;
   route: string;
   departure_time: string;
   length_m: string;

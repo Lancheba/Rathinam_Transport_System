@@ -39,6 +39,9 @@ export const BusDetailModal: React.FC<Props> = ({ bus, onClose }) => {
     }
   };
 
+  // The server leaves the RFID UID and the driver / in-charge details out of the
+  // response for everyone except admins and transport staff.
+  const showStaffDetails = bus.rfid_uid !== undefined;
   const hasDriver = Boolean(bus.driver_username);
   const hasIncharge = Boolean(bus.incharge_username);
 
@@ -71,7 +74,9 @@ export const BusDetailModal: React.FC<Props> = ({ bus, onClose }) => {
         <div style={{ marginBottom: 14 }}>
           <Row icon={<RouteIcon size={14} />} label="Route" value={bus.route} />
           <Row icon={<Clock size={14} />} label="Departs" value={bus.departure_time} />
-          <Row icon={<Radio size={14} />} label="RFID" value={<code style={{ fontSize: 11 }}>{bus.rfid_uid}</code>} />
+          {showStaffDetails && (
+            <Row icon={<Radio size={14} />} label="RFID" value={<code style={{ fontSize: 11 }}>{bus.rfid_uid}</code>} />
+          )}
           <Row
             icon={<Users size={14} />}
             label="Capacity"
@@ -79,28 +84,36 @@ export const BusDetailModal: React.FC<Props> = ({ bus, onClose }) => {
           />
         </div>
 
-        <div style={{ marginBottom: 4, fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>
-          Driver
-        </div>
-        {hasDriver ? (
+        {showStaffDetails ? (
           <>
-            <Row icon={<User size={14} />} label="Name" value={bus.driver_username} />
-            <Row icon={<Phone size={14} />} label="Phone" value={bus.driver_phone || "Not on file"} />
-          </>
-        ) : (
-          <div style={{ color: "var(--text-dim)", fontSize: 13, padding: "8px 0" }}>No driver assigned yet.</div>
-        )}
+          <div style={{ marginBottom: 4, fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>
+            Driver
+          </div>
+          {hasDriver ? (
+            <>
+              <Row icon={<User size={14} />} label="Name" value={bus.driver_username} />
+              <Row icon={<Phone size={14} />} label="Phone" value={bus.driver_phone || "Not on file"} />
+            </>
+          ) : (
+            <div style={{ color: "var(--text-dim)", fontSize: 13, padding: "8px 0" }}>No driver assigned yet.</div>
+          )}
 
-        <div style={{ margin: "14px 0 4px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>
-          Cab In-Charge
-        </div>
-        {hasIncharge ? (
-          <>
-            <Row icon={<ShieldCheck size={14} />} label="Name" value={bus.incharge_username} />
-            <Row icon={<Phone size={14} />} label="Phone" value={bus.incharge_phone || "Not on file"} />
+          <div style={{ margin: "14px 0 4px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>
+            Cab In-Charge
+          </div>
+          {hasIncharge ? (
+            <>
+              <Row icon={<ShieldCheck size={14} />} label="Name" value={bus.incharge_username} />
+              <Row icon={<Phone size={14} />} label="Phone" value={bus.incharge_phone || "Not on file"} />
+            </>
+          ) : (
+            <div style={{ color: "var(--text-dim)", fontSize: 13, padding: "8px 0 0" }}>No in-charge assigned yet.</div>
+          )}
           </>
         ) : (
-          <div style={{ color: "var(--text-dim)", fontSize: 13, padding: "8px 0 0" }}>No in-charge assigned yet.</div>
+          <div style={{ color: "var(--text-dim)", fontSize: 13, padding: "8px 0 0" }}>
+            Driver and in-charge contact details are visible to transport staff only.
+          </div>
         )}
 
         <div className="abm__foot">
