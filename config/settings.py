@@ -130,6 +130,29 @@ STATIC_ROOT = BASE_DIR / "staticfiles"   # filled by: python manage.py collectst
 STATIC_ROOT.mkdir(exist_ok=True)          # keeps WhiteNoise quiet before the first collectstatic
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Cache: shared counters for rate limiting (audit item 1.7) ---
+# DRF throttles and the login lockout keep their counters in the default cache. The
+# built-in in-process cache is private to each worker and empties on every restart, so in
+# production point REDIS_URL at Redis (Railway: add the Redis add-on, then set REDIS_URL on
+# the web service to ${{Redis.REDIS_URL}}). With REDIS_URL unset (local development) the
+# in-process cache is used.
+REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+if REDIS_URL:
+    if "?" not in REDIS_URL:
+        # Fail fast if Redis is unreachable instead of hanging every login request.
+        REDIS_URL += "?socket_connect_timeout=2&socket_timeout=2"
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+
+# --- Login lockout: too many failed sign-ins for one username lock it for a while ---
+LOGIN_LOCKOUT_MAX_FAILURES = int(os.environ.get("LOGIN_LOCKOUT_MAX_FAILURES", 5))
+LOGIN_LOCKOUT_WINDOW_SECONDS = int(os.environ.get("LOGIN_LOCKOUT_WINDOW_SECONDS", 900))  # failures counted within this
+LOGIN_LOCKOUT_SECONDS = int(os.environ.get("LOGIN_LOCKOUT_SECONDS", 900))                # how long the lock lasts
+
 # --- REST Framework ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -139,6 +162,11 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # How many reverse proxies sit in front of Django (Railway's edge is one). DRF then takes
+    # the address the nearest proxy appended to X-Forwarded-For and ignores anything a client
+    # put in front of it, so a spoofed header cannot dodge the per-IP throttles. Use 0 when
+    # gunicorn is reached directly, with no proxy.
+    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", 1)),
     "DEFAULT_THROTTLE_RATES": {
         "login": "10/min",
         "register": "10/hour",
@@ -219,6 +247,14 @@ if not DEBUG:
         )
     if "*" in ALLOWED_HOSTS:
         raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must list real hostnames, not '*', when DJANGO_DEBUG=0.")
+    if not REDIS_URL:
+        import warnings
+
+        warnings.warn(
+            "REDIS_URL is not set: rate limits and login lockouts are per-process and reset on "
+            "every restart. Set REDIS_URL in production.",
+            RuntimeWarning,
+        )
 
     # HTTPS hardening. Off by default so a plain-HTTP campus server keeps working;
     # switch on with DJANGO_HTTPS=1 once the site really is served over HTTPS.

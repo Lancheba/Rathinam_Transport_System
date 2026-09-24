@@ -17,3 +17,6 @@ dj-database-url>=2.2
 psycopg2-binary>=2.9
 
 qrcode[pil]>=7.4
+
+# Shared cache for rate limiting and login lockout (Railway Redis add-on)
+redis>=5.0

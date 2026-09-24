@@ -99,6 +99,10 @@ qrcode[pil]==8.2
     # via
     #   -c _constraints.txt
     #   -r requirements.in
+redis==8.1.0
+    # via
+    #   -c _constraints.txt
+    #   -r requirements.in
 referencing==0.37.0
     # via
     #   -c _constraints.txt
