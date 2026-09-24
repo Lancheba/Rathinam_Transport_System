@@ -1,3 +1,7 @@
+from django.conf import settings
+
+if not settings.DEBUG:
+    raise SystemExit("Refusing to run: reset_buses.py deletes every bus and only runs with DJANGO_DEBUG=1 (local development).")
 from datetime import time
 from buses.models import Bus
 from parking.models import ParkingSlot, recompute_blocked_slots
