@@ -17,6 +17,7 @@ from accounts.permissions import CanManageBuses, IsStudent
 from buses.models import Bus
 from students.models import Student
 
+from .exports import force_text_cells, safe_rows
 from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
 from .permissions import IsDriver, driver_bus, is_driver
 from .serializers import (
@@ -418,6 +419,7 @@ def attendance_export(request):
         ws.title = "Attendance"
         for row in rows:
             ws.append(row)
+        force_text_cells(ws)  # names like "=1+1" must stay text, not become formulas
         buf = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
@@ -454,7 +456,7 @@ def attendance_export(request):
     # Default: CSV - no extra dependency needed.
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerows(rows)
+    writer.writerows(safe_rows(rows))  # neutralise spreadsheet formulas in names etc.
     resp = HttpResponse(buf.getvalue(), content_type="text/csv")
     resp["Content-Disposition"] = f'attachment; filename="{filename_base}.csv"'
     return resp

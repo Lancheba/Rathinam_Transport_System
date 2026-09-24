@@ -13,6 +13,8 @@ from accounts.permissions import can_manage_buses
 from attendance.permissions import driver_bus, incharge_bus, is_driver, is_incharge
 from students.models import Student
 
+from .exports import safe_rows
+
 # Change the columns here (and in _build_rows below) if you want different report fields.
 HEADER = [
     "Roll No.", "Name", "Department", "Year", "Bus", "Route",
@@ -126,7 +128,7 @@ def attendance_report(request):
         return resp
 
     buf = io.StringIO()
-    csv.writer(buf).writerows(rows)
+    csv.writer(buf).writerows(safe_rows(rows))  # neutralise spreadsheet formulas
     resp = HttpResponse("\ufeff" + buf.getvalue(), content_type="text/csv; charset=utf-8")
     resp["Content-Disposition"] = f'attachment; filename="{name}.csv"'
     return resp
