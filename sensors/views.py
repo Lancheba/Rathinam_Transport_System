@@ -15,7 +15,7 @@ class SensorViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
-            return [permissions.AllowAny()]
+            return [permissions.IsAuthenticated()]
         # create / update / partial_update / destroy require ADMIN or STAFF
         return [CanManageBuses()]
 
@@ -23,7 +23,7 @@ class SensorViewSet(viewsets.ModelViewSet):
 class ParkingEventViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ParkingEvent.objects.select_related("bus", "sensor", "parking_slot").order_by("-timestamp")
     serializer_class = ParkingEventSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         qs = super().get_queryset()

@@ -192,8 +192,11 @@ class VisionFlowTests(APITestCase):
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertEqual(ParkingSlot.objects.get(pk=self.slots["B2"].pk).bus_id, self.b1.pk)
 
-    def test_track_list_is_public(self):
+    def test_track_list_requires_login(self):
         self.frames([self.det(1, "A1")], 2)
+        self.assertEqual(self.client.get("/api/vision/tracks/").status_code, 401)
+
+        self.client.force_authenticate(User.objects.create_user("viewer", password="x"))
         resp = self.client.get("/api/vision/tracks/")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 1)

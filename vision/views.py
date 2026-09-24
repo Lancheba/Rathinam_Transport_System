@@ -33,7 +33,7 @@ def positions(request):
 
 
 @api_view(["GET"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([permissions.IsAuthenticated])
 def track_list(request):
     """Vehicles the camera currently follows (newest first)."""
     qs = VisionTrack.objects.filter(is_active=True).select_related("bus", "slot")

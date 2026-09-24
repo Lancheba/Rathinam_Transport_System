@@ -2,6 +2,43 @@ from rest_framework import serializers
 from .models import Bus
 
 
+def _slot_info(obj):
+    """Row / slot number / blocked flag of the slot this bus is parked in (or None)."""
+    try:
+        slot = obj.parking_slot
+        return {
+            "row": slot.row,
+            "slot_number": slot.slot_number,
+            "is_blocked": slot.is_blocked,
+        }
+    except Exception:
+        return None
+
+
+class BusPublicSerializer(serializers.ModelSerializer):
+    """
+    What anonymous visitors and ordinary logged-in users may see.
+
+    Deliberately leaves out the RFID UID (it identifies the bus to the gate
+    readers) and the driver / in-charge usernames and phone numbers.
+    Only admins and transport staff get the full BusSerializer.
+    """
+
+    parking_slot_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Bus
+        fields = [
+            "id", "bus_number", "route", "departure_time",
+            "length_m", "width_m", "is_active", "parking_slot_info",
+            "student_capacity", "teacher_capacity",
+        ]
+        read_only_fields = fields
+
+    def get_parking_slot_info(self, obj):
+        return _slot_info(obj)
+
+
 class BusSerializer(serializers.ModelSerializer):
     parking_slot_info = serializers.SerializerMethodField()
     driver_username = serializers.CharField(source="driver.username", read_only=True, allow_null=True)
@@ -60,15 +97,7 @@ class BusSerializer(serializers.ModelSerializer):
         return value
 
     def get_parking_slot_info(self, obj):
-        try:
-            slot = obj.parking_slot
-            return {
-                "row": slot.row,
-                "slot_number": slot.slot_number,
-                "is_blocked": slot.is_blocked,
-            }
-        except Exception:
-            return None
+        return _slot_info(obj)
 
     def get_driver_phone(self, obj):
         profile = getattr(obj.driver, "profile", None) if obj.driver_id else None

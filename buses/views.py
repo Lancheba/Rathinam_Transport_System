@@ -1,17 +1,36 @@
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from accounts.permissions import CanManageBuses
+from accounts.permissions import CanManageBuses, can_manage_buses
 from parking.models import recompute_blocked_slots
 from .models import Bus
-from .serializers import BusSerializer
+from .serializers import BusPublicSerializer, BusSerializer
+
+
+class BusSearchFilter(filters.SearchFilter):
+    """?search= may match the RFID UID for admins/staff only.
+
+    Otherwise anyone could probe which UIDs exist by searching for them.
+    """
+
+    def get_search_fields(self, view, request):
+        fields = list(super().get_search_fields(view, request))
+        if not can_manage_buses(request.user):
+            fields = [f for f in fields if f != "rfid_uid"]
+        return fields
 
 
 class BusViewSet(viewsets.ModelViewSet):
     queryset = Bus.objects.all().order_by("bus_number")
     serializer_class = BusSerializer
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [BusSearchFilter]
     search_fields = ["bus_number", "route", "rfid_uid"]
+
+    def get_serializer_class(self):
+        # Reads by anyone except admins/staff get the trimmed-down public view.
+        if self.action in ("list", "retrieve", "search_by_number") and not can_manage_buses(self.request.user):
+            return BusPublicSerializer
+        return BusSerializer
 
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
