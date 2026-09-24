@@ -173,6 +173,7 @@ REST_FRAMEWORK = {
         "optimize": "30/min",
         "face_scan": "12/min",
         "feedback": "20/hour",
+        "link_request": "10/hour",
     },
 }
 

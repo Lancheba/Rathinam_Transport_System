@@ -35,3 +35,13 @@ class FaceScanThrottle(SimpleRateThrottle):
     def get_cache_key(self, request, view):
         user_id = request.user.pk if request.user.is_authenticated else "anon"
         return f"face_scan_{user_id}"
+
+
+class LinkRequestThrottle(SimpleRateThrottle):
+    """Caps how many link requests one signed-in user can file (audit item 3.1)."""
+    scope = "link_request"
+
+    def get_cache_key(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return None
+        return self.cache_format % {"scope": self.scope, "ident": "user_%s" % request.user.pk}

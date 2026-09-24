@@ -78,6 +78,13 @@ class Teacher(models.Model):
         related_name="teachers",
     )
     boarding_point = models.CharField(max_length=150, blank=True)
+    linked_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="teacher_profile",
+        help_text="The login account of this teacher. Set only after staff approval.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
