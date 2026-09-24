@@ -17,6 +17,7 @@ from accounts.permissions import CanManageBuses, IsStudent
 from buses.models import Bus
 from students.models import Student
 
+from attendance.services import set_attendance
 from .exports import force_text_cells, safe_rows
 from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
 from .permissions import IsDriver, driver_bus, is_driver
@@ -30,7 +31,7 @@ from .serializers import (
 
 
 # ---------------------------------------------------------------------------
-# Attendance window times (when MORNING/EVENING open & close) — admins and
+# Attendance window times (when MORNING/EVENING open & close) Ã¢â‚¬â€ admins and
 # transport staff can view and edit these; everyone else can only view them
 # read-only (e.g. so the incharge UI can show "window opens at 5:00 AM").
 # ---------------------------------------------------------------------------
@@ -358,28 +359,18 @@ def attendance_correct(request, record_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    old_status = record.status
-    record.status = "PRESENT"
-    record.source = "MANUAL"
-    record.is_correction = True
-    record.corrected_by = request.user
-    record.corrected_at = timezone.now()
-    record.locked_at = timezone.now()
-    record.remarks = remark
-    record.save(update_fields=[
-        "status", "source", "is_correction", "corrected_by", "corrected_at", "locked_at", "remarks",
-    ])
-
-    from attendance.models import AttendanceAudit
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
-    AttendanceAudit.objects.create(
-        record=record,
+    record = set_attendance(
+        session=record.session,
+        person_type=record.person_type,
+        student=record.student,
+        teacher=record.teacher,
+        status='PRESENT',
         action='CORRECT',
-        old_status=old_status,
-        new_status='PRESENT',
+        source='MANUAL',
+        remarks=remark,
         actor=request.user,
         reason=remark,
-        source='MANUAL',
         ip_address=ip.split(',')[0].strip() or None,
     )
 

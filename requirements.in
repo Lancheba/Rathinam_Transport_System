@@ -20,3 +20,5 @@ qrcode[pil]>=7.4
 
 # Shared cache for rate limiting and login lockout (Railway Redis add-on)
 redis>=5.0
+coverage>=7.6
+numpy

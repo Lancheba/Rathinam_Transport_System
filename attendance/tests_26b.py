@@ -1,4 +1,4 @@
-﻿from django.test import override_settings
+from django.test import override_settings
 
 from attendance.models import AttendanceSession
 from attendance.services import finalize_slot, run_due_finalizations, slot_is_pending

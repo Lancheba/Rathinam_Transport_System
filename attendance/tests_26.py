@@ -1,4 +1,4 @@
-﻿from datetime import date, datetime, time
+from datetime import date, datetime, time
 from io import StringIO
 from unittest.mock import patch
 from datetime import timedelta

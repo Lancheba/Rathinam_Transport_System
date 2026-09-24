@@ -1,0 +1,12 @@
+﻿[run]
+source = .
+omit =
+    */migrations/*
+    manage.py
+    */venv/*
+    */tests_*.py
+    */management/commands/*
+
+[report]
+skip_covered = False
+show_missing = True

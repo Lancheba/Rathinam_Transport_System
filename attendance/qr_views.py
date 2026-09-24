@@ -1,5 +1,6 @@
 import logging
 import math
+import numpy as np
 import secrets
 import base64
 import io
@@ -16,7 +17,7 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
-from attendance.services import get_windows, is_school_day
+from attendance.services import get_windows, is_school_day, set_attendance
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
@@ -61,14 +62,9 @@ def _tally(bus, session):
     return present, total
 
 
-def _cosine_distance(a, b):
-    """Cosine distance in [0, 1] - 0 means identical vectors."""
-    dot = sum(x * y for x, y in zip(a, b))
-    na  = math.sqrt(sum(x * x for x in a))
-    nb  = math.sqrt(sum(x * x for x in b))
-    if na == 0 or nb == 0:
-        return 1.0
-    return 1.0 - dot / (na * nb)
+def _face_distance(a, b):
+    """Euclidean distance between two embeddings - 0 means identical vectors."""
+    return float(np.linalg.norm(np.asarray(a, dtype=float) - np.asarray(b, dtype=float)))
 
 
 # POST /api/attendance/qr/generate/   (Cab In-Charge only)
@@ -355,7 +351,7 @@ def qr_scan(request):
             {'detail': 'Your saved face data is invalid. Please re-enroll your face.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    distance = _cosine_distance(embedding, stored)
+    distance = _face_distance(embedding, stored)
 
     # A NaN or infinite distance must never count as a match (NaN > threshold is False).
     # The score is logged server-side only: returning it lets an attacker tune a fake vector.
@@ -372,16 +368,16 @@ def qr_scan(request):
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
-    record, _ = AttendanceRecord.objects.update_or_create(
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    record = set_attendance(
         session=session,
+        person_type='STUDENT',
         student=student,
-        defaults={
-            'status': 'PRESENT',
-            'person_type': 'STUDENT',
-            'source': 'QR_FACE',
-            'marked_at': timezone.now(),
-            'face_match_score': distance,
-        },
+        status='PRESENT',
+        action='SCAN',
+        source='QR_FACE',
+        face_match_score=distance,
+        ip_address=ip.split(',')[0].strip() or None,
     )
 
     return Response({
@@ -455,31 +451,17 @@ def qr_manual_mark(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    record, _ = AttendanceRecord.objects.update_or_create(
-        session=session,
-        student=student,
-        defaults={
-            'status': 'PRESENT',
-            'person_type': 'STUDENT',
-            'source': 'MANUAL',
-            'marked_at': timezone.now(),
-            'remarks': remark,
-            'is_correction': True,
-            'corrected_by': request.user,
-            'corrected_at': timezone.now(),
-        },
-    )
-
-    from attendance.models import AttendanceAudit
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
-    AttendanceAudit.objects.create(
-        record=record,
+    record = set_attendance(
+        session=session,
+        person_type='STUDENT',
+        student=student,
+        status='PRESENT',
         action='MANUAL',
-        old_status=existing.status if existing else '',
-        new_status='PRESENT',
+        source='MANUAL',
+        remarks=remark,
         actor=request.user,
         reason=remark,
-        source='MANUAL',
         ip_address=ip.split(',')[0].strip() or None,
     )
 

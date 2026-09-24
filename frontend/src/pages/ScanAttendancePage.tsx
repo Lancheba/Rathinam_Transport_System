@@ -33,7 +33,7 @@ export default function ScanAttendancePage() {
       streamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
       setStage("scanning");
-      setMessage("Point your camera at the driver's QR code.");
+      setMessage("Point your camera at the in-charge's QR code.");
     })();
     return () => {
       cancelled = true;

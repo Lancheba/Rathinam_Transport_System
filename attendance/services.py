@@ -1,10 +1,11 @@
-﻿from datetime import datetime, timedelta
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from attendance.models import AttendanceAudit
 from attendance.models import (
     AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Holiday, Teacher,
 )
@@ -154,3 +155,61 @@ def run_due_finalizations(now=None):
             if now >= due_at and slot_is_pending(day, slot):
                 results.append(finalize_slot(day, slot))
     return results
+
+
+def set_attendance(*, session, person_type, status, action, student=None, teacher=None,
+                    actor=None, reason='', source='', ip_address=None,
+                    face_match_score=None, remarks=None):
+    """
+    THE ONLY function allowed to create or update an AttendanceRecord.
+    Locks the existing row (select_for_update) if one exists, applies the
+    change in one transaction, and always writes exactly one AttendanceAudit
+    row alongside it. Returns the saved AttendanceRecord.
+    """
+    if person_type == 'STUDENT' and student is None:
+        raise ValueError('student is required when person_type is STUDENT')
+    if person_type == 'TEACHER' and teacher is None:
+        raise ValueError('teacher is required when person_type is TEACHER')
+
+    lookup = {
+        'session': session,
+        'student': student if person_type == 'STUDENT' else None,
+        'teacher': teacher if person_type == 'TEACHER' else None,
+    }
+
+    with transaction.atomic():
+        existing = AttendanceRecord.objects.select_for_update().filter(**lookup).first()
+        old_status = existing.status if existing else ''
+
+        defaults = {'status': status, 'person_type': person_type}
+        if source:
+            defaults['source'] = source
+        if remarks is not None:
+            defaults['remarks'] = remarks
+        if face_match_score is not None:
+            defaults['face_match_score'] = face_match_score
+        if status == 'PRESENT':
+            defaults['marked_at'] = timezone.now()
+        if action in ('CORRECT', 'MANUAL'):
+            defaults['is_correction'] = True
+            defaults['corrected_by'] = actor
+            defaults['corrected_at'] = timezone.now()
+        if action == 'CORRECT':
+            defaults['locked_at'] = timezone.now()
+
+        record, _created = AttendanceRecord.objects.update_or_create(
+            defaults=defaults, **lookup
+        )
+
+        AttendanceAudit.objects.create(
+            record=record,
+            action=action,
+            old_status=old_status,
+            new_status=status,
+            actor=actor,
+            reason=reason,
+            source=source or record.source,
+            ip_address=ip_address,
+        )
+
+    return record

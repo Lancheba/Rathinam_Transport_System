@@ -270,7 +270,7 @@ if not DEBUG:
 # --- Smart Attendance Feature ---
 # MORNING/EVENING attendance windows are edited in the app (Settings page);
 # code reads them through attendance.services.get_windows().
-FACE_MATCH_THRESHOLD = 0.6
+FACE_MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.6"))
 QR_TOKEN_TTL_SECONDS = 60
 FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5
 

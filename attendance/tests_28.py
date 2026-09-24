@@ -1,4 +1,4 @@
-﻿from unittest.mock import patch
+from unittest.mock import patch
 
 from django.utils import timezone
 from rest_framework.test import APITestCase
