@@ -1,4 +1,4 @@
-﻿from rest_framework import permissions
+from rest_framework import permissions
 
 from accounts.permissions import can_manage_buses
 from attendance.permissions import is_driver

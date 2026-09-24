@@ -1,4 +1,4 @@
-﻿import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode } from "lucide-react";
+import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.

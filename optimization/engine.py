@@ -1,4 +1,4 @@
-﻿"""
+"""
 Parking Optimisation Engine
 ===========================
 Strategy: Sort buses by departure time (earliest first) and assign them to

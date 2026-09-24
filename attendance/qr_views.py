@@ -1,4 +1,5 @@
-﻿import math
+import logging
+import math
 import secrets
 import base64
 import io
@@ -17,6 +18,9 @@ from attendance.permissions import IsInCharge, incharge_bus
 from students.models import FaceProfile
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
+from students.face_utils import clean_embedding
+
+logger = logging.getLogger(__name__)
 
 
 def _current_slot():
@@ -253,6 +257,13 @@ def qr_scan(request):
             {'detail': 'token and embedding are required.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    try:
+        embedding = clean_embedding(embedding)
+    except ValueError:
+        return Response(
+            {'detail': 'A valid 128-value embedding array is required.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     try:
         qr_token = AttendanceQRToken.objects.get(token=token_str)
@@ -304,14 +315,21 @@ def qr_scan(request):
         return Response({'detail': 'Face not enrolled yet.'}, status=status.HTTP_400_BAD_REQUEST)
 
     threshold = getattr(settings, 'FACE_MATCH_THRESHOLD', 0.6)
-    distance  = _cosine_distance(embedding, face_profile.embedding)
-
-    if distance > threshold:
+    try:
+        stored = clean_embedding(face_profile.embedding)
+    except ValueError:
         return Response(
-            {
-                'detail': 'Face did not match. Try again with better lighting, or ask your driver to mark you manually.',
-                'score': distance,
-            },
+            {'detail': 'Your saved face data is invalid. Please re-enroll your face.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    distance = _cosine_distance(embedding, stored)
+
+    # A NaN or infinite distance must never count as a match (NaN > threshold is False).
+    # The score is logged server-side only: returning it lets an attacker tune a fake vector.
+    if not math.isfinite(distance) or distance > threshold:
+        logger.warning('Face scan rejected for student %s (distance=%s)', student.pk, distance)
+        return Response(
+            {'detail': 'Face did not match. Try again with better lighting, or ask your driver to mark you manually.'},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 

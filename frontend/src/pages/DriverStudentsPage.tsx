@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Users, Bus as BusIcon, GraduationCap } from "lucide-react";
 import { getMyBus, getStudents } from "../api/endpoints";
 import { ClaimBusForm } from "./DriverAttendancePage";

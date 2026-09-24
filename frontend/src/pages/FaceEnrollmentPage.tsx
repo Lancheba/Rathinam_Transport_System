@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import api from "../api/client";
 

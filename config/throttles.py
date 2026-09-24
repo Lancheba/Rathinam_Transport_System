@@ -1,4 +1,4 @@
-﻿from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import SimpleRateThrottle
 
 
 class _PerIPThrottle(SimpleRateThrottle):

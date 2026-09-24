@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
 import { getStudentAttendanceAnalytics } from "../api/endpoints";
 import type { AttendanceStudentAnalytics } from "../types";

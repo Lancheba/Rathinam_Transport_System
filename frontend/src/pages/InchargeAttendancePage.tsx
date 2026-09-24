@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { QrCode } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import QRDisplaySection from "../components/QRDisplaySection";

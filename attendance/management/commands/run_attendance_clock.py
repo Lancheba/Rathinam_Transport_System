@@ -1,4 +1,4 @@
-﻿import time
+import time
 from datetime import timedelta
 
 from django.core.management import call_command

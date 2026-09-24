@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 import io
 from datetime import date as date_cls, datetime, timedelta
 

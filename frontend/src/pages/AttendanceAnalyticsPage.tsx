@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BarChart3, Download, LoaderCircle, Lock, CheckCircle2,
 } from "lucide-react";

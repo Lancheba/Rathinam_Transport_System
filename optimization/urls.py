@@ -1,4 +1,4 @@
-﻿from django.urls import path
+from django.urls import path
 from .views import run_optimization_view, apply_optimization_view, optimization_results
 
 urlpatterns = [
