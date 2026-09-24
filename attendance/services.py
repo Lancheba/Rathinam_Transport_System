@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -166,7 +167,8 @@ def run_due_finalizations(now=None):
 
 def set_attendance(*, session, person_type, status, action, student=None, teacher=None,
                    student_id=None, teacher_id=None, actor=None, reason='', source='',
-                   ip_address=None, face_match_score=None, remarks=None):
+                   ip_address=None, face_match_score=None, remarks=None,
+                   user_agent=''):
     """
     THE ONLY function allowed to create or update an AttendanceRecord.
     Locks the existing row (select_for_update) if one exists, applies the
@@ -210,6 +212,16 @@ def set_attendance(*, session, person_type, status, action, student=None, teache
             defaults=defaults, **lookup
         )
 
+        actor_id = actor.pk if actor else None
+        prev = (
+            AttendanceAudit.objects.filter(record=record)
+            .order_by('-created_at').values_list('row_hash', flat=True).first() or ''
+        )
+        row_data = (
+            f"{record.pk}|{action}|{old_status}|{status}"
+            f"|{actor_id}|{ip_address}|{prev}"
+        )
+        row_hash = hashlib.sha256(row_data.encode()).hexdigest()
         AttendanceAudit.objects.create(
             record=record,
             action=action,
@@ -219,6 +231,10 @@ def set_attendance(*, session, person_type, status, action, student=None, teache
             reason=reason,
             source=source or record.source,
             ip_address=ip_address,
+            user_agent=user_agent,
+            session=session,
+            prev_hash=prev,
+            row_hash=row_hash,
         )
 
     return record
