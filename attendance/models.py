@@ -224,6 +224,9 @@ class AttendanceAudit(models.Model):
         ('MANUAL',      'Manual mark by in-charge'),
         ('CORRECT',     'Corrected by staff/admin'),
         ('AUTO_ABSENT', 'Auto-marked absent'),
+        ('SUBMIT',      'Driver submit'),
+        ('REVOKE',      'Revoked by admin'),
+        ('DELETE_BLOCKED', 'Delete attempt blocked'),
     ]
 
     record     = models.ForeignKey(

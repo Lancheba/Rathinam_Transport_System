@@ -31,7 +31,7 @@ from .serializers import (
 
 
 # ---------------------------------------------------------------------------
-# Attendance window times (when MORNING/EVENING open & close) Ã¢â‚¬â€ admins and
+# Attendance window times (when MORNING/EVENING open & close) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â admins and
 # transport staff can view and edit these; everyone else can only view them
 # read-only (e.g. so the incharge UI can show "window opens at 5:00 AM").
 # ---------------------------------------------------------------------------
@@ -311,19 +311,21 @@ def attendance_submit(request):
                         seen_teacher_ids.add(row["id"])
                     continue
 
-                defaults = {"status": row["status"], "remarks": row.get("remarks", ""), "person_type": person_type}
-                if row["status"] == "PRESENT":
-                    defaults["locked_at"] = timezone.now()
-
+                set_attendance(
+                    session=session,
+                    person_type=person_type,
+                    student_id=row["id"] if person_type == "STUDENT" else None,
+                    teacher_id=row["id"] if person_type == "TEACHER" else None,
+                    status=row["status"],
+                    action="SUBMIT",
+                    actor=request.user,
+                    remarks=row.get("remarks", ""),
+                    reason=row.get("remarks", ""),
+                    ip_address=(request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip() or None),
+                )
                 if person_type == "STUDENT":
-                    AttendanceRecord.objects.update_or_create(
-                        session=session, student_id=row["id"], defaults=defaults
-                    )
                     seen_student_ids.add(row["id"])
                 else:
-                    AttendanceRecord.objects.update_or_create(
-                        session=session, teacher_id=row["id"], defaults=defaults
-                    )
                     seen_teacher_ids.add(row["id"])
             # Only drop records for people not in this submission AND not already
             # PRESENT (verified via QR/face). Never delete a PRESENT record.

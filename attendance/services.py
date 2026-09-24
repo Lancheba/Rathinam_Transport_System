@@ -158,23 +158,25 @@ def run_due_finalizations(now=None):
 
 
 def set_attendance(*, session, person_type, status, action, student=None, teacher=None,
-                    actor=None, reason='', source='', ip_address=None,
-                    face_match_score=None, remarks=None):
+                   student_id=None, teacher_id=None, actor=None, reason='', source='',
+                   ip_address=None, face_match_score=None, remarks=None):
     """
     THE ONLY function allowed to create or update an AttendanceRecord.
     Locks the existing row (select_for_update) if one exists, applies the
     change in one transaction, and always writes exactly one AttendanceAudit
     row alongside it. Returns the saved AttendanceRecord.
     """
-    if person_type == 'STUDENT' and student is None:
+    sid = student.pk if student is not None else student_id
+    tid = teacher.pk if teacher is not None else teacher_id
+    if person_type == 'STUDENT' and sid is None:
         raise ValueError('student is required when person_type is STUDENT')
-    if person_type == 'TEACHER' and teacher is None:
+    if person_type == 'TEACHER' and tid is None:
         raise ValueError('teacher is required when person_type is TEACHER')
 
     lookup = {
         'session': session,
-        'student': student if person_type == 'STUDENT' else None,
-        'teacher': teacher if person_type == 'TEACHER' else None,
+        'student_id': sid if person_type == 'STUDENT' else None,
+        'teacher_id': tid if person_type == 'TEACHER' else None,
     }
 
     with transaction.atomic():
@@ -194,7 +196,7 @@ def set_attendance(*, session, person_type, status, action, student=None, teache
             defaults['is_correction'] = True
             defaults['corrected_by'] = actor
             defaults['corrected_at'] = timezone.now()
-        if action == 'CORRECT':
+        if action == 'CORRECT' or (action == 'SUBMIT' and status == 'PRESENT'):
             defaults['locked_at'] = timezone.now()
 
         record, _created = AttendanceRecord.objects.update_or_create(
