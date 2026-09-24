@@ -478,3 +478,22 @@ def qr_manual_mark(request):
         'remark': remark,
         'marked_at': record.marked_at,
     }, status=status.HTTP_200_OK)
+
+
+# GET /api/attendance/qr/window/   (Cab In-Charge only)
+# Tells the UI which slot is open right now, using the SERVER clock and the
+# configured windows, so the frontend never hardcodes hours.
+
+@api_view(['GET'])
+@permission_classes([IsInCharge])
+def qr_window(request):
+    today = timezone.localdate()
+    school_day = is_school_day(today)
+    cfg = AttendanceWindowConfig.get_solo()
+    fmt = lambda t: t.strftime('%H:%M')
+    return Response({
+        'slot': _current_slot() if school_day else None,
+        'school_day': school_day,
+        'morning': [fmt(cfg.morning_start), fmt(cfg.morning_end)],
+        'evening': [fmt(cfg.evening_start), fmt(cfg.evening_end)],
+    })

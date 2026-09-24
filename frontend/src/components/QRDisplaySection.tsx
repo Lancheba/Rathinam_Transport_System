@@ -11,6 +11,13 @@ interface QRData {
   total_count: number;
 }
 
+interface WindowData {
+  slot: "MORNING" | "EVENING" | null;
+  school_day: boolean;
+  morning: [string, string];
+  evening: [string, string];
+}
+
 interface TallyData {
   slot: string;
   session_id: number | null;
@@ -27,10 +34,22 @@ export default function QRDisplaySection() {
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const tallyRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Which slot is open is decided by the SERVER (configured windows, IST clock,
+  // holidays and weekends) so this screen can never disagree with the API.
+  const [windowInfo, setWindowInfo] = useState<WindowData | null>(null);
+
+  async function fetchWindow() {
+    try {
+      const res = await api.get<WindowData>("/attendance/qr/window/");
+      setWindowInfo(res.data);
+    } catch {
+      // Keep the last known state; the server still enforces the window.
+    }
+  }
+
   function currentSlotLabel() {
-    const h = new Date().getHours();
-    if (h >= 5  && h < 10)  return "Morning";
-    if (h >= 16 && h < 20)  return "Evening";
+    if (windowInfo?.slot === "MORNING") return "Morning";
+    if (windowInfo?.slot === "EVENING") return "Evening";
     return null;
   }
 
@@ -77,6 +96,12 @@ export default function QRDisplaySection() {
     clearInterval(tallyRef.current!);
   }
 
+  useEffect(() => {
+    fetchWindow();
+    const id = setInterval(fetchWindow, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => () => {
     clearInterval(pollRef.current!);
     clearInterval(timerRef.current!);
@@ -90,8 +115,12 @@ export default function QRDisplaySection() {
                   padding: "1.25rem", marginBottom: "1.5rem" }}>
       <h3 style={{ marginTop: 0 }}>🟢 Smart QR Attendance {label ? `— ${label}` : ""}</h3>
 
-      {!label && !active && (
-        <p style={{ color: "#6b7280" }}>No attendance window is open right now.</p>
+      {!label && !active && windowInfo && (
+        <p style={{ color: "#6b7280" }}>
+          {windowInfo.school_day
+            ? `No attendance window is open right now. Morning ${windowInfo.morning[0]}\u2013${windowInfo.morning[1]}, evening ${windowInfo.evening[0]}\u2013${windowInfo.evening[1]}.`
+            : "Attendance is not taken today (weekend or holiday)."}
+        </p>
       )}
 
       {!active ? (
