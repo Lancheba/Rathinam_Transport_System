@@ -155,10 +155,9 @@ SIMPLE_JWT = {
 }
 
 # --- CORS ---
-# Open only in development. When the frontend is served by Django itself (same
-# origin), no CORS is needed. When it's deployed separately (e.g. on Vercel) it
-# is a different origin, so its exact URL(s) must be listed in
-# DJANGO_CORS_ORIGINS (comma-separated, e.g. "https://myapp.vercel.app").
+# The React frontend is hosted separately (Vercel), so it is a different origin from
+# this API: list its exact URL(s) in DJANGO_CORS_ORIGINS (comma-separated, e.g.
+# "https://myapp.vercel.app"). CORS is open to every origin only when DEBUG is on.
 # DJANGO_CORS_ORIGIN_REGEXES is optional, for things like Vercel's per-branch
 # preview URLs, e.g. "^https://myapp-.*\.vercel\.app$".
 CORS_ALLOW_ALL_ORIGINS = DEBUG

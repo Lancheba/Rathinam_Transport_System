@@ -1,45 +1,34 @@
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APITestCase
 
 from optimization.models import OptimizationResult
 from parking.models import ParkingGround, ParkingSlot
 
 
-class FrontendServingTests(SimpleTestCase):
-    """serve_frontend must never hand out files from outside frontend/dist."""
+class ApiOnlyRoutingTests(SimpleTestCase):
+    """Audit item 1.3: the backend is API-only (the React app is hosted on Vercel).
 
-    def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp())
-        dist = self.tmp / "frontend" / "dist"
-        (dist / "assets").mkdir(parents=True)
-        (dist / "index.html").write_text("<html>APP SHELL</html>")
-        (dist / "assets" / "app.js").write_text("console.log('ok')")
-        (self.tmp / "db.sqlite3").write_text("SECRET DATABASE CONTENT")
-        (self.tmp / "config").mkdir()
-        (self.tmp / "config" / "settings.py").write_text("SECRET_KEY = 'leaked'")
+    Every unknown URL must be a JSON 404, and Django must never serve files from disk.
+    """
 
-    def get(self, path):
-        with override_settings(BASE_DIR=self.tmp):
-            return self.client.get(path)
+    def assert_json_404(self, response, url=""):
+        self.assertEqual(response.status_code, 404, url)
+        self.assertEqual(response["Content-Type"], "application/json", url)
+        self.assertEqual(response.json(), {"detail": "Not found."}, url)
 
-    def body(self, resp):
-        return b"".join(resp.streaming_content) if resp.streaming else resp.content
+    def test_unknown_api_url_is_a_json_404(self):
+        self.assert_json_404(self.client.get("/api/does-not-exist/"))
 
-    def test_real_assets_are_served(self):
-        r = self.get("/assets/app.js")
-        self.assertEqual(r.status_code, 200)
-        self.assertIn(b"console.log", self.body(r))
-
-    def test_unknown_route_falls_back_to_the_app_shell(self):
-        self.assertIn(b"APP SHELL", self.body(self.get("/dashboard")))
+    def test_frontend_routes_are_not_served_by_django(self):
+        for url in ("/", "/dashboard", "/login", "/index.html", "/assets/app.js"):
+            self.assert_json_404(self.client.get(url), url)
 
     def test_parent_directory_paths_do_not_leak_files(self):
         for evil in (
@@ -49,17 +38,10 @@ class FrontendServingTests(SimpleTestCase):
             "/%2e%2e/%2e%2e/db.sqlite3",
             "/..%2f..%2fdb.sqlite3",
         ):
-            body = self.body(self.get(evil))
-            self.assertNotIn(b"SECRET DATABASE CONTENT", body, evil)
-            self.assertNotIn(b"leaked", body, evil)
-
-    def test_unknown_api_url_is_a_json_404(self):
-        r = self.get("/api/does-not-exist/")
-        self.assertEqual(r.status_code, 404)
-        self.assertEqual(r["Content-Type"], "application/json")
+            self.assert_json_404(self.client.get(evil), evil)
 
     def test_null_byte_does_not_crash(self):
-        self.assertEqual(self.get("/assets/%00x").status_code, 200)
+        self.assert_json_404(self.client.get("/assets/%00x"))
 
 
 class ThrottleTests(APITestCase):

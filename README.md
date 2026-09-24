@@ -17,6 +17,9 @@ attendance** for the cab fleet, all behind a role-based web dashboard.
 
 > **Note:** `/admin` and `/api/docs/` are served by the **Railway backend**, not by Vercel.
 > Use your Railway URL, e.g. `https://<your-app>.up.railway.app/admin/`.
+>
+> The backend is **API-only**: it never serves the React app, and any unknown URL returns a JSON 404.
+> Vercel builds and serves the frontend.
 
 ---
 
@@ -194,7 +197,7 @@ GATE  ←  Row A  [A1][A2] ... [A10]      bus slots
 ## Project structure
 
 ```
-config/          Django settings, URLs, throttles, SPA catch-all
+config/          Django settings, URLs, throttles, JSON 404 handler
 accounts/        Auth, roles, permissions, identity (student/teacher)
 buses/           Bus model + API (driver / in-charge links, capacities)
 students/        Students, face profiles, roster and face-enrolment APIs
@@ -262,6 +265,10 @@ python manage.py seed_cab_attendance
 ---
 
 ## Deployment
+
+**Deployment model:** frontend and backend deploy separately. Vercel builds and serves the React app;
+Railway runs the Django API only. `frontend/dist` is build output: it is gitignored and never committed,
+so Vercel builds it fresh on every deploy.
 
 ### Backend on Railway
 
