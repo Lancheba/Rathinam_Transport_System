@@ -31,7 +31,7 @@ from .serializers import (
 
 
 # ---------------------------------------------------------------------------
-# Attendance window times (when MORNING/EVENING open & close) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â admins and
+# Attendance window times (when MORNING/EVENING open & close) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â admins and
 # transport staff can view and edit these; everyone else can only view them
 # read-only (e.g. so the incharge UI can show "window opens at 5:00 AM").
 # ---------------------------------------------------------------------------
@@ -327,14 +327,8 @@ def attendance_submit(request):
                     seen_student_ids.add(row["id"])
                 else:
                     seen_teacher_ids.add(row["id"])
-            # Only drop records for people not in this submission AND not already
-            # PRESENT (verified via QR/face). Never delete a PRESENT record.
-            session.records.filter(student__isnull=False).exclude(
-                student_id__in=seen_student_ids
-            ).exclude(status="PRESENT").delete()
-            session.records.filter(teacher__isnull=False).exclude(
-                teacher_id__in=seen_teacher_ids
-            ).exclude(status="PRESENT").delete()
+            # Records for people missing from this submission are left untouched.
+            # Deleting them would also erase their audit trail (cascade).
 
     return Response(AttendanceSessionSerializer(session).data, status=status.HTTP_200_OK)
 

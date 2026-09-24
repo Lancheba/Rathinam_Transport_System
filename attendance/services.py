@@ -83,6 +83,13 @@ def finalize_session(session):
                 status="ABSENT", source="AUTO_ABSENT", marked_at=now,
             ))
     AttendanceRecord.objects.bulk_create(new_rows, ignore_conflicts=True)
+    # ignore_conflicts inserts return no ids, so re-read the rows this call created
+    created = AttendanceRecord.objects.filter(session=locked, source="AUTO_ABSENT", marked_at=now)
+    AttendanceAudit.objects.bulk_create([
+        AttendanceAudit(record=r, action="AUTO_ABSENT", old_status="", new_status="ABSENT",
+                        source="AUTO_ABSENT", reason="Auto-marked absent when the session closed")
+        for r in created
+    ])
 
     locked.closed_at = now
     locked.auto_finalized = True

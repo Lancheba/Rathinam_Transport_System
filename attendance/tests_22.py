@@ -99,15 +99,16 @@ class AttendanceSubmitProtectionTests(TestCase):
         r1 = AttendanceRecord.objects.get(session=self.session, student=self.s1)
         self.assertEqual(r1.status, 'PRESENT')
 
-    def test_absent_record_not_in_payload_is_removed(self):
+    def test_absent_record_not_in_payload_is_kept(self):
         AttendanceRecord.objects.create(
             session=self.session, person_type='STUDENT', student=self.s2,
             status='ABSENT', source='AUTO_ABSENT', marked_at=timezone.now(),
         )
-        # submit only s1 in payload; s2 absent should be dropped
+        # submit only s1; s2's absent record must stay (deleting it would also
+        # erase its audit trail through the cascade)
         self._submit(records=[
             {'person_type': 'STUDENT', 'id': self.s1.pk, 'status': 'PRESENT'}
         ])
-        self.assertFalse(
+        self.assertTrue(
             AttendanceRecord.objects.filter(session=self.session, student=self.s2).exists()
         )
