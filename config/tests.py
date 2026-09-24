@@ -4,11 +4,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APITestCase
 
 from optimization.models import OptimizationResult
+from parking.models import ParkingGround, ParkingSlot
 
 
 class FrontendServingTests(SimpleTestCase):
@@ -75,12 +77,71 @@ class ThrottleTests(APITestCase):
         self.assertEqual(codes[0], 401)
         self.assertIn(429, codes)
 
-    def test_public_optimisation_preview_still_works_and_keeps_only_50_rows(self):
+    def test_optimizer_throttle_is_per_user(self):
+        a = User.objects.create_user("opt_a", password="x", is_staff=True)
+        b = User.objects.create_user("opt_b", password="x", is_staff=True)
+        self.client.force_authenticate(a)
+        codes = [self.client.post("/api/optimization/run/").status_code for _ in range(31)]
+        self.assertEqual(codes[0], 200)
+        self.assertEqual(codes[-1], 429)
+        self.client.force_authenticate(b)  # a different user is not affected
+        self.assertEqual(self.client.post("/api/optimization/run/").status_code, 200)
+
+
+class OptimizerAccessTests(APITestCase):
+    """Audit item 1.6: the optimiser preview is staff-only and never changes parking slots."""
+
+    URL = "/api/optimization/run/"
+
+    def setUp(self):
+        cache.clear()
+        ground = ParkingGround.objects.create(
+            name="Test ground", length_m=50, width_m=20,
+            entrance_width_m=6, exit_width_m=6, total_slots=2,
+        )
+        # A "ghost": marked occupied, but no bus is attached to it.
+        self.ghost = ParkingSlot.objects.create(
+            ground=ground, row="A", slot_number=1, x_position_m=10, y_position_m=5, is_occupied=True,
+        )
+        self.staff = User.objects.create_user("opt_staff", password="x", is_staff=True)
+        self.student = User.objects.create_user("opt_student", password="x")
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_anonymous_is_rejected_and_changes_nothing(self):
+        r = self.client.post(self.URL)
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(OptimizationResult.objects.count(), 0)
+        self.ghost.refresh_from_db()
+        self.assertTrue(self.ghost.is_occupied)
+
+    def test_student_is_rejected(self):
+        self.client.force_authenticate(self.student)
+        self.assertEqual(self.client.post(self.URL).status_code, 403)
+        self.assertEqual(OptimizationResult.objects.count(), 0)
+
+    def test_staff_preview_is_read_only(self):
+        self.client.force_authenticate(self.staff)
+        r = self.client.post(self.URL)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(OptimizationResult.objects.count(), 1)  # the preview is stored...
+        self.ghost.refresh_from_db()
+        self.assertTrue(self.ghost.is_occupied)  # ...but no slot was touched
+
+    def test_preview_keeps_only_50_rows(self):
         for _ in range(60):
             OptimizationResult.objects.create()
-        r = self.client.post("/api/optimization/run/")
-        self.assertEqual(r.status_code, 200)
+        self.client.force_authenticate(self.staff)
+        self.assertEqual(self.client.post(self.URL).status_code, 200)
         self.assertLessEqual(OptimizationResult.objects.count(), 50)
+
+    def test_applying_a_result_clears_ghost_slots(self):
+        self.client.force_authenticate(self.staff)
+        result_id = self.client.post(self.URL).data["id"]
+        self.assertEqual(self.client.post("/api/optimization/apply/", {"result_id": result_id}, format="json").status_code, 200)
+        self.ghost.refresh_from_db()
+        self.assertFalse(self.ghost.is_occupied)
 
 
 class ProductionGuardTests(TestCase):

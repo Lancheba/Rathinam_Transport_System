@@ -13,19 +13,17 @@ from buses.models import Bus
 def run_optimization():
     """
     Returns a dict describing the current and recommended layouts.
-    Does NOT write to the database — the result is used for display only
-    until staff clicks "Apply".
-    """
-    # Self-heal: a slot marked occupied with no bus attached is a leftover
-    # from a bus that was deleted while still parked. Free it up first so
-    # it never crashes the layout below.
-    ParkingSlot.objects.filter(is_occupied=True, bus__isnull=True).update(
-        is_occupied=False, is_blocked=False
-    )
 
+    READ-ONLY: this never writes to the database. The result is only a preview
+    until staff click "Apply".
+
+    A slot marked occupied with no bus attached (left behind when a bus was
+    deleted while parked) is a "ghost". It is ignored here rather than fixed;
+    applying a result clears every slot first, which removes ghosts.
+    """
     occupied_slots = (
         ParkingSlot.objects
-        .filter(is_occupied=True)
+        .filter(is_occupied=True, bus__isnull=False)
         .select_related("bus")
         .order_by("row", "slot_number")
     )
@@ -43,6 +41,7 @@ def run_optimization():
         is_blocked = ParkingSlot.objects.filter(
             row=slot.row,
             is_occupied=True,
+            bus__isnull=False,
             slot_number__lt=slot.slot_number,
         ).exists()
         current_layout.append({
@@ -135,7 +134,8 @@ def run_optimization():
 def apply_optimization(recommended_layout):
     """
     Writes the recommended layout to the database.
-    Clears all current slot assignments then sets new ones.
+    Clears all current slot assignments then sets new ones (this also removes
+    any ghost slots: occupied with no bus).
     """
     # Clear all slots
     ParkingSlot.objects.all().update(is_occupied=False, bus=None, is_blocked=False)

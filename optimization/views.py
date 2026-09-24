@@ -1,5 +1,4 @@
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.permissions import AllowAny
 from config.throttles import OptimizeThrottle
 from rest_framework import status
 from accounts.permissions import CanManageBuses
@@ -10,15 +9,15 @@ from .serializers import OptimizationResultSerializer
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([CanManageBuses])
 @throttle_classes([OptimizeThrottle])
 def run_optimization_view(request):
     """Run optimisation and save the result (does not apply it).
 
-    Public on purpose (see OptimizeThrottle) so anyone can try the optimiser
-    preview without an account; it is IP-throttled and only keeps the latest
-    50 rows. Applying a result (`apply_optimization_view`) still requires
-    CanManageBuses.
+    Admins and transport staff only, and throttled per user. Running it never
+    changes parking slots (see engine.run_optimization); it only stores the
+    preview so it can be applied later, keeping the latest 50 rows.
+    Applying a result (`apply_optimization_view`) also requires CanManageBuses.
     """
     result = run_optimization()
 

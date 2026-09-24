@@ -16,9 +16,16 @@ class RegisterThrottle(_PerIPThrottle):
     scope = "register"
 
 
-class OptimizeThrottle(_PerIPThrottle):
-    """Optimisation preview is public but writes a row each time, so cap it."""
+class OptimizeThrottle(SimpleRateThrottle):
+    """Caps optimisation runs per signed-in user (each run stores a row)."""
     scope = "optimize"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f"user_{request.user.pk}"
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
 
 
 class FaceScanThrottle(SimpleRateThrottle):
