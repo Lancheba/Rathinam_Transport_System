@@ -1,4 +1,10 @@
-ultralytics>=8.3
-opencv-python>=4.9
-numpy>=1.26
-requests>=2.31
+# Edge camera tracker dependencies (versions resolved 2026-09-24).
+# Direct packages are pinned to exact versions so installs are repeatable.
+# torch and torchvision are deliberately NOT pinned here: ultralytics pulls them in,
+# and the right build depends on the device (CPU, NVIDIA CUDA, Jetson, Raspberry Pi).
+# Install the PyTorch build that matches the device first, then run: pip install -r requirements.txt
+# (Resolved alongside torch 2.14.0 and torchvision 0.29.0 on Windows CPU.)
+ultralytics==8.4.161
+opencv-python==5.0.0.93
+numpy==2.5.3
+requests==2.34.2
