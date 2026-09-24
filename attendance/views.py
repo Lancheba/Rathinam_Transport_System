@@ -259,7 +259,15 @@ def attendance_submit(request):
         )
 
         if data["is_holiday"]:
-            session.records.all().delete()
+            # Never delete verified records. Only remove ABSENT/AUTO_ABSENT rows;
+            # if any PRESENT records exist, refuse and tell the caller.
+            present_count = session.records.filter(status="PRESENT").count()
+            if present_count:
+                return Response(
+                    {"detail": f"Cannot mark as holiday: {present_count} student(s) are already marked PRESENT. Correct those records first."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            session.records.exclude(status="PRESENT").delete()
         else:
             seen_student_ids, seen_teacher_ids = set(), set()
             for row in data["records"]:
@@ -298,10 +306,14 @@ def attendance_submit(request):
                         session=session, teacher_id=row["id"], defaults=defaults
                     )
                     seen_teacher_ids.add(row["id"])
-            # Anyone not included in this submission is dropped from the session
-            # (e.g. they were reassigned off the bus since the form was opened).
-            session.records.filter(student__isnull=False).exclude(student_id__in=seen_student_ids).delete()
-            session.records.filter(teacher__isnull=False).exclude(teacher_id__in=seen_teacher_ids).delete()
+            # Only drop records for people not in this submission AND not already
+            # PRESENT (verified via QR/face). Never delete a PRESENT record.
+            session.records.filter(student__isnull=False).exclude(
+                student_id__in=seen_student_ids
+            ).exclude(status="PRESENT").delete()
+            session.records.filter(teacher__isnull=False).exclude(
+                teacher_id__in=seen_teacher_ids
+            ).exclude(status="PRESENT").delete()
 
     return Response(AttendanceSessionSerializer(session).data, status=status.HTTP_200_OK)
 
