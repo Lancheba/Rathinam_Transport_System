@@ -66,7 +66,8 @@ def register_failure(username):
 
 
 def clear_failures(username):
-    """A successful sign-in wipes the failure count."""
+    """A successful sign-in wipes the failure count and any active lockout."""
     username = normalize(username)
     if username:
         cache.delete(_key("fail", username))
+        cache.delete(_key("lock", username))

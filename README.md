@@ -316,7 +316,9 @@ so Vercel builds it fresh on every deploy.
 | `VISION_LINK_MIN_FRAMES` | Frames before matching to an ENTRY | `5` |
 | `VISION_ENTRY_WINDOW_MIN` | How long an ENTRY stays claimable (min) | `15` |
 | `VISION_TRACK_TIMEOUT_S` | Unseen this long marks a track inactive | `30` |
-
+| `LOGIN_LOCKOUT_MAX_FAILURES` | Failed login attempts before a username is locked | `5` |
+| `LOGIN_LOCKOUT_WINDOW_SECONDS` | Sliding window (seconds) for counting failures | `900` |
+| `LOGIN_LOCKOUT_SECONDS` | How long the lockout lasts (seconds) | `900` |
 Set `DEVICE_API_KEY` and `DJANGO_SECRET_KEY` to real secrets before going live.
 
 ### Frontend (Vercel)
