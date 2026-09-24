@@ -1,6 +1,32 @@
 ﻿from rest_framework import serializers
 
-from .models import AttendanceRecord, AttendanceSession, Teacher
+from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
+
+
+class AttendanceWindowConfigSerializer(serializers.ModelSerializer):
+    updated_by_username = serializers.CharField(source="updated_by.username", read_only=True, allow_null=True)
+
+    class Meta:
+        model = AttendanceWindowConfig
+        fields = [
+            "morning_start", "morning_end",
+            "evening_start", "evening_end",
+            "updated_by_username", "updated_at",
+        ]
+
+    def validate(self, data):
+        morning_start = data.get("morning_start", getattr(self.instance, "morning_start", None))
+        morning_end = data.get("morning_end", getattr(self.instance, "morning_end", None))
+        evening_start = data.get("evening_start", getattr(self.instance, "evening_start", None))
+        evening_end = data.get("evening_end", getattr(self.instance, "evening_end", None))
+
+        if morning_start >= morning_end:
+            raise serializers.ValidationError({"morning_end": "Morning end time must be after morning start time."})
+        if evening_start >= evening_end:
+            raise serializers.ValidationError({"evening_end": "Evening end time must be after evening start time."})
+        if morning_end > evening_start:
+            raise serializers.ValidationError({"evening_start": "Evening start time must be after morning end time."})
+        return data
 
 
 class TeacherSerializer(serializers.ModelSerializer):

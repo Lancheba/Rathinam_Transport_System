@@ -2,7 +2,26 @@
 
 from students.models import FaceProfile
 
-from .models import AttendanceQRToken, AttendanceRecord, AttendanceSession, Teacher
+from .models import (
+    AttendanceQRToken,
+    AttendanceRecord,
+    AttendanceSession,
+    AttendanceWindowConfig,
+    Teacher,
+)
+
+
+@admin.register(AttendanceWindowConfig)
+class AttendanceWindowConfigAdmin(admin.ModelAdmin):
+    list_display = ("morning_start", "morning_end", "evening_start", "evening_end", "updated_by", "updated_at")
+    readonly_fields = ("updated_by", "updated_at")
+
+    def has_add_permission(self, request):
+        # Singleton: only one row (pk=1) should ever exist.
+        return not AttendanceWindowConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Teacher)

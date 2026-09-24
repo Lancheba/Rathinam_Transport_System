@@ -1,5 +1,68 @@
+from datetime import time
+
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+
+
+class AttendanceWindowConfig(models.Model):
+    """
+    Singleton row controlling what time of day the MORNING and EVENING
+    attendance-taking windows open and close.
+
+    Previously these cutoffs (05:00-09:30 / 16:30-19:30) were hardcoded in
+    attendance/qr_views.py and the finalize_attendance/run_attendance_clock
+    management commands. This model makes them editable at runtime by
+    admins and transport staff (see attendance/views.py::attendance_window_config
+    and the Settings page in the frontend), with no redeploy needed.
+
+    Always use `AttendanceWindowConfig.get_solo()` to fetch it, which
+    creates the single row (pk=1) with sane defaults on first access.
+    """
+
+    morning_start = models.TimeField(default=time(5, 0))
+    morning_end = models.TimeField(default=time(9, 30))
+    evening_start = models.TimeField(default=time(16, 30))
+    evening_end = models.TimeField(default=time(19, 30))
+
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="attendance_window_updates",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Attendance window configuration"
+        verbose_name_plural = "Attendance window configuration"
+
+    def __str__(self):
+        return (
+            f"Morning {self.morning_start.strftime('%H:%M')}-{self.morning_end.strftime('%H:%M')} / "
+            f"Evening {self.evening_start.strftime('%H:%M')}-{self.evening_end.strftime('%H:%M')}"
+        )
+
+    def clean(self):
+        errors = {}
+        if self.morning_start >= self.morning_end:
+            errors["morning_end"] = "Morning end time must be after morning start time."
+        if self.evening_start >= self.evening_end:
+            errors["evening_end"] = "Evening end time must be after evening start time."
+        if not errors and self.morning_end > self.evening_start:
+            errors["evening_start"] = "Evening start time must be after morning end time."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # enforce singleton
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        obj, _created = cls.objects.get_or_create(pk=1)
+        return obj
 
 
 class Teacher(models.Model):

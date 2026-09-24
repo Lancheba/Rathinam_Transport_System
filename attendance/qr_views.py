@@ -12,7 +12,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 
-from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession
+from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
 from students.models import FaceProfile
 from config.throttles import FaceScanThrottle
@@ -20,29 +20,26 @@ from accounts.permissions import IsStudent
 
 
 def _current_slot():
-    """Return 'MORNING', 'EVENING', or None based on Asia/Kolkata time."""
+    """
+    Return 'MORNING', 'EVENING', or None based on Asia/Kolkata time, using the
+    start/end times admins and staff have configured (AttendanceWindowConfig),
+    instead of fixed hours.
+    """
     now = timezone.localtime(timezone.now())
     t = now.time()
-    import datetime
-    m_start = datetime.time(5, 0)
-    m_end   = datetime.time(9, 30)
-    e_start = datetime.time(16, 30)
-    e_end   = datetime.time(19, 30)
-    if m_start <= t <= m_end:
+    cfg = AttendanceWindowConfig.get_solo()
+    if cfg.morning_start <= t <= cfg.morning_end:
         return 'MORNING'
-    if e_start <= t <= e_end:
+    if cfg.evening_start <= t <= cfg.evening_end:
         return 'EVENING'
     return None
 
 
 def _slot_window_end(slot):
-    """Return today's window-end as an aware datetime."""
-    import datetime
+    """Return today's configured window-end as an aware datetime."""
     now = timezone.localtime(timezone.now())
-    if slot == 'MORNING':
-        end_t = datetime.time(9, 30)
-    else:
-        end_t = datetime.time(19, 30)
+    cfg = AttendanceWindowConfig.get_solo()
+    end_t = cfg.morning_end if slot == 'MORNING' else cfg.evening_end
     return timezone.make_aware(
         timezone.datetime.combine(now.date(), end_t),
         timezone.get_current_timezone(),

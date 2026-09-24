@@ -284,6 +284,18 @@ export type AttendanceStatus = "PRESENT" | "ABSENT";
 export type AttendanceSlot = "MORNING" | "EVENING";
 export type AttendanceSource = "MANUAL" | "QR_FACE" | "AUTO_ABSENT";
 
+/** GET/PATCH /api/attendance/window-config/ — when the MORNING/EVENING
+ * attendance-taking windows open & close. Times are "HH:MM:SS" strings.
+ * Admins and transport staff can edit; everyone else can read. */
+export interface AttendanceWindowConfig {
+  morning_start: string;
+  morning_end: string;
+  evening_start: string;
+  evening_end: string;
+  updated_by_username: string | null;
+  updated_at: string;
+}
+
 export interface AttendanceRosterPerson {
   id: number;
   name: string;

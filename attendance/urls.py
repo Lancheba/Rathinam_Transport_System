@@ -11,6 +11,7 @@ from .views import (
     attendance_history,
     attendance_roster,
     attendance_submit,
+    attendance_window_config,
     my_attendance,
 )
 from .qr_views import qr_generate, qr_scan, qr_stop, qr_status, qr_tally
@@ -27,6 +28,7 @@ urlpatterns = [
     path("export/", attendance_export, name="attendance-export"),
     path("report/", attendance_report, name="attendance-report"),
     path("my/", my_attendance, name="attendance-my"),
+    path("window-config/", attendance_window_config, name="attendance-window-config"),
     path("analytics/overview/", attendance_analytics_overview, name="attendance-analytics-overview"),
     path("analytics/student/<int:student_id>/", attendance_analytics_student, name="attendance-analytics-student"),
     path("qr/generate/", qr_generate, name="attendance-qr-generate"),

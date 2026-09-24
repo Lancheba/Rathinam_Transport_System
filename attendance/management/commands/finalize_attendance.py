@@ -11,7 +11,9 @@ class Command(BaseCommand):
         "Closes the current attendance window: marks every student who "
         "has no record in the session as ABSENT (source=AUTO_ABSENT), "
         "then sets session.auto_finalized=True. "
-        "Run at 09:31 for MORNING and at 19:31 for EVENING (Asia/Kolkata)."
+        "Run one minute after each slot's configured window end time "
+        "(see AttendanceWindowConfig, editable by admins/staff in Settings) "
+        "— run_attendance_clock does this automatically."
     )
 
     def add_arguments(self, parser):

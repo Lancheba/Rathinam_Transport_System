@@ -17,14 +17,39 @@ from accounts.permissions import CanManageBuses, IsStudent
 from buses.models import Bus
 from students.models import Student
 
-from .models import AttendanceRecord, AttendanceSession, Teacher
+from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
 from .permissions import IsDriver, driver_bus, is_driver
 from .serializers import (
     AttendanceRecordSerializer,
     AttendanceSessionSerializer,
     AttendanceSubmitSerializer,
+    AttendanceWindowConfigSerializer,
     TeacherSerializer,
 )
+
+
+# ---------------------------------------------------------------------------
+# Attendance window times (when MORNING/EVENING open & close) — admins and
+# transport staff can view and edit these; everyone else can only view them
+# read-only (e.g. so the incharge UI can show "window opens at 5:00 AM").
+# ---------------------------------------------------------------------------
+@api_view(["GET", "PUT", "PATCH"])
+@permission_classes([permissions.IsAuthenticated])
+def attendance_window_config(request):
+    config = AttendanceWindowConfig.get_solo()
+
+    if request.method == "GET":
+        return Response(AttendanceWindowConfigSerializer(config).data)
+
+    if not CanManageBuses().has_permission(request, None):
+        return Response({"detail": "Only admins and transport staff can change attendance window times."}, status=403)
+
+    serializer = AttendanceWindowConfigSerializer(
+        config, data=request.data, partial=(request.method == "PATCH"),
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save(updated_by=request.user)
+    return Response(serializer.data)
 
 
 # ---------------------------------------------------------------------------

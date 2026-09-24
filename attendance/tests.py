@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 from buses.models import Bus
 from students.models import Student
 
-from .models import AttendanceRecord, AttendanceSession
+from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 
 BUS_FIELDS = {
     "rfid_uid": "RFID-ATT",
@@ -248,3 +248,61 @@ class AttendanceAnalyticsTests(APITestCase):
         self.assertEqual(res.data["absent_count"], 1)
         self.assertEqual(res.data["attendance_pct"], 50.0)
         self.assertEqual(res.data["longest_absence_streak"], 1)
+
+
+class AttendanceWindowConfigTests(APITestCase):
+    """Admins and transport staff can customize the MORNING/EVENING attendance
+    windows; nobody else can, though everyone can read the current times."""
+
+    url = "/api/attendance/window-config/"
+
+    def setUp(self):
+        self.student = make_user("winstu", "STUDENT")
+        self.admin = make_user("winadmin", "ADMIN")
+        self.staff = make_user("winstaff", "STAFF")
+
+    def test_defaults_match_previous_hardcoded_times(self):
+        self.client.force_authenticate(self.student)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["morning_start"], "05:00:00")
+        self.assertEqual(res.data["morning_end"], "09:30:00")
+        self.assertEqual(res.data["evening_start"], "16:30:00")
+        self.assertEqual(res.data["evening_end"], "19:30:00")
+
+    def test_student_cannot_edit(self):
+        self.client.force_authenticate(self.student)
+        res = self.client.patch(self.url, {"morning_start": "06:00:00"}, format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_admin_can_edit(self):
+        self.client.force_authenticate(self.admin)
+        res = self.client.patch(self.url, {"morning_start": "06:00:00"}, format="json")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["morning_start"], "06:00:00")
+        self.assertEqual(res.data["updated_by_username"], "winadmin")
+
+    def test_staff_can_edit(self):
+        self.client.force_authenticate(self.staff)
+        res = self.client.patch(self.url, {"evening_end": "20:00:00"}, format="json")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["evening_end"], "20:00:00")
+
+    def test_start_after_end_is_rejected(self):
+        self.client.force_authenticate(self.admin)
+        res = self.client.patch(
+            self.url, {"morning_start": "10:00:00", "morning_end": "09:00:00"}, format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_overlapping_slots_rejected(self):
+        self.client.force_authenticate(self.admin)
+        res = self.client.patch(
+            self.url, {"morning_end": "18:00:00"}, format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_get_solo_creates_singleton_with_defaults(self):
+        cfg = AttendanceWindowConfig.get_solo()
+        self.assertEqual(cfg.pk, 1)
+        self.assertEqual(AttendanceWindowConfig.objects.count(), 1)

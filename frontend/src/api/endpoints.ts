@@ -6,6 +6,7 @@ import type {
   DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance, AttendanceSlot,
   MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary,
   AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
+  AttendanceWindowConfig,
 } from "../types";
 
 // Buses
@@ -123,6 +124,12 @@ export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?
   link.remove();
   window.URL.revokeObjectURL(url);
 };
+
+// Attendance window times (admin/staff can customize when MORNING/EVENING open & close)
+export const getAttendanceWindowConfig = () =>
+  api.get<AttendanceWindowConfig>("/attendance/window-config/").then(r => r.data);
+export const updateAttendanceWindowConfig = (data: Partial<AttendanceWindowConfig>) =>
+  api.patch<AttendanceWindowConfig>("/attendance/window-config/", data).then(r => r.data);
 
 // Student's own attendance (yesterday + a short recent trend)
 export const getMyAttendance = () => api.get<MyAttendance>("/attendance/my/").then(r => r.data);
