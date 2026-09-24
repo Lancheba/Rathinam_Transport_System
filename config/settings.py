@@ -267,8 +267,8 @@ if not DEBUG:
             SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # --- Smart Attendance Feature ---
-ATTENDANCE_MORNING_WINDOW = ('05:00', '09:30')
-ATTENDANCE_EVENING_WINDOW  = ('16:30', '19:30')
+# MORNING/EVENING attendance windows are edited in the app (Settings page);
+# code reads them through attendance.services.get_windows().
 FACE_MATCH_THRESHOLD = 0.6
 QR_TOKEN_TTL_SECONDS = 60
 FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5

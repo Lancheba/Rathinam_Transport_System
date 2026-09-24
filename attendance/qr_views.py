@@ -16,7 +16,7 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
-from attendance.services import is_school_day
+from attendance.services import get_windows, is_school_day
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
@@ -31,21 +31,17 @@ def _current_slot():
     start/end times admins and staff have configured (AttendanceWindowConfig),
     instead of fixed hours.
     """
-    now = timezone.localtime(timezone.now())
-    t = now.time()
-    cfg = AttendanceWindowConfig.get_solo()
-    if cfg.morning_start <= t <= cfg.morning_end:
-        return 'MORNING'
-    if cfg.evening_start <= t <= cfg.evening_end:
-        return 'EVENING'
+    t = timezone.localtime(timezone.now()).time()
+    for slot, (start, end) in get_windows().items():
+        if start <= t <= end:
+            return slot
     return None
 
 
 def _slot_window_end(slot):
     """Return today's configured window-end as an aware datetime."""
     now = timezone.localtime(timezone.now())
-    cfg = AttendanceWindowConfig.get_solo()
-    end_t = cfg.morning_end if slot == 'MORNING' else cfg.evening_end
+    end_t = get_windows()[slot][1]
     return timezone.make_aware(
         timezone.datetime.combine(now.date(), end_t),
         timezone.get_current_timezone(),
@@ -499,11 +495,11 @@ def qr_manual_mark(request):
 def qr_window(request):
     today = timezone.localdate()
     school_day = is_school_day(today)
-    cfg = AttendanceWindowConfig.get_solo()
+    w = get_windows()
     fmt = lambda t: t.strftime('%H:%M')
     return Response({
         'slot': _current_slot() if school_day else None,
         'school_day': school_day,
-        'morning': [fmt(cfg.morning_start), fmt(cfg.morning_end)],
-        'evening': [fmt(cfg.evening_start), fmt(cfg.evening_end)],
+        'morning': [fmt(t) for t in w['MORNING']],
+        'evening': [fmt(t) for t in w['EVENING']],
     })

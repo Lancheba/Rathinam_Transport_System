@@ -23,6 +23,19 @@ def is_school_day(day):
     return not Holiday.objects.filter(date=day).exists()
 
 
+def get_windows():
+    """
+    The ONE place the MORNING/EVENING windows come from: the admin-editable
+    AttendanceWindowConfig (Settings page). Returns
+    {"MORNING": (start, end), "EVENING": (start, end)} as datetime.time values.
+    """
+    cfg = AttendanceWindowConfig.get_solo()
+    return {
+        "MORNING": (cfg.morning_start, cfg.morning_end),
+        "EVENING": (cfg.evening_start, cfg.evening_end),
+    }
+
+
 def _active_bus_ids():
     """Ids of active buses that have at least one student or teacher."""
     ids = set(Student.objects.filter(bus__isnull=False).values_list("bus_id", flat=True))
@@ -131,8 +144,7 @@ def run_due_finalizations(now=None):
     now = timezone.localtime(now or timezone.now())
     today = now.date()
     catchup = getattr(settings, "ATTENDANCE_CATCHUP_DAYS", 3)
-    cfg = AttendanceWindowConfig.get_solo()
-    ends = (("MORNING", cfg.morning_end), ("EVENING", cfg.evening_end))
+    ends = tuple((slot, end) for slot, (_start, end) in get_windows().items())
 
     results = []
     for offset in range(catchup, -1, -1):
