@@ -242,6 +242,13 @@ class AttendanceAudit(models.Model):
     reason     = models.CharField(max_length=500, blank=True)
     source     = models.CharField(max_length=15, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    session    = models.ForeignKey(
+        'attendance.AttendanceSession', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='audit_entries',
+    )
+    prev_hash  = models.CharField(max_length=64, blank=True)
+    row_hash   = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
