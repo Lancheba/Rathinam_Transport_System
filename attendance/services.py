@@ -14,6 +14,9 @@ from students.models import Student
 
 def is_school_day(day):
     """True if attendance should be taken on this date: a working weekday and not a declared Holiday."""
+    start = getattr(settings, "ATTENDANCE_START_DATE", None)
+    if start and day < start:
+        return False
     weekdays = getattr(settings, "ATTENDANCE_WORKING_WEEKDAYS", (0, 1, 2, 3, 4, 5))
     if day.weekday() not in weekdays:
         return False

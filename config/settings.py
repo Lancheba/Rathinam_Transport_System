@@ -284,3 +284,8 @@ ATTENDANCE_WORKING_WEEKDAYS = (0, 1, 2, 3, 4, 5)
 import sys as _sys
 if "test" in _sys.argv:
     ATTENDANCE_WORKING_WEEKDAYS = tuple(range(7))
+
+# Go-live date (YYYY-MM-DD). Days before it never get sessions or auto-absents.
+import datetime as _dt
+_start = os.environ.get("ATTENDANCE_START_DATE", "").strip()
+ATTENDANCE_START_DATE = _dt.date.fromisoformat(_start) if _start else None
