@@ -2,8 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from attendance.models import AttendanceRecord, AttendanceSession
-from students.models import Student
+from attendance.models import AttendanceSession
 
 
 class Command(BaseCommand):
@@ -28,7 +27,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         slot  = options['slot']
         today = timezone.localdate()
-        now   = timezone.now()
 
         sessions = AttendanceSession.objects.filter(
             date=today,
@@ -43,38 +41,15 @@ class Command(BaseCommand):
             ))
             return
 
+        from attendance.services import finalize_session
+
         total_absent = 0
-
         for session in sessions:
-            already_marked = set(
-                session.records
-                .filter(person_type='STUDENT')
-                .values_list('student_id', flat=True)
-            )
-
-            students_on_bus = Student.objects.filter(bus=session.bus)
-            to_absent = [
-                AttendanceRecord(
-                    session=session,
-                    person_type='STUDENT',
-                    student=s,
-                    status='ABSENT',
-                    source='AUTO_ABSENT',
-                    marked_at=now,
-                )
-                for s in students_on_bus
-                if s.pk not in already_marked
-            ]
-
-            AttendanceRecord.objects.bulk_create(to_absent)
-            session.closed_at = now
-            session.auto_finalized = True
-            session.save(update_fields=['closed_at', 'auto_finalized'])
-
-            total_absent += len(to_absent)
+            n = finalize_session(session)
+            total_absent += n
             self.stdout.write(
                 f'[{session.bus.bus_number}] {slot} finalized — '
-                f'{len(to_absent)} auto-absent record(s) created.'
+                f'{n} auto-absent record(s) created.'
             )
 
         self.stdout.write(self.style.SUCCESS(

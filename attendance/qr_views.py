@@ -191,9 +191,8 @@ def qr_stop(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    session.closed_at = timezone.now()
-    session.auto_finalized = True
-    session.save(update_fields=['closed_at', 'auto_finalized'])
+    from attendance.services import finalize_session
+    finalize_session(session)
 
     present = session.records.filter(status='PRESENT').count()
     total   = session.records.count()
