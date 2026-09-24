@@ -240,24 +240,28 @@ export const SettingsPage: React.FC = () => {
                   <input id="aw-morning-start" type="time" value={morningStart}
                     onChange={e => setMorningStart(e.target.value)} style={inputStyle}
                     disabled={!canManageBuses} />
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>24-hour: {morningStart || "--:--"}</div>
                 </div>
                 <div>
                   <label htmlFor="aw-morning-end" style={{ fontSize: 12, color: "var(--text-muted)" }}>Morning window closes</label>
                   <input id="aw-morning-end" type="time" value={morningEnd}
                     onChange={e => setMorningEnd(e.target.value)} style={inputStyle}
                     disabled={!canManageBuses} />
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>24-hour: {morningEnd || "--:--"}</div>
                 </div>
                 <div>
                   <label htmlFor="aw-evening-start" style={{ fontSize: 12, color: "var(--text-muted)" }}>Evening window opens</label>
                   <input id="aw-evening-start" type="time" value={eveningStart}
                     onChange={e => setEveningStart(e.target.value)} style={inputStyle}
                     disabled={!canManageBuses} />
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>24-hour: {eveningStart || "--:--"}</div>
                 </div>
                 <div>
                   <label htmlFor="aw-evening-end" style={{ fontSize: 12, color: "var(--text-muted)" }}>Evening window closes</label>
                   <input id="aw-evening-end" type="time" value={eveningEnd}
                     onChange={e => setEveningEnd(e.target.value)} style={inputStyle}
                     disabled={!canManageBuses} />
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>24-hour: {eveningEnd || "--:--"}</div>
                 </div>
               </div>
 
