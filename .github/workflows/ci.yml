@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   backend:
@@ -15,7 +16,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: rathinam
+          POSTGRES_DB: rathinam_ci
         ports:
           - 5432:5432
         options: >-
@@ -24,7 +25,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/rathinam
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/rathinam_ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
