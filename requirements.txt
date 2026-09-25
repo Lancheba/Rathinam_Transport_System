@@ -14,11 +14,15 @@ attrs==26.1.0
     #   referencing
 certifi==2026.7.22
     # via sentry-sdk
+cffi==2.1.1
+    # via cryptography
 charset-normalizer==3.5.1
     # via reportlab
 colorama==0.4.6
     # via qrcode
 coverage==7.16.1
+    # via -r requirements.in
+cryptography==50.0.1
     # via -r requirements.in
 dj-database-url==3.1.2
     # via -r requirements.in
@@ -62,6 +66,8 @@ pillow==12.3.0
     #   reportlab
 psycopg2-binary==2.9.13
     # via -r requirements.in
+pycparser==3.0
+    # via cffi
 pyjwt==2.14.0
     # via djangorestframework-simplejwt
 pyyaml==6.0.3
