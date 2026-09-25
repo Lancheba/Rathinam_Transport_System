@@ -38,7 +38,7 @@ jobs:
         env:
           DJANGO_DEBUG: "0"
           DJANGO_SECRET_KEY: ci-only-secret-key-not-used-anywhere-else-0123456789abcdef
-          DEVICE_API_KEY: ci-only-device-key-not-used-anywhere-else-0123456789abcdef
+          FACE_EMBEDDING_KEY: 6AKwBw9JRoY97c1ubESqqiO7jQiZaC7PmS_4Qf7bIO0=
           DJANGO_ALLOWED_HOSTS: localhost
         run: python manage.py check --deploy
       - name: Run tests with coverage
