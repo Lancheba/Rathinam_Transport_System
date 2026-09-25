@@ -156,8 +156,14 @@ LOGIN_LOCKOUT_SECONDS = int(os.environ.get("LOGIN_LOCKOUT_SECONDS", 900))       
 
 # --- REST Framework ---
 REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 50,
+    # No DEFAULT_PAGINATION_CLASS: individual views cap their own querysets
+    # where needed (e.g. AnnouncementViewSet.get_queryset() slices to
+    # LIST_LIMIT=50). A global PageNumberPagination default was added here
+    # at some point and silently wrapped every list endpoint's response in
+    # {count, next, previous, results}, which no view, test, or frontend
+    # call site in this app was written to expect - it broke 19 backend
+    # tests (KeyError: 0 / TypeError on res.data[0]) and crashed the
+    # frontend ("x.forEach is not a function") the moment it shipped.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],

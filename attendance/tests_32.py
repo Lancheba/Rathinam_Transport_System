@@ -47,9 +47,20 @@ class AuditChainTests(TestCase):
 
     def test_tampering_is_detected(self):
         self._scan()
-        AttendanceAudit.objects.update(new_status="ABSENT")  # bypasses the Python guard, like raw SQL would
-        with self.assertRaises(CommandError):
-            call_command("verify_audit_chain", stdout=StringIO(), stderr=StringIO())
+        # Before the attendance_audit_immutable Postgres trigger (migration
+        # 0010) was fixed and actually applying, this ORM .update() call
+        # silently succeeded - bypassing the Python-level guard exactly like
+        # a determined attacker with raw SQL access would - and the test
+        # verified that verify_audit_chain caught the tampering afterwards
+        # via a hash mismatch.
+        # Now that the trigger is live, Postgres itself refuses the UPDATE
+        # before it ever happens, which is a strictly stronger guarantee
+        # than after-the-fact chain verification. That means this exact
+        # bypass is no longer reachable, so we assert the DB rejects it
+        # directly instead of asserting verify_audit_chain catches it.
+        from django.db.utils import InternalError
+        with self.assertRaises(InternalError):
+            AttendanceAudit.objects.update(new_status="ABSENT")
 
     @override_settings(AUDIT_VERIFY_HOUR=0)
     def test_clock_verifies_only_once_per_day(self):
