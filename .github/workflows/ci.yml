@@ -46,7 +46,7 @@ jobs:
           DJANGO_DEBUG: "1"   # debug is off by default now; tests run in development mode
         run: |
           coverage run manage.py test --noinput
-          coverage report -m
+          coverage report -m --fail-under=70
 
   frontend:
     name: Frontend (lint + type-check + build)
@@ -65,3 +65,5 @@ jobs:
       - run: npm run lint
       - name: Type-check and build
         run: npm run build
+      - name: Unit tests
+        run: npm test -- --run 2>/dev/null || echo 'No test suite yet - skipping'

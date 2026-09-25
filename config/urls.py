@@ -17,7 +17,10 @@ def json_not_found(request, exception=None):
 
 handler404 = json_not_found
 
+from config.healthz import healthz as healthz_view
+
 urlpatterns = [
+    path("healthz", healthz_view, name="healthz"),
     path("admin/", admin.site.urls),
 
     # Auth

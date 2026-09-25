@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from students.models import FaceProfile
+from attendance.net import client_ip
+from students.models import FaceProfile, FaceProfileAudit
 
 from .models import (
     AttendanceQRToken,
@@ -70,6 +71,16 @@ class FaceProfileAdmin(admin.ModelAdmin):
     readonly_fields = ("embedding_preview", "enrolled_at", "updated_at")
     exclude = ("embedding",)
 
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        if request.method == "GET":
+            profile = self.get_object(request, object_id)
+            if profile is not None:
+                FaceProfileAudit.objects.create(
+                    student=profile.student, action=FaceProfileAudit.ADMIN_READ,
+                    actor=request.user, ip_address=client_ip(request),
+                )
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def enrollment_status(self, obj):
         return "Enrolled \u2713" if obj.embedding else "Not enrolled"
     enrollment_status.short_description = "Status"
@@ -95,3 +106,61 @@ class HolidayAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+# ---- Step 2: read-only admin for attendance data (all changes go through set_attendance) ----
+from .models import AttendanceAudit  # noqa: E402
+
+
+class ReadOnlyRecordInline(AttendanceRecordInline):
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+admin.site.unregister(AttendanceSession)
+admin.site.unregister(AttendanceRecord)
+
+
+@admin.register(AttendanceSession)
+class ReadOnlySessionAdmin(AttendanceSessionAdmin):
+    inlines = [ReadOnlyRecordInline]
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AttendanceRecord)
+class ReadOnlyRecordAdmin(AttendanceRecordAdmin):
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AttendanceAudit)
+class AttendanceAuditAdmin(admin.ModelAdmin):
+    list_display = ("id", "record", "action", "old_status", "new_status", "actor", "ip_address", "created_at")
+    list_filter = ("action", "source")
+    date_hierarchy = "created_at"
+
+    def get_readonly_fields(self, request, obj=None):
+        return [f.name for f in self.model._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

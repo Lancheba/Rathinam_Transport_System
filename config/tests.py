@@ -131,12 +131,12 @@ class ProductionGuardTests(TestCase):
 
     GOOD = dict(
         DJANGO_SECRET_KEY="x" * 60,
-        DEVICE_API_KEY="y" * 30,
         DJANGO_ALLOWED_HOSTS="app.example.com",
+        FACE_EMBEDDING_KEY="zH8f3s5D9pQeYw2mVn7tR4uJk1oXcAbLgN0iT6yEqF8=",
     )
 
     def import_settings(self, **env):
-        base = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "DEVICE_API_KEY"))}
+        base = {k: v for k, v in os.environ.items() if not k.startswith("DJANGO_")}
         base["DJANGO_SKIP_DOTENV"] = "1"  # a developer's local .env must not affect these tests
         base.update(env)
         return subprocess.run(
@@ -154,10 +154,10 @@ class ProductionGuardTests(TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("DJANGO_SECRET_KEY", r.stderr)
 
-    def test_default_device_key_is_refused_when_debug_is_off(self):
-        r = self.import_settings(DJANGO_DEBUG="0", DJANGO_SECRET_KEY="x" * 60)
+    def test_default_face_embedding_key_is_refused_when_debug_is_off(self):
+        r = self.import_settings(DJANGO_DEBUG="0", DJANGO_SECRET_KEY="x" * 60, DEVICE_API_KEY="y" * 30)
         self.assertNotEqual(r.returncode, 0)
-        self.assertIn("DEVICE_API_KEY", r.stderr)
+        self.assertIn("FACE_EMBEDDING_KEY", r.stderr)
 
     def test_missing_allowed_hosts_is_refused_when_debug_is_off(self):
         good = {k: v for k, v in self.GOOD.items() if k != "DJANGO_ALLOWED_HOSTS"}

@@ -2,6 +2,7 @@ import React from "react";
 import { QrCode } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import QRDisplaySection from "../components/QRDisplaySection";
+import ManualMarkSection from "../components/ManualMarkSection";
 
 const InchargeAttendancePage: React.FC = () => {
   const { isLoggedIn, role } = useAuth();
@@ -27,6 +28,7 @@ const InchargeAttendancePage: React.FC = () => {
         Start a session and students scan the QR, then confirm with their face.
       </p>
       <QRDisplaySection />
+      <ManualMarkSection />
     </div>
   );
 };

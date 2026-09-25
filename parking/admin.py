@@ -20,14 +20,23 @@ class ParkingSlotAdmin(admin.ModelAdmin):
         "row",
         "slot_number",
         "ground",
+        "slot_type",
+        "is_active",
         "is_occupied",
         "is_blocked",
         "bus",
     )
 
+    list_editable = (
+        "slot_type",
+        "is_active",
+    )
+
     list_filter = (
         "ground",
         "row",
+        "slot_type",
+        "is_active",
         "is_occupied",
         "is_blocked",
     )

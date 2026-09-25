@@ -1,15 +1,31 @@
+import re
+
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .permissions import can_manage_buses, is_admin
 
+PHONE_RE = re.compile(r"^\+?[0-9][0-9\s\-]{6,19}$")
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
+    email = serializers.EmailField(required=True)
 
     class Meta:
         model = User
         fields = ["username", "email", "password"]
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+    def validate_password(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        validate_password(value)
+        return value
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -23,6 +39,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     identity = serializers.CharField(source="profile.identity", read_only=True)
     role = serializers.CharField(source="profile.role", read_only=True)
+    phone = serializers.CharField(source="profile.phone", read_only=True)
     can_manage_buses = serializers.SerializerMethodField()
     is_admin = serializers.SerializerMethodField()
     driven_bus_number = serializers.SerializerMethodField()
@@ -30,7 +47,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "identity", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number"]
+        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number"]
 
     def get_can_manage_buses(self, obj):
         return can_manage_buses(obj)
@@ -45,6 +62,25 @@ class UserSerializer(serializers.ModelSerializer):
     def get_incharge_bus_number(self, obj):
         bus = getattr(obj, "incharge_bus", None)
         return bus.bus_number if bus else None
+
+
+class UpdatePhoneSerializer(serializers.Serializer):
+    """item 2.9 / Step 4: lets a signed-in user set their own contact number."""
+
+    phone = serializers.CharField(allow_blank=True, max_length=20)
+
+    def validate_phone(self, value):
+        value = value.strip()
+        if value and not PHONE_RE.match(value):
+            raise serializers.ValidationError("Enter a valid phone number.")
+        return value
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        profile = user.profile
+        profile.phone = self.validated_data["phone"]
+        profile.save(update_fields=["phone"])
+        return profile
 
 
 class SetIdentitySerializer(serializers.Serializer):

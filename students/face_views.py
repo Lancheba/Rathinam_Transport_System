@@ -4,8 +4,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from accounts.permissions import IsStudent
+from attendance.net import client_ip
 from students.face_utils import clean_embedding
-from students.models import FaceProfile
+from students.models import FaceProfile, FaceProfileAudit
 
 MAX_RETAKES = 3
 
@@ -45,6 +46,10 @@ def face_enrollment(request):
             profile.consent_given = False
             profile.consent_at = None
             profile.save()
+            FaceProfileAudit.objects.create(
+                student=student, action=FaceProfileAudit.DELETE,
+                actor=request.user, ip_address=client_ip(request),
+            )
         return Response(_status_payload(profile))
 
     # POST - enroll / re-enroll
@@ -72,6 +77,10 @@ def face_enrollment(request):
             consent_at=timezone.now(),
         )
         created = True
+        FaceProfileAudit.objects.create(
+            student=student, action=FaceProfileAudit.ENROLL,
+            actor=request.user, ip_address=client_ip(request),
+        )
     else:
         if profile.retake_count >= MAX_RETAKES:
             return Response(
@@ -84,6 +93,10 @@ def face_enrollment(request):
         profile.retake_count += 1
         profile.save()
         created = False
+        FaceProfileAudit.objects.create(
+            student=student, action=FaceProfileAudit.REENROLL,
+            actor=request.user, ip_address=client_ip(request),
+        )
 
     payload = _status_payload(profile)
     payload['detail'] = 'Enrolled.' if created else 'Re-enrolled.'

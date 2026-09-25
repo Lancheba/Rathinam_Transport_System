@@ -150,3 +150,27 @@ class AttendanceSubmitSerializer(serializers.Serializer):
         if not data.get("is_holiday") and not data.get("records"):
             raise serializers.ValidationError("Mark at least one person present/absent, or mark the day a holiday.")
         return data
+
+
+class AttendanceFlagSerializer(serializers.ModelSerializer):
+    reviewed_by_username = serializers.CharField(
+        source="reviewed_by.username", read_only=True, default=None
+    )
+    session_date = serializers.CharField(source="session.date", read_only=True, default=None)
+    record_ids = serializers.PrimaryKeyRelatedField(
+        source="records", many=True, read_only=True
+    )
+
+    class Meta:
+        from attendance.models import AttendanceFlag
+        model = AttendanceFlag
+        fields = [
+            "id", "session", "session_date", "rule", "severity", "detail",
+            "status", "record_ids", "reviewed_by", "reviewed_by_username",
+            "reviewed_at", "review_note", "created_at",
+        ]
+        read_only_fields = [
+            "id", "session", "session_date", "rule", "severity", "detail",
+            "record_ids", "reviewed_by", "reviewed_by_username",
+            "reviewed_at", "created_at",
+        ]

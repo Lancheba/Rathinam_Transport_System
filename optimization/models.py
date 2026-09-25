@@ -8,6 +8,10 @@ class OptimizationResult(models.Model):
     blocked_after = models.IntegerField(default=0)
     movements_required = models.IntegerField(default=0)
     layout_json = models.TextField(default="{}")
+    # Plan item 4.4: set once this preview is actually applied, so it can
+    # never be applied twice and staff can see at a glance which of the
+    # last few runs is the one that went live.
+    applied_at = models.DateTimeField(null=True, blank=True)
 
     def get_layout(self):
         return json.loads(self.layout_json)

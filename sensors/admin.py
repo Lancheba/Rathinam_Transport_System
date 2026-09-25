@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Sensor, ParkingEvent
+from .models import Sensor, ParkingEvent, SensorAlert
 
 
 @admin.register(Sensor)
@@ -40,3 +40,11 @@ class ParkingEventAdmin(admin.ModelAdmin):
         "sensor__sensor_id",
         "message",
     )
+
+
+@admin.register(SensorAlert)
+class SensorAlertAdmin(admin.ModelAdmin):
+    list_display = ("alert_type", "sensor", "parking_slot", "created_at", "resolved_at")
+    list_filter = ("alert_type", "resolved_at")
+    readonly_fields = ("sensor", "parking_slot", "alert_type", "message", "created_at")
+    search_fields = ("sensor__sensor_id", "message")

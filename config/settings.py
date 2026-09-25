@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     # Local apps
@@ -155,6 +156,8 @@ LOGIN_LOCKOUT_SECONDS = int(os.environ.get("LOGIN_LOCKOUT_SECONDS", 900))       
 
 # --- REST Framework ---
 REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
@@ -179,8 +182,10 @@ REST_FRAMEWORK = {
 
 # --- JWT ---
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.environ.get("ACCESS_TOKEN_MINUTES", "20"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 # --- CORS ---
@@ -210,10 +215,8 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-# --- Devices (ESP32 RFID readers, ultrasonic sensors, the camera script) ---
-# Every device request must send this value in an "X-Device-Key" header.
-# CHANGE IT: set the DEVICE_API_KEY environment variable before real use.
-DEVICE_API_KEY = os.environ.get("DEVICE_API_KEY", "dev-device-key")
+_DEV_FACE_KEY = "TWPGREab5FZD2PKqzw48Cff3tQvLrTn8a6sqi97CFQ0="
+FACE_EMBEDDING_KEY = os.environ.get("FACE_EMBEDDING_KEY", _DEV_FACE_KEY)  # Fernet key; students face vectors are encrypted at rest with it
 
 # --- Camera / YOLO tracking (see vision/linking.py) ---
 VISION_MAX_SLOT_DISTANCE_M = float(os.environ.get("VISION_MAX_SLOT_DISTANCE_M", 4.0))  # detection -> slot
@@ -221,6 +224,7 @@ VISION_STABLE_FRAMES = int(os.environ.get("VISION_STABLE_FRAMES", 3))       # fr
 VISION_LINK_MIN_FRAMES = int(os.environ.get("VISION_LINK_MIN_FRAMES", 5))   # frames before matching to an ENTRY
 VISION_ENTRY_WINDOW_MIN = int(os.environ.get("VISION_ENTRY_WINDOW_MIN", 15))  # how long an ENTRY stays claimable
 VISION_TRACK_TIMEOUT_S = int(os.environ.get("VISION_TRACK_TIMEOUT_S", 30))  # unseen this long -> inactive
+VISION_CAMERA_OFFLINE_S = int(os.environ.get("VISION_CAMERA_OFFLINE_S", 90))  # camera silent this long -> offline alert
 
 # --- Logging: without this, errors are silent when DEBUG is off ---
 LOGGING = {
@@ -240,8 +244,8 @@ if not DEBUG:
 
     if SECRET_KEY == _DEV_SECRET_KEY:
         raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value when DJANGO_DEBUG=0.")
-    if DEVICE_API_KEY == "dev-device-key":
-        raise ImproperlyConfigured("Set DEVICE_API_KEY to a long random value when DJANGO_DEBUG=0.")
+    if FACE_EMBEDDING_KEY == _DEV_FACE_KEY:
+        raise ImproperlyConfigured("Set FACE_EMBEDDING_KEY (a Fernet key) to a real secret when DJANGO_DEBUG=0.")
     if not os.environ.get("DJANGO_ALLOWED_HOSTS", "").strip():
         raise ImproperlyConfigured(
             "Set DJANGO_ALLOWED_HOSTS (comma-separated hostnames) when DJANGO_DEBUG=0."
@@ -270,8 +274,8 @@ if not DEBUG:
 # --- Smart Attendance Feature ---
 # MORNING/EVENING attendance windows are edited in the app (Settings page);
 # code reads them through attendance.services.get_windows().
-FACE_MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.6"))
-QR_TOKEN_TTL_SECONDS = 60
+FACE_MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.5"))  # Euclidean distance; dlib 128-d embeddings: 0.5 rejects most impostors
+QR_TOKEN_TTL_SECONDS = int(os.environ.get("QR_TOKEN_TTL_SECONDS", "25"))  # target 20-30 once the frontend auto-refreshes
 FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5
 
 
@@ -285,8 +289,50 @@ ATTENDANCE_WORKING_WEEKDAYS = (0, 1, 2, 3, 4, 5)
 import sys as _sys
 if "test" in _sys.argv:
     ATTENDANCE_WORKING_WEEKDAYS = tuple(range(7))
+    # Device.generate() / check_secret() hash through Django's password hashers
+    # (deliberately slow, PBKDF2 by default). Real users' password hashing
+    # strength is untouched -- this only applies while running `manage.py test`.
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 # Go-live date (YYYY-MM-DD). Days before it never get sessions or auto-absents.
 import datetime as _dt
 _start = os.environ.get("ATTENDANCE_START_DATE", "").strip()
 ATTENDANCE_START_DATE = _dt.date.fromisoformat(_start) if _start else None
+
+# --- Step 6: attendance-flag detection thresholds (audit item 2A.5) --------
+ATTENDANCE_DETECTION = {
+    "SAME_DEVICE_MIN_STUDENTS": int(os.environ.get("DET_SAME_DEVICE_MIN_STUDENTS", "4")),
+    "SAME_IP_BURST_MIN_SCANS": int(os.environ.get("DET_SAME_IP_BURST_MIN_SCANS", "6")),
+    "SAME_IP_BURST_WINDOW_SECONDS": int(os.environ.get("DET_SAME_IP_BURST_WINDOW_SECONDS", "60")),
+    "IDENTICAL_SCORE_MIN_COUNT": int(os.environ.get("DET_IDENTICAL_SCORE_MIN_COUNT", "3")),
+    "MANUAL_SHARE_THRESHOLD": float(os.environ.get("DET_MANUAL_SHARE_THRESHOLD", "0.5")),
+    "MANUAL_SHARE_MIN_RECORDS": int(os.environ.get("DET_MANUAL_SHARE_MIN_RECORDS", "5")),
+    "INSTANT_PRESENT_WINDOW_SECONDS": int(os.environ.get("DET_INSTANT_PRESENT_WINDOW_SECONDS", "60")),
+    "INSTANT_PRESENT_MIN_RECORDS": int(os.environ.get("DET_INSTANT_PRESENT_MIN_RECORDS", "5")),
+}
+
+# ---------------------------------------------------------------------------
+# Sentry error tracking (Step 10)
+# Set SENTRY_DSN in your .env to enable. Safe to leave blank in development.
+# ---------------------------------------------------------------------------
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+_SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if _SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=_SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
+
+# ---------------------------------------------------------------------------
+# Attendance cheat-detection thresholds (Step 6 / plan item 2A.5)
+# ---------------------------------------------------------------------------
+FLAG_SAME_DEVICE_THRESHOLD    = int(os.environ.get("FLAG_SAME_DEVICE_THRESHOLD", "3"))
+FLAG_IP_BURST_WINDOW_SECONDS  = int(os.environ.get("FLAG_IP_BURST_WINDOW_SECONDS", "30"))
+FLAG_IP_BURST_THRESHOLD       = int(os.environ.get("FLAG_IP_BURST_THRESHOLD", "4"))
+FLAG_MANUAL_SHARE_RATIO       = float(os.environ.get("FLAG_MANUAL_SHARE_RATIO", "0.4"))
+FLAG_INSTANT_PRESENT_SECONDS  = int(os.environ.get("FLAG_INSTANT_PRESENT_SECONDS", "60"))
+

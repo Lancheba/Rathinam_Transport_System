@@ -168,7 +168,7 @@ def run_due_finalizations(now=None):
 def set_attendance(*, session, person_type, status, action, student=None, teacher=None,
                    student_id=None, teacher_id=None, actor=None, reason='', source='',
                    ip_address=None, face_match_score=None, remarks=None,
-                   user_agent=''):
+                   user_agent='', device_id=''):
     """
     THE ONLY function allowed to create or update an AttendanceRecord.
     Locks the existing row (select_for_update) if one exists, applies the
@@ -191,6 +191,7 @@ def set_attendance(*, session, person_type, status, action, student=None, teache
     with transaction.atomic():
         existing = AttendanceRecord.objects.select_for_update().filter(**lookup).first()
         old_status = existing.status if existing else ''
+        check_rules(action=action, actor=actor, old_status=old_status, new_status=status, reason=reason)
 
         defaults = {'status': status, 'person_type': person_type}
         if source:
@@ -215,11 +216,11 @@ def set_attendance(*, session, person_type, status, action, student=None, teache
         actor_id = actor.pk if actor else None
         prev = (
             AttendanceAudit.objects.filter(record=record)
-            .order_by('-created_at').values_list('row_hash', flat=True).first() or ''
+            .order_by('-id').values_list('row_hash', flat=True).first() or ''
         )
         row_data = (
             f"{record.pk}|{action}|{old_status}|{status}"
-            f"|{actor_id}|{ip_address}|{prev}"
+            f"|{actor_id}|{ip_address or ''}|{prev}"
         )
         row_hash = hashlib.sha256(row_data.encode()).hexdigest()
         AttendanceAudit.objects.create(
@@ -232,9 +233,62 @@ def set_attendance(*, session, person_type, status, action, student=None, teache
             source=source or record.source,
             ip_address=ip_address,
             user_agent=user_agent,
+            device_id=device_id,
             session=session,
             prev_hash=prev,
             row_hash=row_hash,
         )
 
     return record
+
+
+# ---- Step 2: one place for every role rule ----
+from rest_framework.exceptions import APIException  # noqa: E402
+
+from accounts.permissions import can_manage_buses, is_admin  # noqa: E402
+
+
+class RuleViolation(APIException):
+    """Raised by check_rules. DRF turns it into {"detail": ...} with the right status."""
+    status_code = 400
+    default_detail = "This change is not allowed."
+
+    def __init__(self, detail, status_code=None):
+        super().__init__(detail)
+        if status_code:
+            self.status_code = status_code
+
+
+def check_rules(*, action, actor, old_status, new_status, reason=""):
+    """
+    Role x action rules for changing attendance. Called inside set_attendance()
+    after the record row is locked, so it cannot be bypassed.
+      MANUAL  in-charge marks Absent -> Present, capped per day.
+      CORRECT staff/admin turns Absent -> Present.
+      REVOKE  admin only, Present -> Absent, reason of 10+ characters.
+    SCAN, SUBMIT and AUTO_ABSENT keep their own checks in their views.
+    """
+    if action == "MANUAL":
+        if old_status == "PRESENT":
+            raise RuleViolation("Student is already marked PRESENT.")
+        cap = getattr(settings, "ATTENDANCE_MANUAL_DAILY_CAP", 10)
+        start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+        used = AttendanceAudit.objects.filter(
+            action="MANUAL", actor=actor, created_at__gte=start
+        ).count()
+        if used >= cap:
+            raise RuleViolation(
+                f"Daily manual-mark limit reached ({cap}). Ask an administrator.", 429
+            )
+    elif action == "CORRECT":
+        if not can_manage_buses(actor):
+            raise RuleViolation("Only staff or administrators can correct attendance.", 403)
+        if old_status == "PRESENT":
+            raise RuleViolation("This record is already marked Present and is locked.")
+    elif action == "REVOKE":
+        if not is_admin(actor):
+            raise RuleViolation("Only administrators can revoke a Present record.", 403)
+        if old_status != "PRESENT" or new_status != "ABSENT":
+            raise RuleViolation("Revoke only changes a Present record to Absent.")
+        if len((reason or "").strip()) < 10:
+            raise RuleViolation("A reason of at least 10 characters is required to revoke.")

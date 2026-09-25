@@ -20,11 +20,7 @@ class IsDriver(permissions.BasePermission):
         return is_driver(request.user)
 
 
-def is_incharge(user):
-    if not user or not user.is_authenticated:
-        return False
-    profile = getattr(user, "profile", None)
-    return bool(profile and profile.role == "INCHARGE")
+from accounts.permissions import is_incharge  # single source of truth
 
 
 def incharge_bus(user):

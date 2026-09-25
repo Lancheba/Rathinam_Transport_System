@@ -141,3 +141,4 @@ coverage==7.16.1
     # via -r requirements.in
 numpy==2.5.3
     # via -r requirements.in
+cryptography==50.0.1

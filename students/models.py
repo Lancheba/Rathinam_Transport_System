@@ -1,3 +1,4 @@
+from students.fields import EncryptedListField
 from django.conf import settings
 from django.db import models
 
@@ -54,7 +55,7 @@ class FaceProfile(models.Model):
         on_delete=models.CASCADE,
         related_name="face_profile",
     )
-    embedding = models.JSONField()
+    embedding = EncryptedListField()
     embedding_model = models.CharField(max_length=50, default="face-api-128d")
     retake_count = models.PositiveSmallIntegerField(default=0)
     consent_given = models.BooleanField(default=False)
@@ -64,4 +65,47 @@ class FaceProfile(models.Model):
 
     def __str__(self):
         return f"FaceProfile({self.student.roll_number})"
+
+
+class FaceProfileAudit(models.Model):
+    """
+    Append-only log of who touched a student's face data and when:
+    enrolments, re-enrolments, deletions, and admin reads.
+    Written by the view/admin layer; never updated or deleted.
+    """
+    ENROLL = "ENROLL"
+    REENROLL = "REENROLL"
+    DELETE = "DELETE"
+    ADMIN_READ = "ADMIN_READ"
+    ACTION_CHOICES = [
+        (ENROLL, "Enrolled"),
+        (REENROLL, "Re-enrolled"),
+        (DELETE, "Deleted"),
+        (ADMIN_READ, "Admin viewed"),
+    ]
+
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name="face_audit_entries",
+    )
+    action = models.CharField(max_length=12, choices=ACTION_CHOICES)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="face_audit_entries",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"FaceAudit({self.student_id} {self.action} {self.created_at:%Y-%m-%d %H:%M})"
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValueError("FaceProfileAudit rows are append-only and cannot be updated.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("FaceProfileAudit rows cannot be deleted.")
 

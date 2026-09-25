@@ -260,6 +260,33 @@ export interface Feedback {
   updated_at: string;
 }
 
+// ---- Attendance cheat-detection flags (Step 6) ----
+
+export type AttendanceFlagStatus = "OPEN" | "REVIEWED" | "DISMISSED";
+
+/** One row from GET /api/attendance/flags/ */
+export interface AttendanceFlag {
+  id: number;
+  session: number;
+  session_date: string | null;
+  rule: string;
+  severity: string;
+  detail: string;
+  status: AttendanceFlagStatus;
+  record_ids: number[];
+  reviewed_by: number | null;
+  reviewed_by_username: string | null;
+  reviewed_at: string | null;
+  review_note: string;
+  created_at: string;
+}
+
+/** Body for PATCH /api/attendance/flags/<id>/review/ */
+export interface AttendanceFlagReviewInput {
+  status: "REVIEWED" | "DISMISSED";
+  review_note?: string;
+}
+
 // ---- Driver attendance: "my bus" setup, roster, sessions ----
 
 export interface Teacher {

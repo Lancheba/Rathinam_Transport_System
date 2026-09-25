@@ -1,3 +1,6 @@
+import secrets
+
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import User
@@ -89,3 +92,39 @@ class LinkRequest(models.Model):
     def __str__(self):
         target = self.teacher or self.bus
         return f"{self.user.username} -> {target} ({self.status})"
+
+
+class Device(models.Model):
+    """
+    A physical device (ESP32 RFID reader, ultrasonic node, the camera script)
+    that authenticates with its own key instead of the old single shared
+    DEVICE_API_KEY. Plan item 7.1: revoking one device stops only that device.
+
+    The key handed to hardware is "<key_id>.<secret>". Only a salted hash of
+    the secret is stored -- a stolen database dump exposes no usable keys.
+    """
+    key_id = models.CharField(max_length=12, unique=True, editable=False)
+    key_hash = models.CharField(max_length=200, editable=False)
+    name = models.CharField(max_length=100, help_text="e.g. \'RFID reader - Gate 1\'")
+    is_active = models.BooleanField(default=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        suffix = "" if self.is_active else " [revoked]"
+        return f"{self.name} ({self.key_id}){suffix}"
+
+    @classmethod
+    def generate(cls, name):
+        """
+        Create a new device and return (device, plaintext_key). The plaintext
+        key is only ever available here, at creation time -- show it to the
+        caller once and never store or log it.
+        """
+        key_id = secrets.token_hex(6)
+        secret = secrets.token_urlsafe(32)
+        device = cls.objects.create(name=name, key_id=key_id, key_hash=make_password(secret))
+        return device, f"{key_id}.{secret}"
+
+    def check_secret(self, secret):
+        return check_password(secret, self.key_hash)

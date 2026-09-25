@@ -1,9 +1,9 @@
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
+﻿from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from config.throttles import OptimizeThrottle
 from rest_framework import status
 from accounts.permissions import CanManageBuses
 from rest_framework.response import Response
-from .engine import run_optimization, apply_optimization
+from .engine import run_optimization, apply_optimization, StaleOptimization
 from .models import OptimizationResult
 from .serializers import OptimizationResultSerializer
 
@@ -39,6 +39,7 @@ def run_optimization_view(request):
         "stats": result["stats"],
         "current": result["current"],
         "recommended": result["recommended"],
+        "moves": result["moves"],
     }, status=status.HTTP_200_OK)
 
 
@@ -54,9 +55,18 @@ def apply_optimization_view(request):
     except OptimizationResult.DoesNotExist:
         return Response({"error": "Result not found"}, status=404)
 
-    layout_data = opt.get_layout()
-    apply_optimization(layout_data.get("recommended", []))
-    return Response({"status": "applied", "result_id": opt.pk})
+    if opt.applied_at is not None:
+        return Response(
+            {"error": "This result was already applied.", "applied_at": opt.applied_at},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    try:
+        apply_optimization(opt)
+    except StaleOptimization as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_409_CONFLICT)
+
+    return Response({"status": "applied", "result_id": opt.pk, "applied_at": opt.applied_at})
 
 
 @api_view(["GET"])

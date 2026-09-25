@@ -1,3 +1,4 @@
+from .revoke_views import attendance_revoke
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -14,8 +15,9 @@ from .views import (
     attendance_window_config,
     my_attendance,
 )
-from .qr_views import qr_generate, qr_manual_mark, qr_scan, qr_stop, qr_status, qr_tally, qr_window
+from .qr_views import qr_generate, qr_manual_mark, qr_roster, qr_scan, qr_stop, qr_status, qr_tally, qr_window
 from .report_views import attendance_report
+from .flag_views import flag_list, flag_review
 router = DefaultRouter()
 router.register("teachers", TeacherViewSet, basename="teacher")
 
@@ -24,6 +26,7 @@ urlpatterns = [
     path("roster/", attendance_roster, name="attendance-roster"),
     path("submit/", attendance_submit, name="attendance-submit"),
     path("records/<int:record_id>/correct/", attendance_correct, name="attendance-correct"),
+    path("records/<int:record_id>/revoke/", attendance_revoke, name="attendance-revoke"),
     path("sessions/", attendance_history, name="attendance-history"),
     path("export/", attendance_export, name="attendance-export"),
     path("report/", attendance_report, name="attendance-report"),
@@ -38,5 +41,8 @@ urlpatterns = [
     path("qr/status/", qr_status, name="attendance-qr-status"),
     path("qr/scan/", qr_scan, name="attendance-qr-scan"),
     path("qr/manual/", qr_manual_mark, name="attendance-qr-manual"),
+    path("qr/roster/", qr_roster, name="attendance-qr-roster"),
+    path("flags/", flag_list, name="attendance-flag-list"),
+    path("flags/<int:flag_id>/review/", flag_review, name="attendance-flag-review"),
     path("", include(router.urls)),
 ]

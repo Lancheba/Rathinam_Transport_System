@@ -1,4 +1,4 @@
-from .net import client_ip
+from .net import client_ip, device_id as request_device_id, user_agent as request_user_agent
 import logging
 import math
 import numpy as np
@@ -18,6 +18,7 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
+from attendance.detection import run_detection
 from attendance.services import get_windows, is_school_day, set_attendance
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
@@ -324,6 +325,12 @@ def qr_scan(request):
             {'detail': 'Attendance for this session is already closed.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    if AttendanceRecord.objects.filter(session=session, student=student, status='PRESENT').exists():
+        logger.warning('Repeat scan rejected for student %s session %s', student.pk, session.pk)
+        return Response(
+            {'detail': 'You are already marked present for this session.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     lockout_key = f'face_scan_fail_{student.pk}_{session.pk}'
     max_attempts = getattr(settings, 'FACE_SCAN_MAX_ATTEMPTS_PER_SESSION', 5)
     if cache.get(lockout_key, 0) >= max_attempts:
@@ -378,9 +385,12 @@ def qr_scan(request):
         action='SCAN',
         source='QR_FACE',
         face_match_score=distance,
+        user_agent=request_user_agent(request),
+        device_id=request_device_id(request),
         ip_address=ip.split(',')[0].strip() or None,
     )
 
+    run_detection(session)
     return Response({
         'status': 'PRESENT',
         'session_id': session.pk,
@@ -404,7 +414,7 @@ def qr_manual_mark(request):
         )
 
     student_id = request.data.get('student_id')
-    remark = (request.data.get('remark') or '').strip()
+    remark = (request.data.get('remark') or request.data.get('reason') or '').strip()
 
     if not student_id:
         return Response(
@@ -452,12 +462,15 @@ def qr_manual_mark(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    req_status = request.data.get('status', 'PRESENT')
+    if req_status not in ('PRESENT', 'ABSENT'):
+        req_status = 'PRESENT'
     ip = client_ip(request) or ''
     record = set_attendance(
         session=session,
         person_type='STUDENT',
         student=student,
-        status='PRESENT',
+        status=req_status,
         action='MANUAL',
         source='MANUAL',
         remarks=remark,
@@ -466,6 +479,7 @@ def qr_manual_mark(request):
         ip_address=ip.split(',')[0].strip() or None,
     )
 
+    run_detection(session)
     return Response({
         'status': 'PRESENT',
         'source': 'MANUAL',
@@ -493,3 +507,46 @@ def qr_window(request):
         'morning': [fmt(t) for t in w['MORNING']],
         'evening': [fmt(t) for t in w['EVENING']],
     })
+
+
+# GET /api/attendance/qr/roster/   (Cab In-Charge only)
+# Every student on the in-charge's bus plus their status for today's open
+# session, so the manual-mark screen has a picker without a separate
+# students-app permission.
+@api_view(['GET'])
+@permission_classes([IsInCharge])
+def qr_roster(request):
+    bus = incharge_bus(request.user)
+    if not bus:
+        return Response(
+            {'detail': 'No bus is assigned to you.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    today = timezone.localdate()
+    session = (
+        AttendanceSession.objects
+        .filter(bus=bus, date=today, opened_at__isnull=False,
+                closed_at__isnull=True, auto_finalized=False, is_holiday=False)
+        .order_by('-id')
+        .first()
+    )
+
+    by_student = {}
+    if session:
+        for rec in AttendanceRecord.objects.filter(session=session, person_type='STUDENT'):
+            by_student[rec.student_id] = {'status': rec.status, 'source': rec.source}
+
+    students = Student.objects.filter(bus=bus).order_by('name')
+    rows = [
+        {
+            'id': s.pk,
+            'name': s.name,
+            'roll_number': s.roll_number,
+            'status': by_student.get(s.pk, {}).get('status', 'ABSENT'),
+            'source': by_student.get(s.pk, {}).get('source', ''),
+        }
+        for s in students
+    ]
+
+    return Response({'session_open': session is not None, 'students': rows})

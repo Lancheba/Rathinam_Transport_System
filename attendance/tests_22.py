@@ -68,7 +68,7 @@ class AttendanceSubmitProtectionTests(TestCase):
         r = self._submit(is_holiday=True, holiday_reason='Pongal')
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
-    def test_holiday_deletes_absent_rows_not_present(self):
+    def test_holiday_keeps_absent_rows_and_never_deletes(self):
         # add an absent row for s2
         AttendanceRecord.objects.create(
             session=self.session, person_type='STUDENT', student=self.s2,
@@ -77,7 +77,7 @@ class AttendanceSubmitProtectionTests(TestCase):
         # remove present so holiday is allowed
         AttendanceRecord.objects.filter(session=self.session, student=self.s1).delete()
         self._submit(is_holiday=True, holiday_reason='Pongal')
-        self.assertEqual(AttendanceRecord.objects.filter(session=self.session).count(), 0)
+        self.assertEqual(AttendanceRecord.objects.filter(session=self.session, status="ABSENT").count(), 1)
 
     # --- partial submit path ---
 

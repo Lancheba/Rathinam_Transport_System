@@ -58,7 +58,7 @@ export default function QRDisplaySection() {
       const res = await api.post<QRData>("/attendance/qr/generate/");
       setQrData(res.data);
       setError("");
-      setCountdown(45);
+      setCountdown(15);
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? "Failed to generate QR.");
     }
@@ -83,7 +83,7 @@ export default function QRDisplaySection() {
   function start() {
     setActive(true);
     fetchQR();
-    pollRef.current  = setInterval(fetchQR, 45_000);
+    pollRef.current  = setInterval(fetchQR, 15_000);
     timerRef.current = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : 0)), 1_000);
     tallyRef.current = setInterval(fetchTally, 7_000);
   }

@@ -19,6 +19,7 @@ from buses.models import Bus
 from students.models import Student
 
 from attendance.services import set_attendance
+from utils.params import int_param
 from .exports import force_text_cells, safe_rows
 from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
 from .permissions import IsDriver, driver_bus, is_driver
@@ -188,7 +189,7 @@ def attendance_roster(request):
 
     session = (
         AttendanceSession.objects.filter(bus=bus, date=day, slot=slot)
-        .prefetch_related("records")
+        .prefetch_related("records__student", "records__teacher")
         .first()
     )
     status_by_student = {}
@@ -267,16 +268,18 @@ def attendance_submit(request):
             )
 
     with transaction.atomic():
-        session, _ = AttendanceSession.objects.update_or_create(
+        session, created = AttendanceSession.objects.update_or_create(
             bus=bus,
             date=data["date"],
             slot=data["slot"],
             defaults={
                 "is_holiday": data["is_holiday"],
                 "holiday_reason": data.get("holiday_reason", "") if data["is_holiday"] else "",
-                "marked_by": request.user,
             },
         )
+        if created:
+            session.marked_by = request.user
+            session.save(update_fields=["marked_by"])
 
         if data["is_holiday"]:
             # Never delete verified records. Only remove ABSENT/AUTO_ABSENT rows;
@@ -287,7 +290,7 @@ def attendance_submit(request):
                     {"detail": f"Cannot mark as holiday: {present_count} student(s) are already marked PRESENT. Correct those records first."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            session.records.exclude(status="PRESENT").delete()
+            # Never delete records: their audit rows are immutable. Reports skip holiday sessions.
         else:
             seen_student_ids, seen_teacher_ids = set(), set()
             for row in data["records"]:
@@ -388,7 +391,7 @@ def attendance_history(request):
     if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
         return Response({"detail": "Not allowed."}, status=403)
 
-    qs = AttendanceSession.objects.filter(bus=bus).prefetch_related("records").order_by("-date")
+    qs = AttendanceSession.objects.filter(bus=bus).select_related("bus").prefetch_related("records__student", "records__teacher").order_by("-date")
     date_from = parse_date(request.query_params.get("from", "") or "")
     date_to = parse_date(request.query_params.get("to", "") or "")
     if date_from:
@@ -410,17 +413,20 @@ def _export_rows(bus, date_from, date_to):
         qs = qs.filter(date__lte=date_to)
     qs = qs.order_by("date")
 
-    rows = [["Date", "Bus", "Type", "ID/Roll No.", "Name", "Status"]]
+    rows = [["Date", "Bus", "Slot", "Type", "ID/Roll No.", "Name", "Status", "Source", "Remarks"]]
     for session in qs:
         if session.is_holiday:
-            rows.append([str(session.date), bus.bus_number, "-", "-", "-", f"HOLIDAY ({session.holiday_reason or '-'})"])
+            rows.append([
+                str(session.date), bus.bus_number, session.slot, "-", "-", "-",
+                f"HOLIDAY ({session.holiday_reason or '-'})", "-", "-",
+            ])
             continue
         for r in session.records.all():
             who = r.student or r.teacher
             identifier = r.student.roll_number if r.student else (r.teacher.staff_id if r.teacher else "")
             rows.append([
-                str(session.date), bus.bus_number, r.person_type,
-                identifier, who.name if who else "", r.status,
+                str(session.date), bus.bus_number, session.slot, r.person_type,
+                identifier, who.name if who else "", r.status, r.source, r.remarks,
             ])
     return rows
 
@@ -443,7 +449,7 @@ def attendance_export(request):
     date_from = parse_date(request.query_params.get("from", "") or "")
     date_to = parse_date(request.query_params.get("to", "") or "")
     rows = _export_rows(bus, date_from, date_to)
-    filename_base = f"attendance_{bus.bus_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    filename_base = f"attendance_{bus.bus_number}_{timezone.localtime().strftime('%Y%m%d_%H%M%S')}"
 
     if fmt == "xlsx":
         try:
@@ -571,12 +577,12 @@ def attendance_analytics_overview(request):
     department = request.query_params.get("department")
 
     today = date_cls.today()
-    year = int(request.query_params.get("year") or today.year)
+    year = int_param(request.query_params, "year", today.year)
 
     sessions = AttendanceSession.objects.filter(date__year=year, is_holiday=False)
     month = None
     if period == "monthly":
-        month = int(request.query_params.get("month") or today.month)
+        month = int_param(request.query_params, "month", today.month)
         sessions = sessions.filter(date__month=month)
     if bus_id:
         sessions = sessions.filter(bus_id=bus_id)
@@ -677,14 +683,14 @@ def attendance_analytics_student(request, student_id):
             return Response({"detail": "Not allowed."}, status=403)
 
     today = date_cls.today()
-    year = int(request.query_params.get("year") or today.year)
+    year = int_param(request.query_params, "year", today.year)
     month = request.query_params.get("month")
 
     records = AttendanceRecord.objects.filter(
         student=student, session__date__year=year, session__is_holiday=False,
     ).select_related("session").order_by("session__date")
     if month:
-        records = records.filter(session__date__month=int(month))
+        records = records.filter(session__date__month=int_param({"month": month}, "month", 1))
 
     total = records.count()
     present = records.filter(status="PRESENT").count()
@@ -699,10 +705,24 @@ def attendance_analytics_student(request, student_id):
         for r in records
     ]
 
+    # Group multi-slot records into one status per calendar day before
+    # computing the streak: a student absent in both slots on one day is a
+    # one-day absence, not two. A day counts PRESENT if present in any slot
+    # that day, else ABSENT.
+    day_status = {}
+    for r in records:
+        d = r.session.date
+        if day_status.get(d) == "PRESENT":
+            continue
+        if r.status == "PRESENT":
+            day_status[d] = "PRESENT"
+        else:
+            day_status.setdefault(d, "ABSENT")
+
     longest_streak = 0
     current_streak = 0
-    for r in records:
-        if r.status == "ABSENT":
+    for d in sorted(day_status):
+        if day_status[d] == "ABSENT":
             current_streak += 1
             longest_streak = max(longest_streak, current_streak)
         else:

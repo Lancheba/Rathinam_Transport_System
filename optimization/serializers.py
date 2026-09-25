@@ -7,7 +7,7 @@ class OptimizationResultSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OptimizationResult
-        fields = ["id", "created_at", "blocked_before", "blocked_after",
+        fields = ["id", "created_at", "applied_at", "blocked_before", "blocked_after",
                   "movements_required", "layout"]
 
     def get_layout(self, obj):

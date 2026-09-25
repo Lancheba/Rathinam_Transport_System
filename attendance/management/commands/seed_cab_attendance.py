@@ -50,6 +50,10 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        from django.conf import settings
+        from django.core.management.base import CommandError
+        if not settings.DEBUG:
+            raise CommandError('Seed commands are dev-only: they bypass the audit trail. Set DEBUG=True locally.')
         bus_number = options["bus_number"]
         count = options["count"]
         absent_n = min(options["absent"], count)

@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-from .models import UserProfile
+from .models import Device, UserProfile
 
 
 class UserCreateForm(BaseUserAdmin.add_form):
@@ -68,3 +68,11 @@ class UserAdmin(BaseUserAdmin):
             # object on later user saves and would otherwise put the default role back.
             obj.profile.role = role
             obj.profile.save()
+
+@admin.register(Device)
+class DeviceAdmin(admin.ModelAdmin):
+    # key_hash is never shown -- only create_device prints the plaintext key, once.
+    list_display = ("name", "key_id", "is_active", "last_used_at", "created_at")
+    list_editable = ("is_active",)
+    readonly_fields = ("key_id", "key_hash", "last_used_at", "created_at")
+    search_fields = ("name", "key_id")

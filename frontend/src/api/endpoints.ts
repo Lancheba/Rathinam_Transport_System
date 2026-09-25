@@ -7,6 +7,7 @@ import type {
   MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary,
   AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
   AttendanceWindowConfig,
+  AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
 } from "../types";
 
 // Buses
@@ -164,3 +165,9 @@ export const createMaintenanceLog = (data: MaintenanceLogInput) =>
 export const updateMaintenanceLog = (id: number, data: MaintenanceLogInput) =>
   api.put<MaintenanceLog>(`/maintenance/logs/${id}/`, data).then(r => r.data);
 export const deleteMaintenanceLog = (id: number) => api.delete(`/maintenance/logs/${id}/`);
+
+// Attendance cheat-detection flags (Step 6) — admin/staff review
+export const getFlags = (status?: AttendanceFlagStatus | "ALL") =>
+  api.get<AttendanceFlag[]>("/attendance/flags/", { params: status ? { status } : undefined }).then(r => r.data);
+export const reviewFlag = (id: number, data: AttendanceFlagReviewInput) =>
+  api.patch<AttendanceFlag>(`/attendance/flags/${id}/review/`, data).then(r => r.data);

@@ -1,4 +1,4 @@
-from django.utils import timezone
+﻿from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from accounts.permissions import CanManageBuses, HasDeviceKey
@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from .models import Sensor, ParkingEvent
 from .serializers import SensorSerializer, ParkingEventSerializer, RFIDEventSerializer, OccupancyEventSerializer
 from buses.models import Bus
-from parking.models import ParkingSlot, recompute_blocked_slots
+from parking.services import assign_bus, free_slot, set_occupancy, SlotNotFound, SlotUnavailable
 
 
 class SensorViewSet(viewsets.ModelViewSet):
@@ -16,7 +16,6 @@ class SensorViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
             return [permissions.IsAuthenticated()]
-        # create / update / partial_update / destroy require ADMIN or STAFF
         return [CanManageBuses()]
 
 
@@ -39,6 +38,38 @@ class ParkingEventViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
+def _touch_sensor(sensor_id_str, last_reading):
+    """
+    Look up a pre-registered sensor by its logical id and stamp last_reading
+    / last_seen. Returns (sensor, error_response).
+
+    Plan item 4.2: sensors are provisioned through the admin panel or the
+    seed_sensors command now, not auto-created from whatever sensor_id an
+    ESP32 happens to send -- an unknown id is a 404, not a phantom row.
+    """
+    if not sensor_id_str:
+        return None, None
+    try:
+        sensor = Sensor.objects.get(sensor_id=sensor_id_str)
+    except Sensor.DoesNotExist:
+        return None, Response(
+            {"error": f"Unknown sensor_id \"{sensor_id_str}\". Register it first."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    sensor.last_reading = last_reading
+    sensor.last_seen = timezone.now()
+    sensor.save(update_fields=["last_reading", "last_seen"])
+    return sensor, None
+
+
+def _last_gate_event(bus):
+    return (
+        ParkingEvent.objects.filter(bus=bus, event_type__in=("ENTRY", "EXIT"))
+        .order_by("-timestamp")
+        .first()
+    )
+
+
 @api_view(["POST"])
 @permission_classes([HasDeviceKey])
 def rfid_event(request):
@@ -56,53 +87,52 @@ def rfid_event(request):
     except Bus.DoesNotExist:
         return Response({"error": f"No bus found with RFID UID: {rfid_uid}"}, status=404)
 
-    sensor = None
-    if sensor_id_str:
-        sensor, _ = Sensor.objects.get_or_create(
-            sensor_id=sensor_id_str,
-            defaults={"sensor_type": "RFID", "location": "Unknown"},
-        )
-        sensor.last_reading = rfid_uid
-        sensor.last_seen = timezone.now()
-        sensor.save()
+    sensor, error = _touch_sensor(sensor_id_str, rfid_uid)
+    if error:
+        return error
 
-    # An ENTRY means the bus is arriving, an EXIT that it left: either way any
-    # old camera identity / slot for this bus is stale.
-    if event_type in ("ENTRY", "EXIT"):
+    if event_type == "ENTRY":
+        last = _last_gate_event(bus)
+        if last is not None and last.event_type == "ENTRY":
+            return Response(
+                {"bus": bus.bus_number, "event_type": event_type, "slot": None, "duplicate": True},
+                status=status.HTTP_200_OK,
+            )
         from vision.linking import release_bus
         release_bus(bus)
+        ParkingEvent.objects.create(
+            bus=bus, sensor=sensor, event_type="ENTRY",
+            message=f"RFID {rfid_uid} detected - ENTRY",
+        )
+        return Response({"bus": bus.bus_number, "event_type": event_type, "slot": None}, status=status.HTTP_200_OK)
 
-    # Assign bus to slot if PARKED or DETECTED
-    slot = None
-    if event_type in ("PARKED", "DETECTED"):
-        # Find first free slot
-        slot = ParkingSlot.objects.filter(is_occupied=False, bus__isnull=True).order_by("row", "slot_number").first()
-        if slot:
-            # Clear previous slot
-            ParkingSlot.objects.filter(bus=bus).update(is_occupied=False, bus=None, is_blocked=False)
-            slot.bus = bus
-            slot.is_occupied = True
-            slot.save()
-            # Recompute blocked status: slots behind this one in same row
-            recompute_blocked_slots()
+    if event_type == "EXIT":
+        from vision.linking import release_bus
+        release_bus(bus)
+        freed = free_slot(bus, sensor=sensor, event_type="EXIT")
+        if not freed:
+            ParkingEvent.objects.create(
+                bus=bus, sensor=sensor, event_type="EXIT",
+                message=f"RFID {rfid_uid} detected - EXIT",
+            )
+        return Response({"bus": bus.bus_number, "event_type": event_type, "slot": None}, status=status.HTTP_200_OK)
 
-    elif event_type == "EXIT":
-        ParkingSlot.objects.filter(bus=bus).update(is_occupied=False, bus=None, is_blocked=False)
-        recompute_blocked_slots()
+    try:
+        slot = assign_bus(bus, sensor=sensor, event_type=event_type)
+    except SlotUnavailable:
+        slot = None
 
-    ParkingEvent.objects.create(
-        bus=bus,
-        sensor=sensor,
-        parking_slot=slot,
-        event_type=event_type,
-        message=f"RFID {rfid_uid} detected — {event_type}",
+    if slot is None:
+        ParkingEvent.objects.create(
+            bus=bus, sensor=sensor, event_type=event_type,
+            message=f"RFID {rfid_uid} detected - {event_type} (no free slot)",
+        )
+        return Response({"bus": bus.bus_number, "event_type": event_type, "slot": None}, status=status.HTTP_200_OK)
+
+    return Response(
+        {"bus": bus.bus_number, "event_type": event_type, "slot": f"{slot.row}{slot.slot_number}"},
+        status=status.HTTP_200_OK,
     )
-
-    return Response({
-        "bus": bus.bus_number,
-        "event_type": event_type,
-        "slot": f"{slot.row}{slot.slot_number}" if slot else None,
-    }, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
@@ -117,27 +147,17 @@ def occupancy_event(request):
     is_occupied = ser.validated_data["is_occupied"]
     slot_id = ser.validated_data.get("slot_id")
 
-    sensor, _ = Sensor.objects.get_or_create(
-        sensor_id=sensor_id_str,
-        defaults={"sensor_type": "ULTRASONIC", "location": "Unknown"},
-    )
-    sensor.last_reading = "occupied" if is_occupied else "free"
-    sensor.last_seen = timezone.now()
-    sensor.save()
+    sensor, error = _touch_sensor(sensor_id_str, "occupied" if is_occupied else "free")
+    if error:
+        return error
 
     if slot_id:
         try:
-            slot = ParkingSlot.objects.get(pk=slot_id)
-            slot.is_occupied = is_occupied
-            if not is_occupied:
-                slot.bus = None
-                slot.is_blocked = False
-            slot.save()
-            recompute_blocked_slots()
-        except ParkingSlot.DoesNotExist:
-            pass
+            set_occupancy(slot_id, is_occupied, sensor=sensor)
+        except SlotNotFound:
+            return Response(
+                {"error": f"No parking slot with id {slot_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     return Response({"status": "ok", "sensor": sensor_id_str, "occupied": is_occupied})
-
-
-

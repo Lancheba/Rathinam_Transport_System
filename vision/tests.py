@@ -1,19 +1,18 @@
-from datetime import time
+from datetime import time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
+from accounts.models import Device
 from buses.models import Bus
 from parking.models import ParkingGround, ParkingSlot
-from sensors.models import ParkingEvent, Sensor
+from sensors.models import ParkingEvent, Sensor, SensorAlert
 
-from .linking import match_detections_to_slots
+from .linking import match_detections_to_slots, sweep_stale
 from .models import VisionTrack
-
-KEY = "test-key"
-
 
 def make_ground():
     ground = ParkingGround.objects.create(
@@ -54,7 +53,7 @@ class MatchingTests(TestCase):
 
 
 @override_settings(
-    DEVICE_API_KEY=KEY, VISION_STABLE_FRAMES=3, VISION_LINK_MIN_FRAMES=5,
+    VISION_STABLE_FRAMES=3, VISION_LINK_MIN_FRAMES=5,
     VISION_MAX_SLOT_DISTANCE_M=4.0, VISION_ENTRY_WINDOW_MIN=15, VISION_TRACK_TIMEOUT_S=30,
 )
 class VisionFlowTests(APITestCase):
@@ -62,20 +61,22 @@ class VisionFlowTests(APITestCase):
         self.slots = make_ground()
         self.b1 = make_bus("B01", "AAAA0001")
         self.b2 = make_bus("B02", "BBBB0002")
+        _, self.device_key = Device.generate("test device")
+        Sensor.objects.create(sensor_id="RFID-GATE", sensor_type="RFID", location="Gate")
 
     # helpers -------------------------------------------------------------
     def rfid(self, uid, event_type="ENTRY"):
         return self.client.post(
             "/api/sensors/rfid/",
             {"rfid_uid": uid, "sensor_id": "RFID-GATE", "event_type": event_type},
-            format="json", HTTP_X_DEVICE_KEY=KEY,
+            format="json", HTTP_X_DEVICE_KEY=self.device_key,
         )
 
     def frame(self, detections, session="s1"):
         return self.client.post(
             "/api/vision/positions/",
             {"camera_id": "CAM-1", "session": session, "detections": detections},
-            format="json", HTTP_X_DEVICE_KEY=KEY,
+            format="json", HTTP_X_DEVICE_KEY=self.device_key,
         )
 
     def det(self, track_id, slot_name, dx=0.0, dy=0.0):
@@ -201,3 +202,113 @@ class VisionFlowTests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 1)
         self.assertEqual(resp.data[0]["camera_id"], "CAM-1")
+
+    # plan item 4.3: FIFO is a suggestion, restart/staff-assign confirm it ---
+    def test_fifo_match_is_unconfirmed_then_reconfirmed_by_restart(self):
+        self.rfid("AAAA0001", "ENTRY")
+        self.frames([self.det(1, "A2")], 6)
+
+        track = VisionTrack.objects.get(track_id=1, session="s1")
+        self.assertFalse(track.bus_confirmed)
+        slot = ParkingSlot.objects.get(pk=self.slots["A2"].pk)
+        self.assertTrue(slot.is_unconfirmed)
+
+        # script restart: same slot already shows this bus -> inherited -> confirmed
+        self.frames([self.det(1, "A2")], 4, session="run-2")
+        new_track = VisionTrack.objects.get(session="run-2", track_id=1)
+        self.assertTrue(new_track.bus_confirmed)
+        slot.refresh_from_db()
+        self.assertFalse(slot.is_unconfirmed)
+
+    def test_staff_assign_marks_slot_confirmed(self):
+        self.frames([self.det(1, "B2")], 6)
+        track = VisionTrack.objects.get(track_id=1)
+        staff = User.objects.create_user("staff2", password="x", is_staff=True)
+        self.client.force_authenticate(staff)
+        self.client.post(f"/api/vision/tracks/{track.pk}/assign/", {"bus_id": self.b1.pk}, format="json")
+
+        track.refresh_from_db()
+        self.assertTrue(track.bus_confirmed)
+        slot = ParkingSlot.objects.get(pk=self.slots["B2"].pk)
+        self.assertFalse(slot.is_unconfirmed)
+
+
+@override_settings(VISION_TRACK_TIMEOUT_S=30, VISION_CAMERA_OFFLINE_S=90)
+class SweepStaleTests(APITestCase):
+    def setUp(self):
+        self.slots = make_ground()
+        self.b1 = make_bus("B01", "AAAA0001")
+        _, self.device_key = Device.generate("test device")
+
+    def frame(self, detections, camera_id="CAM-1", session="s1"):
+        return self.client.post(
+            "/api/vision/positions/",
+            {"camera_id": camera_id, "session": session, "detections": detections},
+            format="json", HTTP_X_DEVICE_KEY=self.device_key,
+        )
+
+    def test_stale_confirmed_slot_is_flagged_and_alerted(self):
+        slot = self.slots["A1"]
+        slot.bus = self.b1
+        slot.is_occupied = True
+        slot.save()
+        track = VisionTrack.objects.create(
+            camera_id="CAM-1", session="s1", track_id=1, bus=self.b1, slot=slot,
+            bus_confirmed=True, is_active=True, frames_seen=10,
+            last_seen=timezone.now() - timedelta(seconds=999),
+        )
+
+        result = sweep_stale()
+        self.assertEqual(result["went_stale"], 1)
+        self.assertEqual(result["newly_unconfirmed"], 1)
+
+        track.refresh_from_db()
+        self.assertFalse(track.is_active)
+        slot.refresh_from_db()
+        self.assertTrue(slot.is_unconfirmed)
+        self.assertTrue(
+            SensorAlert.objects.filter(
+                parking_slot=slot, alert_type=SensorAlert.SLOT_UNCONFIRMED, resolved_at__isnull=True,
+            ).exists()
+        )
+
+    def test_camera_offline_is_flagged_once_not_every_pass(self):
+        sensor = Sensor.objects.create(
+            sensor_id="CAM-X", sensor_type="CAMERA", location="Gate",
+            is_active=True, last_seen=timezone.now() - timedelta(seconds=999),
+        )
+        r1 = sweep_stale()
+        self.assertEqual(r1["cameras_offline"], 1)
+        sensor.refresh_from_db()
+        self.assertFalse(sensor.is_active)
+        self.assertEqual(SensorAlert.objects.filter(sensor=sensor).count(), 1)
+
+        r2 = sweep_stale()
+        self.assertEqual(r2["cameras_offline"], 0)
+        self.assertEqual(SensorAlert.objects.filter(sensor=sensor).count(), 1)
+
+    def test_fresh_frame_resolves_camera_offline_alert(self):
+        sensor = Sensor.objects.create(
+            sensor_id="CAM-1", sensor_type="CAMERA", location="Gate", is_active=False,
+        )
+        SensorAlert.objects.create(sensor=sensor, alert_type=SensorAlert.CAMERA_OFFLINE, message="was offline")
+
+        self.frame([{"track_id": 1, "x_m": float(self.slots["A1"].x_position_m),
+                     "y_m": float(self.slots["A1"].y_position_m), "confidence": 0.9}])
+
+        sensor.refresh_from_db()
+        self.assertTrue(sensor.is_active)
+        self.assertFalse(SensorAlert.objects.filter(sensor=sensor, resolved_at__isnull=True).exists())
+
+    def test_pruning_removes_only_old_inactive_tracks(self):
+        old = VisionTrack.objects.create(
+            camera_id="CAM-1", session="s1", track_id=1, is_active=False,
+            last_seen=timezone.now() - timedelta(days=2),
+        )
+        recent = VisionTrack.objects.create(
+            camera_id="CAM-1", session="s1", track_id=2, is_active=False,
+            last_seen=timezone.now() - timedelta(hours=1),
+        )
+        sweep_stale()
+        self.assertFalse(VisionTrack.objects.filter(pk=old.pk).exists())
+        self.assertTrue(VisionTrack.objects.filter(pk=recent.pk).exists())

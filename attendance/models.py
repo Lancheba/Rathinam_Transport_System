@@ -248,6 +248,7 @@ class AttendanceAudit(models.Model):
         null=True, blank=True, related_name='audit_entries',
     )
     prev_hash  = models.CharField(max_length=64, blank=True)
+    device_id  = models.CharField(max_length=128, blank=True)
     row_hash   = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -284,3 +285,44 @@ class Holiday(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.reason or 'Holiday'}"
+
+class AttendanceFlag(models.Model):
+    """
+    A suspicious pattern detection.py found in one session's attendance.
+    Read-only from the API's point of view except for review/dismiss;
+    audit item 2A.5.
+    """
+    RULE_CHOICES = [
+        ('SAME_DEVICE_MANY_STUDENTS', 'One device used for many students'),
+        ('SAME_IP_BURST', 'Many scans from one IP in a short window'),
+        ('EMBEDDING_CLONE', 'Two students share a near-identical face embedding'),
+        ('IDENTICAL_SCORES', 'Many scans share an unusually exact match score'),
+        ('MANUAL_MARK_SHARE_HIGH', 'Unusually high share of manual marks in a session'),
+        ('SESSION_INSTANT_PRESENT', 'Everyone marked present within one minute'),
+        ('HOLIDAY_ATTENDANCE', 'Attendance recorded on a declared holiday'),
+    ]
+    SEVERITY_CHOICES = [('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High')]
+    STATUS_CHOICES = [('OPEN', 'Open'), ('REVIEWED', 'Reviewed'), ('DISMISSED', 'Dismissed')]
+
+    session = models.ForeignKey(
+        'attendance.AttendanceSession', on_delete=models.CASCADE, related_name='flags',
+        null=True, blank=True,
+    )
+    rule = models.CharField(max_length=32, choices=RULE_CHOICES)
+    severity = models.CharField(max_length=6, choices=SEVERITY_CHOICES, default='MEDIUM')
+    detail = models.JSONField(default=dict, blank=True)
+    records = models.ManyToManyField('attendance.AttendanceRecord', related_name='flags', blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='OPEN')
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='attendance_flags_reviewed',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Flag({self.rule} session={self.session_id} {self.status})'

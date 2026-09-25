@@ -1,6 +1,4 @@
-import hmac
-
-from django.conf import settings
+from django.utils import timezone
 from rest_framework import permissions
 
 
@@ -126,13 +124,26 @@ class IsCabInCharge(permissions.BasePermission):
 class HasDeviceKey(permissions.BasePermission):
     """
     For hardware (ESP32 readers, ultrasonic nodes, the camera script) that has
-    no user account. The device sends the shared secret in `X-Device-Key`.
+    no user account. The device sends its own key, "<key_id>.<secret>", in
+    X-Device-Key. Looked up against accounts.Device -- plan item 7.1:
+    revoking one device (is_active=False) stops only that device.
     """
 
     message = "Missing or invalid device key."
 
     def has_permission(self, request, view):
+        from accounts.models import Device  # local import avoids an app-loading order issue
+
         supplied = request.headers.get("X-Device-Key", "")
-        return bool(supplied) and hmac.compare_digest(
-            supplied.encode(), settings.DEVICE_API_KEY.encode()
-        )
+        key_id, sep, secret = supplied.partition(".")
+        if not sep:
+            return False
+        try:
+            device = Device.objects.get(key_id=key_id, is_active=True)
+        except Device.DoesNotExist:
+            return False
+        if not device.check_secret(secret):
+            return False
+        request.device = device
+        Device.objects.filter(pk=device.pk).update(last_used_at=timezone.now())
+        return True

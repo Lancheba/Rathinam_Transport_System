@@ -17,6 +17,7 @@ class ParkingSlotSerializer(serializers.ModelSerializer):
         model = ParkingSlot
         fields = [
             "id", "ground", "row", "slot_number",
+            "slot_type", "is_active",
             "x_position_m", "y_position_m",
             "is_occupied", "is_blocked",
             "bus", "bus_number", "bus_departure", "bus_route",

@@ -23,6 +23,12 @@ class VisionTrack(models.Model):
     bus = models.ForeignKey(
         Bus, null=True, blank=True, on_delete=models.SET_NULL, related_name="vision_tracks"
     )
+    # True once this identity is trustworthy: inherited from a slot the
+    # database already knew held this bus, or staff assigned it by hand.
+    # False right after a bare FIFO guess (plan item 4.3: "FIFO matching as
+    # a suggestion only") -- still written to `bus` so parking stays
+    # automated, but the slot is flagged is_unconfirmed until this is True.
+    bus_confirmed = models.BooleanField(default=False)
 
     # Slot this track has settled in (after VISION_STABLE_FRAMES matching frames).
     slot = models.ForeignKey(

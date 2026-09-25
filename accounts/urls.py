@@ -3,6 +3,7 @@ from .views import (
     LinkRequestApproveView,
     LinkRequestListView,
     LinkRequestRejectView,
+    LogoutView,
     MeView,
     RegisterView,
     SetIdentityView,
@@ -12,6 +13,7 @@ from .views import (
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("me/", MeView.as_view(), name="me"),
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("me/identity/", SetIdentityView.as_view(), name="set-identity"),
     path("me/teacher-link/", TeacherLinkView.as_view(), name="teacher-link"),
     path("link-requests/", LinkRequestListView.as_view(), name="link-request-list"),

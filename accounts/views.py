@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from config import login_lockout
 from config.throttles import LoginThrottle, RegisterThrottle
-from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer, SetIdentitySerializer
+from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer, SetIdentitySerializer, UpdatePhoneSerializer
 from django.contrib.auth.models import User
 
 
@@ -44,12 +44,38 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
 
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+class LogoutView(generics.GenericAPIView):
+    """POST {"refresh": "..."} blacklists that refresh token. Access tokens still
+    expire on their own (short-lived); this stops the refresh token being reused."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        token = request.data.get("refresh")
+        if not token:
+            return Response({"detail": "refresh is required."}, status=400)
+        try:
+            RefreshToken(token).blacklist()
+        except TokenError:
+            return Response({"detail": "Invalid or already-invalidated refresh token."}, status=400)
+        return Response(status=205)
+
+
 class MeView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
+
+    def patch(self, request, *args, **kwargs):
+        serializer = UpdatePhoneSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
 
 
 class SetIdentityView(generics.GenericAPIView):
