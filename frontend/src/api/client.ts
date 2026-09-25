@@ -17,6 +17,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// DRF pagination now wraps every list response as
+// { count, next, previous, results: [...] } instead of a bare array.
+// Every endpoint in endpoints.ts and every component (ParkingMap2D,
+// BottomAnalyticsCards, useGateRows, etc.) was written against the old
+// bare-array shape and calls .forEach/.map directly on r.data, so without
+// this unwrap step the paginated envelope object gets passed straight
+// through and any list consumer throws "x.forEach is not a function".
+// Unwrapping once here, centrally, avoids patching every call site.
+const isPaginatedEnvelope = (data: unknown): data is { results: unknown[] } =>
+  typeof data === "object" &&
+  data !== null &&
+  !Array.isArray(data) &&
+  Array.isArray((data as Record<string, unknown>).results) &&
+  "count" in (data as Record<string, unknown>);
+
+api.interceptors.response.use((res) => {
+  if (isPaginatedEnvelope(res.data)) {
+    res.data = res.data.results;
+  }
+  return res;
+});
+
 // Auto-refresh on 401
 api.interceptors.response.use(
   (res) => res,
