@@ -1,4 +1,4 @@
-﻿from django.db import migrations, connection
+from django.db import migrations, connection
 
 TRIGGER_UP = """
 CREATE OR REPLACE FUNCTION attendance_audit_immutable()
@@ -27,11 +27,15 @@ DROP FUNCTION IF EXISTS attendance_audit_immutable();
 
 def apply_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == 'postgresql':
-        schema_editor.execute(TRIGGER_UP)
+        # params=None (not the default ()) tells psycopg to skip %-substitution.
+        # TRIGGER_UP contains PL/pgSQL's own RAISE EXCEPTION '...%...' syntax,
+        # which is unrelated to psycopg's parameter placeholders and must not
+        # be treated as one, or psycopg raises IndexError on the empty tuple.
+        schema_editor.execute(TRIGGER_UP, params=None)
 
 def revert_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == 'postgresql':
-        schema_editor.execute(TRIGGER_DOWN)
+        schema_editor.execute(TRIGGER_DOWN, params=None)
 
 class Migration(migrations.Migration):
     dependencies = [
