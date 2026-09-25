@@ -23,3 +23,6 @@ staticfiles/
 !.env.example
 
 test_results.txt
+
+.coverage
+installed.txt
