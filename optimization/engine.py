@@ -1,4 +1,4 @@
-﻿"""
+"""
 Parking Optimisation Engine
 ============================
 Strategy: sort buses by departure time (earliest first) and assign them to
@@ -162,6 +162,24 @@ def apply_optimization(opt):
 
     with transaction.atomic():
         slot_ids = {item["slot_id"] for item in stored_current} | {item["slot_id"] for item in recommended}
+        # Ghost slots (is_occupied=True but bus=None) never appear in
+        # stored_current, because run_optimization()'s occupied_slots query
+        # filters on bus__isnull=False. That means a ghost's slot_id was
+        # never in slot_ids either, so it was never locked or rewritten
+        # below and stayed "occupied" forever even after Apply. Since the
+        # optimizer's own notion of "really occupied" already excludes
+        # ghosts, applying a fresh layout is exactly the moment to also
+        # clear them: fold every currently-ghost slot into the same
+        # locked/rewritten set so Apply self-heals this stale state instead
+        # of leaving it behind indefinitely.
+        ghost_ids = set(
+            ParkingSlot.objects.filter(
+                is_active=True, slot_type=ParkingSlot.SLOT_TYPE_BUS,
+                is_occupied=True, bus__isnull=True,
+            ).values_list("pk", flat=True)
+        )
+        slot_ids |= ghost_ids
+
         locked = {s.pk: s for s in ParkingSlot.objects.select_for_update().filter(pk__in=slot_ids)}
 
         live_mapping = {pk: (s.bus_id if s.is_occupied else None) for pk, s in locked.items()}
