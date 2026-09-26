@@ -179,6 +179,7 @@ class ProductionGuardTests(TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
 
 class HealthzTests(SimpleTestCase):
+    databases = {"default"}
     def test_healthz_ok_when_db_reachable(self):
         res = self.client.get("/healthz")
         self.assertEqual(res.status_code, 200)
@@ -192,3 +193,4 @@ class HealthzTests(SimpleTestCase):
         self.assertEqual(res.status_code, 503)
         self.assertEqual(res.json()["status"], "degraded")
         self.assertIn("boom", res.json()["db"])
+
