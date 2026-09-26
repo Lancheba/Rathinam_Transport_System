@@ -13,23 +13,24 @@ const YEAR_LABEL: Record<number, string> = { 1: "1st Yr", 2: "2nd Yr", 3: "3rd Y
 /* to the in-charge's own bus automatically.                              */
 
 const InchargeStudentsPage: React.FC = () => {
-  const { inchargeBusNumber } = useAuth();
+  const { inchargeBusNumber, standinBusNumber } = useAuth();
+  const effectiveBusNumber = inchargeBusNumber || standinBusNumber;
   const [students, setStudents] = useState<Student[]>([]);
   const [bus, setBus] = useState<Bus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!inchargeBusNumber) { setLoading(false); return; }
+    if (!effectiveBusNumber) { setLoading(false); return; }
     setLoading(true);
     Promise.all([getStudents(), getBuses()])
       .then(([studentData, busData]) => {
         setStudents([...studentData].sort((a, b) => a.name.localeCompare(b.name)));
-        setBus(busData.find((b) => b.bus_number === inchargeBusNumber) ?? null);
+        setBus(busData.find((b) => b.bus_number === effectiveBusNumber) ?? null);
       })
       .finally(() => setLoading(false));
-  }, [inchargeBusNumber]);
+  }, [effectiveBusNumber]);
 
-  if (!inchargeBusNumber) {
+  if (!effectiveBusNumber) {
     return (
       <div>
         <h2 style={{ color: "var(--accent-amber)", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
