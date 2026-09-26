@@ -1,4 +1,4 @@
-﻿from datetime import time
+from datetime import time
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -305,6 +305,7 @@ class AttendanceFlag(models.Model):
         ('SESSION_INSTANT_PRESENT', 'Everyone marked present within one minute'),
         ('HOLIDAY_ATTENDANCE', 'Attendance recorded on a declared holiday'),
         ('MANUAL_MARK_LOGGED', 'Manual mark by in-charge (informational)'),
+        ('CROSS_BUS_SCAN', 'Cross-bus scan under an active cab combination'),
     ]
     SEVERITY_CHOICES = [('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High')]
     STATUS_CHOICES = [('OPEN', 'Open'), ('REVIEWED', 'Reviewed'), ('DISMISSED', 'Dismissed')]
@@ -376,3 +377,85 @@ class TemporaryInchargeAssignment(models.Model):
     def __str__(self):
         return f'StandIn(bus={self.bus_id} -> {self.stand_in_id} on {self.date})'
 
+
+class HistoryEvent(models.Model):
+    """
+    Append-only feed of notable attendance-related events across the system
+    (delegations, cab combinations, manual marks, QR session open/close,
+    flag reviews). Separate from AttendanceAudit, which only tracks edits
+    to individual AttendanceRecord rows.
+
+    Nothing writes here directly -- always go through log_history() in
+    attendance/services.py so every call site stays consistent.
+    """
+    EVENT_TYPES = [
+        ('INCHARGE_DELEGATED', 'Incharge role handed to a stand-in'),
+        ('DELEGATION_ENDED', 'Delegation ended'),
+        ('CABS_COMBINED', 'Cabs combined'),
+        ('COMBINATION_ENDED', 'Cab combination ended'),
+        ('MANUAL_MARK', 'Manual attendance mark or correction'),
+        ('QR_SESSION_OPENED', 'QR session opened'),
+        ('QR_SESSION_CLOSED', 'QR session closed'),
+        ('FLAG_REVIEWED', 'Attendance flag reviewed'),
+    ]
+
+    event_type = models.CharField(max_length=32, choices=EVENT_TYPES)
+    bus = models.ForeignKey(
+        'buses.Bus', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='history_events',
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='history_events_caused',
+    )
+    description = models.CharField(max_length=300)
+    detail = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'History({self.event_type} bus={self.bus_id} {self.created_at:%Y-%m-%d %H:%M})'
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValueError('HistoryEvent rows are append-only and cannot be updated.')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError('HistoryEvent rows cannot be deleted.')
+
+
+class CabCombination(models.Model):
+    """
+    Staff/admin-declared merge of 2+ buses for a single day -- e.g. one
+    in-charge takes both buses' students to a single pickup point, so
+    students from either bus need to be able to scan the same live QR.
+
+    While an active combination covers a bus, qr_scan lets students from
+    any bus in the combination scan any other combined bus's QR -- but the
+    resulting attendance record always lands under the STUDENT'S OWN bus's
+    session, never the bus whose QR was physically scanned (see qr_scan).
+    """
+    buses = models.ManyToManyField('buses.Bus', related_name='combinations')
+    date = models.DateField()
+    reason = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='cab_combinations_created',
+    )
+    is_active = models.BooleanField(default=True)
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='cab_combinations_ended',
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        bus_numbers = ', '.join(self.buses.values_list('bus_number', flat=True))
+        return f'Combination({bus_numbers} on {self.date})'

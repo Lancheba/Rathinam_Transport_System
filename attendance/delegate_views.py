@@ -1,4 +1,4 @@
-﻿from datetime import date as date_cls
+from datetime import date as date_cls
 
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from accounts.permissions import CanManageBuses, is_incharge
 from students.models import Student
 
-from .models import TemporaryInchargeAssignment
+from .models import AttendanceSession, TemporaryInchargeAssignment
+from .services import auto_present_incharge_or_standin, log_history
 
 
 def _real_incharge_bus(user):
@@ -75,6 +76,11 @@ def incharge_delegate(request):
         ).update(is_active=False)
         if not updated:
             return Response({"detail": "No active stand-in for today."}, status=404)
+        log_history(
+            "DELEGATION_ENDED", bus=bus, actor=request.user,
+            description=f"{request.user.username} ended today's stand-in delegation",
+            detail={"date": str(today)},
+        )
         return Response({"detail": "Stand-in delegation ended."})
 
     # POST
@@ -108,6 +114,21 @@ def incharge_delegate(request):
             bus=bus, date=today, stand_in=student.linked_user,
             assigned_by=request.user, is_active=True,
         )
+
+    open_session = (
+        AttendanceSession.objects
+        .filter(bus=bus, date=today, opened_at__isnull=False, closed_at__isnull=True)
+        .order_by("-opened_at")
+        .first()
+    )
+    if open_session:
+        auto_present_incharge_or_standin(bus=bus, session=open_session, actor=request.user)
+
+    log_history(
+        "INCHARGE_DELEGATED", bus=bus, actor=request.user,
+        description=f"{request.user.username} delegated in-charge duties to {student.name} for today",
+        detail={"stand_in_student_id": student.id, "date": str(today)},
+    )
 
     return Response({
         "active": True, "student_id": student.id, "name": student.name,

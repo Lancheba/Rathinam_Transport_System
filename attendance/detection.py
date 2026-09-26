@@ -200,3 +200,29 @@ def log_manual_mark(record, actor=None):
         flag.records.set([record.pk])
 
 
+
+
+def log_cross_bus_scan(record, *, qr_bus_id, actor=None):
+    """
+    Feature 4: a student scanned a QR belonging to a bus their own bus is
+    combined with today. The attendance record already lives under their
+    OWN bus's session (qr_scan handles that) -- this just leaves a
+    LOW-severity trail in the existing Attendance Flags screen so staff can
+    see which scans happened this way, without it blocking anyone.
+    """
+    from buses.models import Bus
+    qr_bus_number = Bus.objects.filter(pk=qr_bus_id).values_list('bus_number', flat=True).first()
+    who = getattr(record.student, 'name', None) or 'Unknown'
+    flag = AttendanceFlag.objects.create(
+        session=record.session,
+        rule='CROSS_BUS_SCAN',
+        severity='LOW',
+        detail={
+            'person': who,
+            'own_bus': getattr(record.session.bus, 'bus_number', None),
+            'scanned_bus': qr_bus_number,
+            'marked_by': getattr(actor, 'username', None),
+        },
+    )
+    if record.pk:
+        flag.records.set([record.pk])

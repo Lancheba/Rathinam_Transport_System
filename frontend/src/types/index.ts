@@ -613,3 +613,52 @@ export interface LinkRequest {
   decision_note: string;
   created_at: string | null;
 }
+
+// ---- History feed (Admin/Staff) ----
+
+export type HistoryEventType =
+  | "INCHARGE_DELEGATED"
+  | "DELEGATION_ENDED"
+  | "CABS_COMBINED"
+  | "COMBINATION_ENDED"
+  | "MANUAL_MARK"
+  | "QR_SESSION_OPENED"
+  | "QR_SESSION_CLOSED"
+  | "FLAG_REVIEWED";
+
+/** One row from GET /api/attendance/history/ */
+export interface HistoryEvent {
+  id: number;
+  event_type: HistoryEventType;
+  event_type_label: string;
+  bus: number | null;
+  bus_number: string | null;
+  actor: number | null;
+  actor_username: string | null;
+  description: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+// ---- Combined Cabs (Feature 4) ----
+
+export interface CabCombination {
+  id: number;
+  buses: number[];
+  bus_numbers: string[];
+  date: string;
+  reason: string;
+  created_by: number | null;
+  created_by_username: string | null;
+  is_active: boolean;
+  ended_by: number | null;
+  ended_by_username: string | null;
+  ended_at: string | null;
+  created_at: string;
+}
+
+export interface CabCombinationInput {
+  buses: number[];
+  date: string;
+  reason?: string;
+}

@@ -20,6 +20,8 @@ from .views import (
 from .qr_views import qr_generate, qr_manual_mark, qr_roster, qr_scan, qr_stop, qr_status, qr_tally, qr_window
 from .report_views import attendance_report
 from .flag_views import flag_list, flag_review
+from .history_views import history_feed
+from .combination_views import combination_list_create, combination_end
 router = DefaultRouter()
 router.register("teachers", TeacherViewSet, basename="teacher")
 
@@ -48,5 +50,8 @@ urlpatterns = [
     path("incharge/delegate/", incharge_delegate, name="attendance-incharge-delegate"),
     path("flags/", flag_list, name="attendance-flag-list"),
     path("flags/<int:flag_id>/review/", flag_review, name="attendance-flag-review"),
+    path("history/", history_feed, name="attendance-history-feed"),
+    path("combinations/", combination_list_create, name="attendance-combinations"),
+    path("combinations/<int:combination_id>/", combination_end, name="attendance-combination-end"),
     path("", include(router.urls)),
 ]

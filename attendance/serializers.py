@@ -200,3 +200,45 @@ class AttendanceFlagSerializer(serializers.ModelSerializer):
             "record_ids", "reviewed_by", "reviewed_by_username",
             "reviewed_at", "created_at",
         ]
+
+
+class HistoryEventSerializer(serializers.ModelSerializer):
+    event_type_label = serializers.CharField(source='get_event_type_display', read_only=True)
+    bus_number = serializers.CharField(source='bus.bus_number', read_only=True, default=None)
+    actor_username = serializers.CharField(source='actor.username', read_only=True, default=None)
+
+    class Meta:
+        from attendance.models import HistoryEvent
+        model = HistoryEvent
+        fields = [
+            'id', 'event_type', 'event_type_label', 'bus', 'bus_number',
+            'actor', 'actor_username', 'description', 'detail', 'created_at',
+        ]
+        read_only_fields = fields
+
+
+class CabCombinationSerializer(serializers.ModelSerializer):
+    bus_numbers = serializers.SerializerMethodField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True, default=None)
+    ended_by_username = serializers.CharField(source='ended_by.username', read_only=True, default=None)
+
+    class Meta:
+        from attendance.models import CabCombination
+        model = CabCombination
+        fields = [
+            'id', 'buses', 'bus_numbers', 'date', 'reason',
+            'created_by', 'created_by_username',
+            'is_active', 'ended_by', 'ended_by_username', 'ended_at', 'created_at',
+        ]
+        read_only_fields = [
+            'id', 'bus_numbers', 'created_by', 'created_by_username', 'is_active',
+            'ended_by', 'ended_by_username', 'ended_at', 'created_at',
+        ]
+
+    def get_bus_numbers(self, obj):
+        return list(obj.buses.values_list('bus_number', flat=True))
+
+    def validate_buses(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError('Select at least 2 buses to combine.')
+        return value

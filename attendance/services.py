@@ -292,3 +292,87 @@ def check_rules(*, action, actor, old_status, new_status, reason=""):
             raise RuleViolation("Revoke only changes a Present record to Absent.")
         if len((reason or "").strip()) < 10:
             raise RuleViolation("A reason of at least 10 characters is required to revoke.")
+
+def log_history(event_type, *, bus=None, actor=None, description='', detail=None):
+    """
+    Single entry point for writing to the HistoryEvent feed (see attendance/models.py).
+    Every feature that should show up on the History page calls this instead of
+    creating HistoryEvent rows directly, so the feed stays consistent as more
+    event types get added later (Feature 3, Feature 4, ...).
+    """
+    from attendance.models import HistoryEvent
+    return HistoryEvent.objects.create(
+        event_type=event_type,
+        bus=bus,
+        actor=actor if getattr(actor, 'is_authenticated', False) else None,
+        description=description,
+        detail=detail or {},
+    )
+
+
+def auto_present_incharge_or_standin(*, bus, session, actor):
+    """
+    Feature 3: called from qr_generate the moment the FIRST QR of a session
+    is issued. Auto-marks PRESENT (via the normal set_attendance() audit-safe
+    path) whoever currently holds in-charge powers for this bus today:
+    today's active stand-in if one has been delegated, otherwise the
+    permanent in-charge. Never both -- delegation exists specifically for
+    when the permanent in-charge isn't around.
+
+    Resolves the target's own roster row (Student or Teacher) automatically,
+    so this works whether the in-charge/stand-in is staff or a student.
+    Silently does nothing if that person has no roster row on this bus.
+    """
+    from django.utils import timezone
+    from .models import TemporaryInchargeAssignment
+
+    delegation = (
+        TemporaryInchargeAssignment.objects
+        .filter(bus=bus, date=timezone.localdate(), is_active=True)
+        .select_related('stand_in')
+        .first()
+    )
+    target_user = delegation.stand_in if delegation else bus.incharge
+    if not target_user:
+        return
+
+    student = getattr(target_user, 'student_profile', None)
+    teacher = getattr(target_user, 'teacher_profile', None)
+
+    if student and student.bus_id == bus.pk:
+        set_attendance(
+            session=session, person_type='STUDENT', status='PRESENT', action='MANUAL',
+            student=student, actor=actor, source='MANUAL',
+            remarks='Auto-marked: cab in-charge',
+        )
+    elif teacher and teacher.bus_id == bus.pk:
+        set_attendance(
+            session=session, person_type='TEACHER', status='PRESENT', action='MANUAL',
+            teacher=teacher, actor=actor, source='MANUAL',
+            remarks='Auto-marked: cab in-charge',
+        )
+    else:
+        return
+
+    log_history(
+        'MANUAL_MARK', bus=bus, actor=actor,
+        description=f"Auto-marked {target_user.username} present as "
+                     f"{'stand-in' if delegation else 'cab in-charge'}",
+        detail={'session_id': session.pk, 'is_stand_in': bool(delegation)},
+    )
+
+
+def combined_partner_bus_ids(bus_id, date):
+    """
+    Feature 4: ids of every bus combined with `bus_id` on `date` via an
+    active CabCombination, NOT including bus_id itself. Empty set if no
+    active combination covers this bus today -- cross-bus scanning then
+    stays blocked exactly as it always has.
+    """
+    from .models import CabCombination
+    combos = CabCombination.objects.filter(buses__id=bus_id, date=date, is_active=True)
+    ids = set()
+    for combo in combos:
+        ids |= set(combo.buses.values_list('id', flat=True))
+    ids.discard(bus_id)
+    return ids

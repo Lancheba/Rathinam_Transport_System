@@ -1,4 +1,4 @@
-import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog, FileText } from "lucide-react";
+import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog, FileText, History } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -36,6 +36,8 @@ export const navItems = [
   { to: "/dashboard/attendance-analytics", label: "Attendance Analytics", short: "Attend. Analytics", icon: LineChart, staffOnly: true },
   // Automatic cheat-detection flags from Step 6 detection.py  14 staff/admin review only.
   { to: "/dashboard/attendance-flags", label: "Attendance Flags", short: "Flags", icon: ShieldAlert, staffOnly: true },
+  // Reverse-chronological feed of delegations, cab combinations, manual marks, QR sessions, flag reviews.
+  { to: "/dashboard/history", label: "History", short: "History", icon: History, staffOnly: true },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },
   // Everyone signed in can send a complaint or feedback; only admins see the inbox inside the page.

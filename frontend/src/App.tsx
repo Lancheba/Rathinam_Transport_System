@@ -31,6 +31,7 @@ import ScanAttendancePage from "./pages/ScanAttendancePage";
 import AttendanceAnalyticsPage from "./pages/AttendanceAnalyticsPage";
 import AttendanceReportPage from "./pages/AttendanceReportPage";
 import AttendanceFlagsPage from "./pages/AttendanceFlagsPage";
+import HistoryPage from "./pages/HistoryPage";
 import { IdentityPromptModal } from "./components/IdentityPromptModal";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -174,6 +175,7 @@ export const App: React.FC = () => {
                   <Route path="attendance-analytics" element={<AttendanceAnalyticsPage />} />
                   <Route path="attendance-report" element={<AttendanceReportPage />} />
                   <Route path="attendance-flags" element={<AttendanceFlagsPage />} />
+                  <Route path="history" element={<HistoryPage />} />
                 </Routes>
               </MainLayout>
             }

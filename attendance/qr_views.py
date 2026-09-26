@@ -1,4 +1,4 @@
-﻿from .net import client_ip, device_id as request_device_id, user_agent as request_user_agent
+from .net import client_ip, device_id as request_device_id, user_agent as request_user_agent
 import logging
 import math
 import numpy as np
@@ -18,8 +18,8 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
-from attendance.detection import run_detection, log_manual_mark
-from attendance.services import get_windows, is_school_day, set_attendance
+from attendance.detection import run_detection, log_manual_mark, log_cross_bus_scan
+from attendance.services import auto_present_incharge_or_standin, combined_partner_bus_ids, get_windows, is_school_day, set_attendance
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
@@ -109,6 +109,12 @@ def qr_generate(request):
         changed_fields += ['closed_at', 'auto_finalized']
     if changed_fields:
         session.save(update_fields=changed_fields)
+
+    if 'opened_at' in changed_fields:
+        # Feature 3: first QR of the day for this bus/slot -- auto-mark whoever
+        # currently holds in-charge powers (permanent in-charge, or today's
+        # active stand-in) present, via the same audit-safe set_attendance() path.
+        auto_present_incharge_or_standin(bus=bus, session=session, actor=request.user)
 
     ttl = AttendanceWindowConfig.get_solo().qr_token_ttl_seconds
 
@@ -296,7 +302,8 @@ def qr_scan(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if qr_token.bus_id != student.bus_id:
+    cross_bus = qr_token.bus_id != student.bus_id
+    if cross_bus and student.bus_id not in combined_partner_bus_ids(qr_token.bus_id, qr_token.date):
         return Response(
             {'detail': "This QR isn't for your bus."},
             status=status.HTTP_400_BAD_REQUEST,
@@ -304,14 +311,22 @@ def qr_scan(request):
 
     try:
         session = AttendanceSession.objects.get(
-            bus_id=qr_token.bus_id,
+            bus_id=student.bus_id,
             date=qr_token.date,
             slot=qr_token.slot,
         )
     except AttendanceSession.DoesNotExist:
-        return Response(
-            {'detail': 'Attendance session not found.'},
-            status=status.HTTP_400_BAD_REQUEST,
+        if not cross_bus:
+            return Response(
+                {'detail': 'Attendance session not found.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # Feature 4: cross-bus scan for a bus whose own session hasn't been
+        # opened yet today -- open it automatically so the very first
+        # cross-bus scan doesn't fail with "session not found".
+        session = AttendanceSession.objects.create(
+            bus_id=student.bus_id, date=qr_token.date, slot=qr_token.slot,
+            opened_at=timezone.now(), marked_by=request.user,
         )
 
     if session.is_holiday or not is_school_day(session.date):
@@ -389,6 +404,9 @@ def qr_scan(request):
         device_id=request_device_id(request),
         ip_address=ip.split(',')[0].strip() or None,
     )
+
+    if cross_bus:
+        log_cross_bus_scan(record, qr_bus_id=qr_token.bus_id, actor=request.user)
 
     run_detection(session)
     return Response({

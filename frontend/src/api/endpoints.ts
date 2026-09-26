@@ -8,6 +8,8 @@ import type {
   AttendanceRecord, AttendanceAnalyticsOverview, AttendanceInchargeAnalytics, AttendanceStudentAnalytics, AnalyticsPeriod,
   AttendanceWindowConfig, AttendanceReportPreview,
   AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
+  HistoryEvent, HistoryEventType,
+  CabCombination, CabCombinationInput,
   Teacher, TeacherInput, TeacherLoginInput, Person, LinkRequest,
 } from "../types";
 
@@ -250,3 +252,13 @@ export const approveLinkRequest = (id: number, note?: string) =>
   api.post<LinkRequest>(`/auth/link-requests/${id}/approve/`, note ? { note } : {}).then(r => r.data);
 export const rejectLinkRequest = (id: number, note?: string) =>
   api.post<LinkRequest>(`/auth/link-requests/${id}/reject/`, note ? { note } : {}).then(r => r.data);
+
+export const getHistory = (params?: { bus?: number; event_type?: HistoryEventType; date?: string }) =>
+  api.get<HistoryEvent[]>("/attendance/history/", { params }).then(r => r.data);
+
+export const getCombinations = (date?: string) =>
+  api.get<CabCombination[]>("/attendance/combinations/", { params: date ? { date } : undefined }).then(r => r.data);
+export const createCombination = (data: CabCombinationInput) =>
+  api.post<CabCombination>("/attendance/combinations/", data).then(r => r.data);
+export const endCombination = (id: number) =>
+  api.delete(`/attendance/combinations/${id}/`);
