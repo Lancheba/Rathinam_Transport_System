@@ -35,12 +35,17 @@ class AttendanceWindowConfigSerializer(serializers.ModelSerializer):
 
 class TeacherSerializer(serializers.ModelSerializer):
     bus_number = serializers.CharField(source="bus.bus_number", read_only=True, allow_null=True)
+    has_login = serializers.SerializerMethodField()
+    username = serializers.CharField(source="linked_user.username", read_only=True, allow_null=True)
+    login_username = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    login_password = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Teacher
         fields = [
             "id", "name", "staff_id", "department", "phone", "email",
             "boarding_point", "bus", "bus_number",
+            "has_login", "username", "login_username", "login_password",
             "created_at", "updated_at",
         ]
         extra_kwargs = {"staff_id": {"validators": []}}
@@ -61,6 +66,25 @@ class TeacherSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Enter the teacher's name.")
         return value
+
+
+    def get_has_login(self, obj):
+        return obj.linked_user_id is not None
+
+    def create(self, validated_data):
+        login_username = (validated_data.pop("login_username", "") or "").strip()
+        login_password = validated_data.pop("login_password", "") or ""
+        teacher = super().create(validated_data)
+        if login_username or login_password:
+            from accounts.linking import create_teacher_login, LinkError
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            try:
+                create_teacher_login(teacher, login_username, login_password)
+            except LinkError as exc:
+                raise serializers.ValidationError({"login_username": str(exc)})
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError({"login_password": exc.messages})
+        return teacher
 
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):

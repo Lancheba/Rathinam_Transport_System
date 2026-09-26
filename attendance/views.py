@@ -10,11 +10,13 @@ from django.utils import timezone
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from rest_framework import filters, permissions, status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import CanManageBuses, IsStudent
+from accounts.linking import create_teacher_login, LinkError
+from django.core.exceptions import ValidationError as DjangoValidationError
 from buses.models import Bus
 from students.models import Student
 
@@ -72,6 +74,20 @@ class TeacherViewSet(viewsets.ModelViewSet):
         if bus_id:
             qs = qs.filter(bus_id=bus_id)
         return qs
+
+    @action(detail=True, methods=["post"], url_path="create-login")
+    def create_login(self, request, pk=None):
+        """Give an existing teacher (e.g. imported by CSV) a login account."""
+        teacher = self.get_object()
+        username = (request.data.get("username") or "").strip()
+        password = request.data.get("password") or ""
+        try:
+            create_teacher_login(teacher, username, password)
+        except LinkError as exc:
+            return Response({"username": str(exc)}, status=400)
+        except DjangoValidationError as exc:
+            return Response({"password": exc.messages}, status=400)
+        return Response(TeacherSerializer(teacher).data)
 
 
 # ---------------------------------------------------------------------------

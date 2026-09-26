@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import transaction
 from accounts.permissions import CanManageBuses, can_manage_buses
 from parking.models import recompute_blocked_slots
 from .models import Bus
@@ -65,3 +66,76 @@ class BusViewSet(viewsets.ModelViewSet):
             return Response({"error": "Bus not found"}, status=404)
         serializer = self.get_serializer(bus)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="assign-incharge")
+    def assign_incharge(self, request, pk=None):
+        """
+        Make a student or teacher (an ordinary role=STUDENT login) the
+        in-charge of this bus. If the bus already has an in-charge, that
+        person is automatically demoted back to STUDENT first.
+        """
+        bus = self.get_object()
+        source_type = (request.data.get("source_type") or "").strip().upper()
+        source_id = request.data.get("source_id")
+
+        if source_type not in ("STUDENT", "TEACHER"):
+            return Response({"source_type": "Must be STUDENT or TEACHER."}, status=400)
+        if not source_id:
+            return Response({"source_id": "Provide the id of the student or teacher."}, status=400)
+
+        if source_type == "STUDENT":
+            from students.models import Student
+            person = Student.objects.filter(pk=source_id).first()
+        else:
+            from attendance.models import Teacher
+            person = Teacher.objects.filter(pk=source_id).first()
+
+        if not person:
+            return Response({"source_id": "Not found."}, status=404)
+
+        user = person.linked_user
+        if not user:
+            return Response({"detail": "This person has no login account yet."}, status=400)
+
+        profile = getattr(user, "profile", None)
+        if not profile or profile.role != "STUDENT":
+            return Response(
+                {"detail": "Only an ordinary student/teacher account (role STUDENT) can be made in-charge."},
+                status=400,
+            )
+
+        with transaction.atomic():
+            old_incharge = bus.incharge
+            if old_incharge and old_incharge.id != user.id:
+                old_profile = getattr(old_incharge, "profile", None)
+                if old_profile:
+                    old_profile.role = "STUDENT"
+                    old_profile.save(update_fields=["role"])
+
+            # If this user is already in-charge of a different bus, free that bus first.
+            Bus.objects.filter(incharge=user).exclude(pk=bus.pk).update(incharge=None)
+
+            bus.incharge = user
+            bus.save(update_fields=["incharge"])
+            profile.role = "INCHARGE"
+            profile.save(update_fields=["role"])
+
+        return Response(BusSerializer(bus).data)
+
+    @action(detail=True, methods=["post"], url_path="remove-incharge")
+    def remove_incharge(self, request, pk=None):
+        """Remove this bus's in-charge and revert their role back to STUDENT."""
+        bus = self.get_object()
+        user = bus.incharge
+        if not user:
+            return Response({"detail": "This bus has no in-charge assigned."}, status=400)
+
+        with transaction.atomic():
+            profile = getattr(user, "profile", None)
+            if profile:
+                profile.role = "STUDENT"
+                profile.save(update_fields=["role"])
+            bus.incharge = None
+            bus.save(update_fields=["incharge"])
+
+        return Response(BusSerializer(bus).data)

@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from config import login_lockout
 from config.throttles import LoginThrottle, RegisterThrottle
-from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer, SetIdentitySerializer, UpdatePhoneSerializer
+from .serializers import RegisterSerializer, UserSerializer, DriverLoginSerializer, SetIdentitySerializer, UpdatePhoneSerializer, PersonSerializer
 from django.contrib.auth.models import User
 
 
@@ -96,7 +96,7 @@ from django.utils import timezone  # noqa: E402
 from attendance.models import Teacher  # noqa: E402
 from config.throttles import LinkRequestThrottle  # noqa: E402
 from . import linking  # noqa: E402
-from .models import LinkRequest  # noqa: E402
+from .models import LinkRequest, UserProfile  # noqa: E402
 from .permissions import CanManageBuses  # noqa: E402
 from .serializers import (  # noqa: E402
     DecisionInputSerializer,
@@ -219,3 +219,23 @@ class LinkRequestApproveView(_LinkRequestDecisionView):
 
 class LinkRequestRejectView(_LinkRequestDecisionView):
     decide = staticmethod(linking.reject)
+
+
+class PeopleListView(generics.GenericAPIView):
+    """
+    GET /api/auth/people/?role=ADMIN|STAFF|DRIVER|INCHARGE|STUDENT
+    Every login account for the People page (Section 5 of the plan).
+    Admins and transport staff only.
+    """
+
+    serializer_class = PersonSerializer
+    permission_classes = [CanManageBuses]
+
+    def get(self, request):
+        qs = UserProfile.objects.select_related(
+            "user", "user__driven_bus", "user__incharge_bus",
+        ).order_by("role", "user__username")
+        role = (request.query_params.get("role") or "").strip().upper()
+        if role:
+            qs = qs.filter(role=role)
+        return Response(PersonSerializer(qs, many=True).data)

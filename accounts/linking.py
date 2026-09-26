@@ -5,6 +5,8 @@ A user never links themselves. They ask (request_*), staff decide
 (approve / reject). Every write happens inside transaction.atomic with the
 rows locked, so two people asking for the same teacher or bus cannot both win.
 """
+from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -131,3 +133,26 @@ def reject(lr, decided_by, note=""):
     lr.decision_note = (note or "")[:200]
     lr.save(update_fields=["status", "decided_by", "decided_at", "decision_note"])
     return lr
+
+@transaction.atomic
+def create_teacher_login(teacher, username, password):
+    """
+    Admin/staff create a teacher's login directly (Section 4 of the plan) --
+    same end state as the self-service TeacherLinkView + approve() flow,
+    done in one step instead of two.
+    """
+    username = (username or "").strip()
+    if not username:
+        raise LinkError("Enter a username.")
+    if teacher.linked_user_id:
+        raise LinkError("This teacher already has a login.")
+    if User.objects.filter(username__iexact=username).exists():
+        raise LinkError("That username is already taken.")
+    validate_password(password)
+
+    user = User.objects.create_user(username=username, password=password)
+    user.profile.identity = "TEACHER"
+    user.profile.save(update_fields=["identity"])
+    teacher.linked_user = user
+    teacher.save(update_fields=["linked_user"])
+    return user

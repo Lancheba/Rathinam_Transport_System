@@ -118,7 +118,7 @@ class DriverLoginSerializer(TokenObtainPairSerializer):
 
 
 # --- Link requests (audit items 2.9 / 3.1) -------------------------------------------------
-from .models import LinkRequest  # noqa: E402
+from .models import LinkRequest, UserProfile  # noqa: E402
 
 
 class LinkRequestSerializer(serializers.ModelSerializer):
@@ -173,3 +173,28 @@ class TeacherLinkRequestInputSerializer(serializers.Serializer):
 
 class DecisionInputSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True, max_length=200)
+
+
+class PersonSerializer(serializers.ModelSerializer):
+    """One row for the People page (Section 5): every login account, admin/staff-only."""
+
+    id = serializers.IntegerField(source="user.id")
+    username = serializers.CharField(source="user.username")
+    email = serializers.CharField(source="user.email")
+    driven_bus_number = serializers.SerializerMethodField()
+    incharge_bus_number = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            "id", "username", "email", "role", "identity", "phone",
+            "driven_bus_number", "incharge_bus_number",
+        ]
+
+    def get_driven_bus_number(self, obj):
+        bus = getattr(obj.user, "driven_bus", None)
+        return bus.bus_number if bus else None
+
+    def get_incharge_bus_number(self, obj):
+        bus = getattr(obj.user, "incharge_bus", None)
+        return bus.bus_number if bus else None
