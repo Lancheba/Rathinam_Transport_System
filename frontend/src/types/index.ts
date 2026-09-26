@@ -441,6 +441,20 @@ export interface AttendanceAnalyticsOverview {
   top_absentees: AttendanceTopAbsentee[];
 }
 
+/** GET /api/attendance/analytics/incharge/ */
+export interface AttendanceInchargeAnalytics {
+  bus_number: string;
+  period: AnalyticsPeriod;
+  year: number;
+  month: number | null;
+  overall_pct: number;
+  present_count: number;
+  absent_count: number;
+  total_count: number;
+  trend: AttendanceTrendPoint[];
+  top_absentees: AttendanceTopAbsentee[];
+}
+
 export interface AttendanceCalendarDay {
   id: number;
   date: string;

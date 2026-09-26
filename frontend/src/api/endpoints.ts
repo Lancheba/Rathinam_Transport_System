@@ -5,7 +5,7 @@ import type {
   Announcement, AnnouncementInput, Feedback, FeedbackInput, FeedbackStatus, VisionTrack, Student, StudentInput, BusRoster, StudentSummary,
   DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance, AttendanceSlot,
   MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary,
-  AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
+  AttendanceRecord, AttendanceAnalyticsOverview, AttendanceInchargeAnalytics, AttendanceStudentAnalytics, AnalyticsPeriod,
   AttendanceWindowConfig, AttendanceReportPreview,
   AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
   Teacher, TeacherInput, TeacherLoginInput, Person, LinkRequest,
@@ -182,6 +182,11 @@ export const getAttendanceAnalyticsOverview = (params: {
 
 export const getStudentAttendanceAnalytics = (studentId: number, params?: { year?: number; month?: number }) =>
   api.get<AttendanceStudentAnalytics>(`/attendance/analytics/student/${studentId}/`, { params }).then(r => r.data);
+
+// Attendance analytics (in-charge, own cab only)
+export const getInchargeAnalytics = (params: {
+  period?: AnalyticsPeriod; year?: number; month?: number;
+}) => api.get<AttendanceInchargeAnalytics>("/attendance/analytics/incharge/", { params }).then(r => r.data);
 
 // Maintenance (driver's own bus: service + fuel logs)
 export const getMaintenanceSummary = (params?: { bus?: number }) =>

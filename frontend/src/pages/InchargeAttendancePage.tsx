@@ -3,6 +3,7 @@ import { QrCode } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import QRDisplaySection from "../components/QRDisplaySection";
 import ManualMarkSection from "../components/ManualMarkSection";
+import InchargeAnalyticsSection from "../components/InchargeAnalyticsSection";
 
 const InchargeAttendancePage: React.FC = () => {
   const { isLoggedIn, role } = useAuth();
@@ -29,6 +30,7 @@ const InchargeAttendancePage: React.FC = () => {
       </p>
       <QRDisplaySection />
       <ManualMarkSection />
+      <InchargeAnalyticsSection />
     </div>
   );
 };
