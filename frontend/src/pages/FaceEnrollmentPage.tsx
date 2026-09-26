@@ -8,15 +8,12 @@ import {
 } from "../utils/faceGuidance";
 
 const MODELS_URL = "/models";
-const STABLE_FRAMES_REQUIRED = 6; // ~6 × 150 ms = ~0.9 s well-centred
+const STABLE_FRAMES_REQUIRED = 6;
 const DETECT_INTERVAL_MS = 150;
 
 type FaceStatus = {
   enrolled: boolean;
   last_enrolled_at: string | null;
-  retakes_used: number;
-  retakes_remaining: number;
-  max_retakes: number;
 };
 
 type Step =
@@ -26,9 +23,7 @@ type Step =
   | "processing"
   | "done"
   | "error"
-  | "duplicate"; // ← new: dedicated state for duplicate-face rejection
-
-// ─── tiny reusable components ────────────────────────────────────────────────
+  | "duplicate";
 
 function Spinner() {
   return (
@@ -57,25 +52,18 @@ function BanWarning({ onTryAgain }: { onTryAgain: () => void }) {
         border: "2px solid #fca5a5",
       }}
     >
-      {/* Icon row */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.75rem" }}>
         <span style={{ fontSize: "1.6rem" }}>🚫</span>
         <strong style={{ color: "#991b1b", fontSize: "1rem" }}>
           Duplicate Face Detected
         </strong>
       </div>
-
-      {/* Primary message */}
       <p style={{ margin: "0 0 0.5rem", color: "#7f1d1d", fontWeight: 600 }}>
         This face is already registered to a different account.
       </p>
-
-      {/* Guidance */}
       <p style={{ margin: "0 0 0.75rem", color: "#b91c1c", fontSize: "0.9rem" }}>
         Please use your own correct credentials to log in and enroll your face.
       </p>
-
-      {/* Stern warning box */}
       <div
         style={{
           padding: "0.75rem 1rem",
@@ -85,14 +73,13 @@ function BanWarning({ onTryAgain }: { onTryAgain: () => void }) {
         }}
       >
         <p style={{ margin: 0, fontSize: "0.85rem", color: "#7f1d1d" }}>
-          ⚠️ <strong>Warning:</strong> Attempting to register another
-          student's face is a violation of the app rules. This incident has
-          been logged. Repeated violations may result in a{" "}
+          ⚠️ <strong>Warning:</strong> Attempting to register another student's
+          face is a violation of the app rules. This incident has been logged.
+          Repeated violations may result in a{" "}
           <strong>permanent account ban</strong> and escalation to your
           institution.
         </p>
       </div>
-
       <button
         onClick={onTryAgain}
         style={{
@@ -112,8 +99,6 @@ function BanWarning({ onTryAgain }: { onTryAgain: () => void }) {
   );
 }
 
-// ─── main page ───────────────────────────────────────────────────────────────
-
 export default function FaceEnrollmentPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -130,8 +115,6 @@ export default function FaceEnrollmentPage() {
   const [guidanceOk, setGuidanceOk] = useState(false);
   const [progress, setProgress] = useState(0);
   const [canForceCapture, setCanForceCapture] = useState(false);
-
-  // ── camera / loop helpers ─────────────────────────────────────────────────
 
   function stopDetectionLoop() {
     if (intervalRef.current !== null) {
@@ -166,8 +149,6 @@ export default function FaceEnrollmentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── detection loop (cheap tiny-detector, no descriptor) ───────────────────
-
   const runDetectionTick = useCallback(async () => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || capturingRef.current) return;
@@ -182,11 +163,7 @@ export default function FaceEnrollmentPage() {
       return;
     }
 
-    const guidance = getFaceGuidance(
-      detection.box,
-      video.videoWidth,
-      video.videoHeight
-    );
+    const guidance = getFaceGuidance(detection.box, video.videoWidth, video.videoHeight);
     setGuidanceOk(guidance.ok);
     setMessage(guidance.text);
 
@@ -202,8 +179,6 @@ export default function FaceEnrollmentPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // ── enrollment flow ───────────────────────────────────────────────────────
 
   async function startEnrollmentFlow() {
     setStep("loading");
@@ -236,9 +211,7 @@ export default function FaceEnrollmentPage() {
     setProgress(0);
     setCanForceCapture(false);
 
-    // Manual override after a few seconds so users on poor cameras are never stuck.
     window.setTimeout(() => setCanForceCapture(true), 3000);
-
     intervalRef.current = window.setInterval(runDetectionTick, DETECT_INTERVAL_MS);
   }
 
@@ -251,10 +224,7 @@ export default function FaceEnrollmentPage() {
     setMessage("Hold still — capturing…");
 
     const video = videoRef.current;
-    if (!video) {
-      capturingRef.current = false;
-      return;
-    }
+    if (!video) { capturingRef.current = false; return; }
 
     const detection = await faceapi
       .detectSingleFace(video, DETECTOR_OPTIONS)
@@ -262,7 +232,6 @@ export default function FaceEnrollmentPage() {
       .withFaceDescriptor();
 
     if (!detection) {
-      // Lost the face between the guidance loop and the final capture — resume.
       capturingRef.current = false;
       setStep("capturing");
       setProgress(0);
@@ -275,10 +244,7 @@ export default function FaceEnrollmentPage() {
     setMessage("Uploading…");
 
     try {
-      await api.post("/students/me/face-enrollment/", {
-        embedding,
-        consent: true,
-      });
+      await api.post("/students/me/face-enrollment/", { embedding, consent: true });
       stopCamera();
       await refreshInfo();
       setRetaking(false);
@@ -287,26 +253,20 @@ export default function FaceEnrollmentPage() {
       setMessage("Face enrolled successfully!");
     } catch (e: any) {
       stopCamera();
-
       const code: string | undefined = e?.response?.data?.code;
       const httpStatus: number | undefined = e?.response?.status;
-
-      // 409 Conflict + FACE_DUPLICATE code → dedicated duplicate state
       if (httpStatus === 409 && code === "FACE_DUPLICATE") {
         setStep("duplicate");
-        setMessage(""); // BanWarning renders its own text
+        setMessage("");
       } else {
         setStep("error");
         setMessage(e?.response?.data?.detail ?? "Enrollment failed.");
       }
-
       await refreshInfo();
     } finally {
       capturingRef.current = false;
     }
   }
-
-  // ── state helpers ─────────────────────────────────────────────────────────
 
   function startRetake() {
     setRetaking(true);
@@ -336,51 +296,31 @@ export default function FaceEnrollmentPage() {
       : step === "done"
       ? "#16a34a"
       : step === "capturing"
-      ? guidanceOk
-        ? "#16a34a"
-        : "#b45309"
+      ? guidanceOk ? "#16a34a" : "#b45309"
       : undefined;
 
-  // ── render ────────────────────────────────────────────────────────────────
-
   if (loadingInfo) {
-    return (
-      <div style={{ maxWidth: 480, margin: "2rem auto", padding: "1rem" }}>
-        Loading...
-      </div>
-    );
+    return <div style={{ maxWidth: 480, margin: "2rem auto", padding: "1rem" }}>Loading...</div>;
   }
 
-  // Already enrolled: show checkmark state
+  // Already enrolled
   if (info?.enrolled && !retaking) {
-    const canRetake = info.retakes_remaining > 0;
     return (
       <div style={{ maxWidth: 480, margin: "2rem auto", padding: "1rem" }}>
         <h2>Face Enrollment</h2>
 
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "1rem",
-            borderRadius: 12,
-            background: "#f0fdf4",
-            border: "1px solid #86efac",
+            display: "flex", alignItems: "center", gap: "0.75rem",
+            padding: "1rem", borderRadius: 12,
+            background: "#f0fdf4", border: "1px solid #86efac",
           }}
         >
           <span
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: "#16a34a",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.2rem",
-              flexShrink: 0,
+              width: 36, height: 36, borderRadius: "50%", background: "#16a34a",
+              color: "#fff", display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: "1.2rem", flexShrink: 0,
             }}
           >
             &#10003;
@@ -395,28 +335,15 @@ export default function FaceEnrollmentPage() {
           </div>
         </div>
 
-        <p style={{ marginTop: "1rem", fontSize: "0.9rem" }}>
-          Retakes used: {info.retakes_used} of {info.max_retakes}
-        </p>
-
-        {canRetake ? (
-          <button
-            onClick={startRetake}
-            style={{ padding: "0.6rem 1.2rem", cursor: "pointer" }}
-          >
-            Retake face ({info.retakes_remaining} left)
-          </button>
-        ) : (
-          <p style={{ fontSize: "0.9rem", color: "#b45309" }}>
-            You have used all {info.max_retakes} retakes. Please contact your
-            admin if you need your face re-enrolled.
-          </p>
-        )}
+        <button
+          onClick={startRetake}
+          style={{ marginTop: "1rem", padding: "0.6rem 1.2rem", cursor: "pointer" }}
+        >
+          Update face enrollment
+        </button>
 
         {message && (
-          <p style={{ marginTop: "1rem", fontWeight: 500, color: messageColor }}>
-            {message}
-          </p>
+          <p style={{ marginTop: "1rem", fontWeight: 500, color: messageColor }}>{message}</p>
         )}
       </div>
     );
@@ -447,148 +374,78 @@ export default function FaceEnrollmentPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <h2>{retaking ? "Retake Face Enrollment" : "Face Enrollment"}</h2>
-
+      <h2>{retaking ? "Update Face Enrollment" : "Face Enrollment"}</h2>
       <p style={{ fontSize: "0.9rem", color: "var(--text-secondary, #666)" }}>
         Your face data is converted to a numeric vector inside your browser.
-        No photo is ever uploaded. You can delete it any time.
+        No photo is ever uploaded. You can update it any time.
       </p>
 
-      {retaking && info && (
-        <p style={{ fontSize: "0.9rem", color: "#b45309" }}>
-          This uses 1 of your {info.retakes_remaining} remaining retakes.
-        </p>
-      )}
-
-      {/* ── idle: consent + start ── */}
       {step === "idle" && (
         <>
-          <label
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "center",
-              marginBottom: "1rem",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
+          <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             I consent to storing my face embedding for attendance verification.
           </label>
           <button
             disabled={!consent}
             onClick={startEnrollmentFlow}
-            style={{
-              padding: "0.6rem 1.2rem",
-              cursor: consent ? "pointer" : "not-allowed",
-            }}
+            style={{ padding: "0.6rem 1.2rem", cursor: consent ? "pointer" : "not-allowed" }}
           >
-            Start Face Enrollment
+            {retaking ? "Start Update" : "Start Face Enrollment"}
           </button>
         </>
       )}
 
-      {/* ── loading ── */}
       {step === "loading" && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            marginTop: "1rem",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "1rem" }}>
           <Spinner />
           <span>{message}</span>
         </div>
       )}
 
-      {/* ── camera + overlay ── */}
       <div
         style={{
-          position: "relative",
-          marginTop: "1rem",
-          display:
-            step === "capturing" || step === "processing" ? "block" : "none",
+          position: "relative", marginTop: "1rem",
+          display: step === "capturing" || step === "processing" ? "block" : "none",
         }}
       >
         <video
-          ref={videoRef}
-          autoPlay
-          muted
-          playsInline
-          style={{
-            width: "100%",
-            borderRadius: 12,
-            display: "block",
-            transform: "scaleX(-1)",
-          }}
+          ref={videoRef} autoPlay muted playsInline
+          style={{ width: "100%", borderRadius: 12, display: "block", transform: "scaleX(-1)" }}
         />
 
         {(step === "capturing" || step === "processing") && (
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              pointerEvents: "none",
+              position: "absolute", inset: 0, display: "flex",
+              alignItems: "center", justifyContent: "center", pointerEvents: "none",
             }}
           >
             <div
               style={{
-                width: "56%",
-                aspectRatio: "3 / 4",
-                borderRadius: "50%",
+                width: "56%", aspectRatio: "3 / 4", borderRadius: "50%",
                 border: `3px dashed ${guidanceOk ? "#16a34a" : "#f59e0b"}`,
-                position: "relative",
-                overflow: "hidden",
+                position: "relative", overflow: "hidden",
                 transition: "border-color 0.2s ease",
-                animation: `${
-                  guidanceOk ? "faceGlowPulseOk" : "faceGlowPulseWarn"
-                } 1.4s ease-in-out infinite`,
+                animation: `${guidanceOk ? "faceGlowPulseOk" : "faceGlowPulseWarn"} 1.4s ease-in-out infinite`,
               }}
             >
               {step === "capturing" && !guidanceOk && (
                 <div
                   style={{
-                    position: "absolute",
-                    left: "8%",
-                    right: "8%",
-                    height: 3,
-                    background:
-                      "linear-gradient(90deg,transparent,#f59e0b,transparent)",
-                    animation: "faceScanLine 1.8s ease-in-out infinite",
-                    borderRadius: 2,
+                    position: "absolute", left: "8%", right: "8%", height: 3,
+                    background: "linear-gradient(90deg,transparent,#f59e0b,transparent)",
+                    animation: "faceScanLine 1.8s ease-in-out infinite", borderRadius: 2,
                   }}
                 />
               )}
               {step === "processing" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span
                     style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      background: "#16a34a",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.5rem",
-                      animation: "popIn 0.35s ease-out",
+                      width: 44, height: 44, borderRadius: "50%", background: "#16a34a",
+                      color: "#fff", display: "flex", alignItems: "center",
+                      justifyContent: "center", fontSize: "1.5rem", animation: "popIn 0.35s ease-out",
                     }}
                   >
                     &#10003;
@@ -600,21 +457,12 @@ export default function FaceEnrollmentPage() {
         )}
       </div>
 
-      {/* ── progress bar ── */}
       {step === "capturing" && (
         <div style={{ marginTop: "0.6rem" }}>
-          <div
-            style={{
-              height: 6,
-              borderRadius: 3,
-              background: "#e5e7eb",
-              overflow: "hidden",
-            }}
-          >
+          <div style={{ height: 6, borderRadius: 3, background: "#e5e7eb", overflow: "hidden" }}>
             <div
               style={{
-                height: "100%",
-                width: `${Math.round(progress * 100)}%`,
+                height: "100%", width: `${Math.round(progress * 100)}%`,
                 background: guidanceOk ? "#16a34a" : "#f59e0b",
                 transition: "width 0.15s ease, background-color 0.2s ease",
               }}
@@ -623,35 +471,24 @@ export default function FaceEnrollmentPage() {
         </div>
       )}
 
-      {/* ── manual capture override ── */}
       {step === "capturing" && canForceCapture && (
         <button
           onClick={() => void finalizeCapture()}
           style={{
-            marginTop: "0.8rem",
-            padding: "0.7rem 1.4rem",
-            background: "#2563eb",
-            color: "#fff",
-            borderRadius: 8,
-            border: "none",
-            cursor: "pointer",
+            marginTop: "0.8rem", padding: "0.7rem 1.4rem", background: "#2563eb",
+            color: "#fff", borderRadius: 8, border: "none", cursor: "pointer",
           }}
         >
           Capture Now
         </button>
       )}
 
-      {/* ── duplicate-face ban warning ── */}
       {step === "duplicate" && <BanWarning onTryAgain={resetToIdle} />}
 
-      {/* ── generic message (loading excluded, duplicate has its own UI) ── */}
       {message && step !== "loading" && step !== "duplicate" && (
-        <p style={{ marginTop: "1rem", fontWeight: 500, color: messageColor }}>
-          {message}
-        </p>
+        <p style={{ marginTop: "1rem", fontWeight: 500, color: messageColor }}>{message}</p>
       )}
 
-      {/* ── error retry ── */}
       {step === "error" && (
         <button
           onClick={resetToIdle}
@@ -661,12 +498,8 @@ export default function FaceEnrollmentPage() {
         </button>
       )}
 
-      {/* ── retake cancel ── */}
       {retaking && step !== "processing" && step !== "duplicate" && (
-        <button
-          onClick={cancelRetake}
-          style={{ marginTop: "1rem", padding: "0.5rem 1rem" }}
-        >
+        <button onClick={cancelRetake} style={{ marginTop: "1rem", padding: "0.5rem 1rem" }}>
           Cancel
         </button>
       )}

@@ -2,17 +2,12 @@
 students/face_views.py
 
 Handles face enrollment and re-enrollment.
+Re-enrollment is unlimited — students can update their face any time.
 
-Security improvements in this version:
-  - Duplicate-face guard: incoming embedding is compared against every
-    enrolled FaceProfile at enrollment time. If the distance falls below
-    FACE_ENROLL_DUPE_THRESHOLD the request is rejected with an explicit
-    warning. A FaceProfileAudit row (DUPE_ATTEMPT) is written so admins
-    can review suspicious activity.
-  - Embedding validation is delegated to clean_embedding() so the logic
-    lives in one place.
-  - Every early return carries an appropriate HTTP status code.
-  - Audit rows are written for every mutating action.
+Security:
+  - Duplicate-face guard: rejects any embedding already registered to
+    a different account (HTTP 409 + FACE_DUPLICATE code).
+  - DUPE_ATTEMPT audit row written on every rejection.
 """
 
 import logging
@@ -32,11 +27,6 @@ from students.models import FaceProfile, FaceProfileAudit
 
 logger = logging.getLogger(__name__)
 
-MAX_RETAKES = 3
-
-# How close two embeddings must be (Euclidean) to count as the same face.
-# face-api.js 128-d descriptors: 0.6 is the standard match threshold;
-# we use a slightly tighter value here so only genuine duplicates are caught.
 _DEFAULT_DUPE_THRESHOLD = 0.55
 
 
@@ -49,13 +39,13 @@ def _face_distance(a: list, b: list) -> float:
     )
 
 
-def _find_duplicate_profile(embedding: list, exclude_student_id: int | None = None) -> FaceProfile | None:
+def _find_duplicate_profile(
+    embedding: list, exclude_student_id: int | None = None
+) -> FaceProfile | None:
     """
-    Scan every enrolled FaceProfile and return the first one whose embedding
-    is within FACE_ENROLL_DUPE_THRESHOLD of *embedding*, or None.
-
-    We exclude the student who already owns this face (re-enrollment) so they
-    are not flagged as a duplicate of themselves.
+    Return the first FaceProfile whose embedding is within
+    FACE_ENROLL_DUPE_THRESHOLD of *embedding*, or None.
+    The student's own profile is excluded so re-enrollment never self-flags.
     """
     threshold = getattr(settings, "FACE_ENROLL_DUPE_THRESHOLD", _DEFAULT_DUPE_THRESHOLD)
 
@@ -71,7 +61,6 @@ def _find_duplicate_profile(embedding: list, exclude_student_id: int | None = No
             distance = _face_distance(embedding, stored)
         except (ValueError, TypeError):
             continue
-
         if math.isfinite(distance) and distance < threshold:
             logger.warning(
                 "Duplicate face detected: distance=%.4f, conflicting student=%s",
@@ -85,13 +74,9 @@ def _find_duplicate_profile(embedding: list, exclude_student_id: int | None = No
 
 def _status_payload(profile: FaceProfile | None) -> dict:
     enrolled = bool(profile and profile.embedding)
-    used = profile.retake_count if profile else 0
     return {
         "enrolled": enrolled,
         "last_enrolled_at": profile.updated_at if enrolled else None,
-        "retakes_used": used,
-        "retakes_remaining": max(MAX_RETAKES - used, 0),
-        "max_retakes": MAX_RETAKES,
     }
 
 
@@ -145,14 +130,11 @@ def face_enrollment(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # ---------- Duplicate-face guard ----------
-    # Exclude the student's own profile so a re-enrollment is not flagged
-    # as a duplicate of themselves.
+    # Duplicate-face guard — exclude own profile so re-enrollment never self-flags
     exclude_id = student.pk if (profile and profile.embedding) else None
     duplicate = _find_duplicate_profile(embedding, exclude_student_id=exclude_id)
 
     if duplicate is not None:
-        # Write an audit row so admins can investigate.
         FaceProfileAudit.objects.create(
             student=student,
             action=FaceProfileAudit.DUPE_ATTEMPT,
@@ -178,11 +160,11 @@ def face_enrollment(request):
             },
             status=status.HTTP_409_CONFLICT,
         )
-    # ------------------------------------------
 
     now = timezone.now()
 
     if profile is None:
+        # First-time enrollment
         FaceProfile.objects.create(
             student=student,
             embedding=embedding,
@@ -199,22 +181,11 @@ def face_enrollment(request):
         payload["detail"] = "Enrolled."
         return Response(payload, status=status.HTTP_201_CREATED)
 
-    # Re-enrollment ↓
-    if profile.retake_count >= MAX_RETAKES:
-        return Response(
-            {
-                "detail": (
-                    f"Retake limit reached ({MAX_RETAKES}). "
-                    "Contact your admin to reset it."
-                )
-            },
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
+    # Re-enrollment (unlimited)
     profile.embedding = embedding
     profile.consent_given = True
     profile.consent_at = now
-    profile.retake_count += 1
+    profile.retake_count += 1  # kept for audit/analytics; no longer a hard cap
     profile.save()
     FaceProfileAudit.objects.create(
         student=student,
