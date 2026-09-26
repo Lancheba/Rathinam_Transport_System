@@ -1,4 +1,4 @@
-import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog, FileText, History } from "lucide-react";
+import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog, FileText, History, Combine } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -38,6 +38,8 @@ export const navItems = [
   { to: "/dashboard/attendance-flags", label: "Attendance Flags", short: "Flags", icon: ShieldAlert, staffOnly: true },
   // Reverse-chronological feed of delegations, cab combinations, manual marks, QR sessions, flag reviews.
   { to: "/dashboard/history", label: "History", short: "History", icon: History, staffOnly: true },
+  // Merge two or more buses for a day so students from any of them can scan any combined QR — staff/admin only.
+  { to: "/dashboard/combined-cabs", label: "Combined Cabs", short: "Combine", icon: Combine, staffOnly: true },
   // Sensor health/wiring detail isn't something a student needs to see or act on.
   { to: "/dashboard/sensors",  label: "Sensor Monitoring", short: "Sensors",  icon: Radio, staffOnly: true },
   // Everyone signed in can send a complaint or feedback; only admins see the inbox inside the page.

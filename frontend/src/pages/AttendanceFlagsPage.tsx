@@ -19,6 +19,7 @@ const RULE_LABELS: Record<string, string> = {
   SESSION_INSTANT_PRESENT: "Everyone marked present within one minute",
   HOLIDAY_ATTENDANCE: "Attendance recorded on a declared holiday",
   MANUAL_MARK_LOGGED: "Manual mark by in-charge",
+  CROSS_BUS_SCAN: "Cross-bus scan under an active cab combination",
 };
 const ruleLabel = (rule: string): string => RULE_LABELS[rule] ?? rule;
 
@@ -45,6 +46,12 @@ const formatDetail = (rule: string, detail: Record<string, unknown> | null | und
       return `${d.present_count ?? "?"} students marked present within ${d.span_seconds ?? "?"}s`;
     case "HOLIDAY_ATTENDANCE":
       return `${d.present_count ?? "?"} attendance record(s) on a declared holiday`;
+    case "CROSS_BUS_SCAN":
+      return [
+        d.person ? `${d.person}` : null,
+        d.own_bus && d.scanned_bus ? `(${d.own_bus}) scanned ${d.scanned_bus}'s QR` : null,
+        d.marked_by ? `via ${d.marked_by}` : null,
+      ].filter(Boolean).join(" ");
     default:
       // Fallback: safely stringify unknown shapes instead of crashing.
       try { return JSON.stringify(d); } catch { return ""; }

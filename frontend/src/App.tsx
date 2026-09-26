@@ -32,6 +32,7 @@ import AttendanceAnalyticsPage from "./pages/AttendanceAnalyticsPage";
 import AttendanceReportPage from "./pages/AttendanceReportPage";
 import AttendanceFlagsPage from "./pages/AttendanceFlagsPage";
 import HistoryPage from "./pages/HistoryPage";
+import CombinedCabsPage from "./pages/CombinedCabsPage";
 import { IdentityPromptModal } from "./components/IdentityPromptModal";
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -176,6 +177,7 @@ export const App: React.FC = () => {
                   <Route path="attendance-report" element={<AttendanceReportPage />} />
                   <Route path="attendance-flags" element={<AttendanceFlagsPage />} />
                   <Route path="history" element={<HistoryPage />} />
+                  <Route path="combined-cabs" element={<CombinedCabsPage />} />
                 </Routes>
               </MainLayout>
             }
