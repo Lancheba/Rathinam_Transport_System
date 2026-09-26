@@ -60,7 +60,7 @@ const PeoplePage: React.FC = () => {
     setLoading(true);
     setForbidden(false);
     Promise.all([getPeople(), getStudents(), getTeachers(), getBuses(), getLinkRequests("PENDING")])
-      .then(([p, s, t, b, lr]) => { setPeople(p); setStudents(s); setTeachers(t); setBuses(b); setLinkRequests(lr); })
+      .then(([p, s, t, b, lr]) => { setPeople(p); setStudents(s); setTeachers(t); setBuses(b); setLinkRequests(lr.results); })
       .catch((err) => {
         if (axios.isAxiosError(err) && (err.response?.status === 403 || err.response?.status === 401)) {
           setForbidden(true);

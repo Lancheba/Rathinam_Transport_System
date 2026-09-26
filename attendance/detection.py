@@ -184,7 +184,7 @@ def run_detection(session):
 
 def log_manual_mark(record, actor=None):
     who = getattr(record.student, 'name', None) or getattr(record.teacher, 'name', None) or 'Unknown'
-    AttendanceFlag.objects.create(
+    flag = AttendanceFlag.objects.create(
         session=record.session,
         rule='MANUAL_MARK_LOGGED',
         severity='LOW',
@@ -195,7 +195,8 @@ def log_manual_mark(record, actor=None):
             'marked_by': getattr(actor, 'username', None),
             'marked_at': record.marked_at.isoformat() if record.marked_at else None,
         },
-        records=[record.pk] if record.pk else None,
     )
+    if record.pk:
+        flag.records.set([record.pk])
 
 

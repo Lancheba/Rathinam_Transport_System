@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
   Wrench, Fuel, Plus, Trash2, Pencil, X, LoaderCircle, Bus as BusIcon, Gauge, IndianRupee,
-  MapPin, Clock, Ruler, Users, CheckCircle2, XCircle,
 } from "lucide-react";
 import {
   getMyBus, getMaintenanceSummary, getMaintenanceLogs, createMaintenanceLog,
