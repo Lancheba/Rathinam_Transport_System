@@ -28,7 +28,7 @@ class Student(models.Model):
 
     boarding_point = models.CharField(
         max_length=150, blank=True,
-        help_text="Stop where this student gets on the bus."
+        help_text="Stop where this student gets on the bus.",
     )
 
     linked_user = models.OneToOneField(
@@ -69,25 +69,28 @@ class FaceProfile(models.Model):
 
 class FaceProfileAudit(models.Model):
     """
-    Append-only log of who touched a student's face data and when:
-    enrolments, re-enrolments, deletions, and admin reads.
+    Append-only log of who touched a student's face data and when.
     Written by the view/admin layer; never updated or deleted.
     """
+
     ENROLL = "ENROLL"
     REENROLL = "REENROLL"
     DELETE = "DELETE"
     ADMIN_READ = "ADMIN_READ"
+    DUPE_ATTEMPT = "DUPE_ATTEMPT"   # ← new: someone tried to enroll another student's face
+
     ACTION_CHOICES = [
         (ENROLL, "Enrolled"),
         (REENROLL, "Re-enrolled"),
         (DELETE, "Deleted"),
         (ADMIN_READ, "Admin viewed"),
+        (DUPE_ATTEMPT, "Duplicate face attempt"),
     ]
 
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name="face_audit_entries",
     )
-    action = models.CharField(max_length=12, choices=ACTION_CHOICES)
+    action = models.CharField(max_length=16, choices=ACTION_CHOICES)   # was max_length=12
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="face_audit_entries",
@@ -108,4 +111,3 @@ class FaceProfileAudit(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValueError("FaceProfileAudit rows cannot be deleted.")
-
