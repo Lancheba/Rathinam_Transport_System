@@ -1,4 +1,4 @@
-import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog } from "lucide-react";
+import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog, FileText } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -31,6 +31,7 @@ export const navItems = [
   // makes sense for STUDENT-role accounts (staff/admin/driver see the real roster instead).
   { to: "/dashboard/my-attendance", label: "My Attendance", short: "Attend",  icon: UserCheck, studentOnly: true },
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
+  { to: "/dashboard/attendance-report", label: "Attendance Report", short: "Report", icon: FileText },
   // Attendance analytics (cohort trend, per-student drill-down) is a management view, not a driver task.
   { to: "/dashboard/attendance-analytics", label: "Attendance Analytics", short: "Attend. Analytics", icon: LineChart, staffOnly: true },
   // Automatic cheat-detection flags from Step 6 detection.py  14 staff/admin review only.
