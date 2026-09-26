@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import CanManageBuses, IsStudent
+from accounts.permissions import CanManageBuses, IsStudent, is_incharge
 from accounts.linking import create_teacher_login, LinkError
 from django.core.exceptions import ValidationError as DjangoValidationError
 from buses.models import Bus
@@ -24,7 +24,7 @@ from attendance.services import set_attendance
 from utils.params import int_param
 from .exports import force_text_cells, safe_rows
 from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig, Teacher
-from .permissions import IsDriver, driver_bus, is_driver
+from .permissions import IsDriver, driver_bus, is_driver, IsInCharge, incharge_bus
 from .serializers import (
     AttendanceRecordSerializer,
     AttendanceSessionSerializer,
@@ -681,6 +681,89 @@ def attendance_analytics_overview(request):
 
 
 # ---------------------------------------------------------------------------
+# Analytics: in-charge's own cab only (same shape as the overview above, but
+# there's exactly one bus so no by_bus/department breakdown is needed).
+# ---------------------------------------------------------------------------
+@api_view(["GET"])
+@permission_classes([IsInCharge])
+def attendance_analytics_incharge(request):
+    bus = incharge_bus(request.user)
+    if not bus:
+        return Response({"detail": "You're not assigned to a bus yet."}, status=400)
+
+    period = (request.query_params.get("period") or "monthly").lower()
+    today = date_cls.today()
+    year = int_param(request.query_params, "year", today.year)
+
+    sessions = AttendanceSession.objects.filter(date__year=year, is_holiday=False, bus=bus)
+    month = None
+    if period == "monthly":
+        month = int_param(request.query_params, "month", today.month)
+        sessions = sessions.filter(date__month=month)
+
+    records = AttendanceRecord.objects.filter(
+        session__in=sessions, person_type="STUDENT"
+    ).select_related("session", "student")
+
+    total = records.count()
+    present = records.filter(status="PRESENT").count()
+    absent = total - present
+    overall_pct = round((present / total) * 100, 1) if total else 0.0
+
+    if period == "monthly":
+        trend_qs = (
+            records.values("session__date")
+            .annotate(present_n=Count("id", filter=Q(status="PRESENT")), total_n=Count("id"))
+            .order_by("session__date")
+        )
+        trend = [
+            {
+                "label": str(row["session__date"]),
+                "present": row["present_n"], "total": row["total_n"],
+                "pct": round((row["present_n"] / row["total_n"]) * 100, 1) if row["total_n"] else 0.0,
+            }
+            for row in trend_qs
+        ]
+    else:
+        trend_qs = (
+            records.annotate(month=TruncMonth("session__date"))
+            .values("month")
+            .annotate(present_n=Count("id", filter=Q(status="PRESENT")), total_n=Count("id"))
+            .order_by("month")
+        )
+        trend = [
+            {
+                "label": row["month"].strftime("%Y-%m"),
+                "present": row["present_n"], "total": row["total_n"],
+                "pct": round((row["present_n"] / row["total_n"]) * 100, 1) if row["total_n"] else 0.0,
+            }
+            for row in trend_qs
+        ]
+
+    absentee_qs = (
+        records.filter(status="ABSENT")
+        .values("student_id", "student__name", "student__roll_number")
+        .annotate(absences=Count("id"))
+        .order_by("-absences")[:10]
+    )
+    top_absentees = [
+        {
+            "student_id": row["student_id"], "name": row["student__name"],
+            "roll_number": row["student__roll_number"], "absences": row["absences"],
+        }
+        for row in absentee_qs
+    ]
+
+    return Response({
+        "bus_number": bus.bus_number,
+        "period": period, "year": year, "month": month,
+        "overall_pct": overall_pct, "present_count": present,
+        "absent_count": absent, "total_count": total,
+        "trend": trend, "top_absentees": top_absentees,
+    })
+
+
+# ---------------------------------------------------------------------------
 # Analytics: per-student attendance (calendar, streak, % this month/year)
 # ---------------------------------------------------------------------------
 @api_view(["GET"])
@@ -691,11 +774,14 @@ def attendance_analytics_student(request, student_id):
     except Student.DoesNotExist:
         return Response({"detail": "Student not found."}, status=404)
 
-    # Staff/admin may look up any student. A student may only ever look up
-    # their own linked record (same scoping as the existing my_attendance view).
+    # Staff/admin may look up any student. A cab in-charge may look up a
+    # student on their own cab. A student may only ever look up their own
+    # linked record (same scoping as the existing my_attendance view).
     if not CanManageBuses().has_permission(request, None):
         own = getattr(request.user, "student_profile", None)
-        if not own or own.id != student.id:
+        own_incharge_bus = incharge_bus(request.user) if is_incharge(request.user) else None
+        is_own_cab_student = own_incharge_bus is not None and student.bus_id == own_incharge_bus.id
+        if not is_own_cab_student and (not own or own.id != student.id):
             return Response({"detail": "Not allowed."}, status=403)
 
     today = date_cls.today()
