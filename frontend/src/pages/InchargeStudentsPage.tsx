@@ -66,7 +66,7 @@ const InchargeStudentsPage: React.FC = () => {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
             <thead>
               <tr>
-                {["Roll No.", "Name", "Dept", "Year", "Phone", "Boarding Point"].map((h) => (
+                {["Roll No.", "Name", "Dept", "Year", "Phone", "Boarding Point", "Face Enrolled"].map((h) => (
                   <th key={h} style={{
                     textAlign: "left", padding: "10px 12px", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase",
                     letterSpacing: 0.4, color: "var(--text-muted)", borderBottom: "1px solid rgba(96,165,250,0.15)",
@@ -84,6 +84,9 @@ const InchargeStudentsPage: React.FC = () => {
                   <td style={{ color: "var(--text-muted)", padding: "8px 12px" }}>{s.year ? YEAR_LABEL[s.year] : "-"}</td>
                   <td style={{ color: "var(--text-muted)", padding: "8px 12px" }}>{s.phone || "-"}</td>
                   <td style={{ color: "var(--text-muted)", padding: "8px 12px" }}>{s.boarding_point || "-"}</td>
+                  <td style={{ color: s.face_enrolled ? "var(--accent-green)" : "var(--text-muted)", padding: "8px 12px" }}>
+                    {s.face_enrolled === null || s.face_enrolled === undefined ? "-" : s.face_enrolled ? "Enrolled" : "Not enrolled"}
+                  </td>
                 </tr>
               ))}
             </tbody>

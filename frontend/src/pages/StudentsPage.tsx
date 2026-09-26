@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { Users, Search, Bus as BusIcon, Plus, Trash2, X, ShieldAlert, ArrowLeft } from "lucide-react";
 import axios from "axios";
 import { getBuses, getBusRoster, searchStudents, deleteStudent } from "../api/endpoints";
@@ -99,19 +99,26 @@ const StudentsPage: React.FC = () => {
     );
   }
 
+  const renderFaceCell = (s: BusRoster["students"][number] | Student) => (
+    <td style={{ color: s.face_enrolled ? "var(--accent-green)" : "var(--text-muted)" }}>
+      {s.face_enrolled === null || s.face_enrolled === undefined ? "-" : s.face_enrolled ? "Enrolled" : "Not enrolled"}
+    </td>
+  );
+
   const renderStudentRow = (s: BusRoster["students"][number] | Student, showBus: boolean) => (
     <tr key={s.id}>
       <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.roll_number}</td>
       <td>{s.name}</td>
-      <td style={{ color: "var(--text-muted)" }}>{s.department || "—"}</td>
-      <td style={{ color: "var(--text-muted)" }}>{s.year ? YEAR_LABEL[s.year] : "—"}</td>
-      <td style={{ color: "var(--text-muted)" }}>{s.phone || "—"}</td>
+      <td style={{ color: "var(--text-muted)" }}>{s.department || "-"}</td>
+      <td style={{ color: "var(--text-muted)" }}>{s.year ? YEAR_LABEL[s.year] : "-"}</td>
+      <td style={{ color: "var(--text-muted)" }}>{s.phone || "-"}</td>
       {showBus && (
         <td style={{ color: "var(--accent-blue)" }}>
-          {"bus_number" in s ? (s.bus_number ?? <span style={{ color: "var(--text-dim)" }}>Unassigned</span>) : "—"}
+          {"bus_number" in s ? (s.bus_number ?? <span style={{ color: "var(--text-dim)" }}>Unassigned</span>) : "-"}
         </td>
       )}
-      <td style={{ color: "var(--text-muted)" }}>{s.boarding_point || "—"}</td>
+      <td style={{ color: "var(--text-muted)" }}>{s.boarding_point || "-"}</td>
+      {renderFaceCell(s)}
       {canManageBuses && (
         <td>
           <button
@@ -203,7 +210,7 @@ const StudentsPage: React.FC = () => {
       {search.trim() && (
         <div>
           <div style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 10 }}>
-            {searching ? "Searching…" : `${searchResults?.length ?? 0} student(s) match "${search.trim()}"`}
+            {searching ? "Searching..." : `${searchResults?.length ?? 0} student(s) match "${search.trim()}"`}
           </div>
           {!searching && searchResults && searchResults.length > 0 &&
             tableWrap(
@@ -217,6 +224,7 @@ const StudentsPage: React.FC = () => {
                     <th style={thStyle}>Phone</th>
                     <th style={thStyle}>Bus</th>
                     <th style={thStyle}>Boarding Point</th>
+                    <th style={thStyle}>Face Enrolled</th>
                     {canManageBuses && <th style={thStyle} />}
                   </tr>
                 </thead>
@@ -266,6 +274,7 @@ const StudentsPage: React.FC = () => {
                     <th style={thStyle}>Year</th>
                     <th style={thStyle}>Phone</th>
                     <th style={thStyle}>Boarding Point</th>
+                    <th style={thStyle}>Face Enrolled</th>
                     {canManageBuses && <th style={thStyle} />}
                   </tr>
                 </thead>
@@ -278,7 +287,7 @@ const StudentsPage: React.FC = () => {
         // Overview: every bus as a card, with its student count
         <div>
           {loading ? (
-            <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "32px 0", textAlign: "center" }}>Loading roster…</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "32px 0", textAlign: "center" }}>Loading roster...</div>
           ) : roster.length === 0 ? (
             <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "32px 0", textAlign: "center" }}>No buses yet.</div>
           ) : (

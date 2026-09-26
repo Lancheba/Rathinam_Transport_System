@@ -1,4 +1,4 @@
-// Types for the Smart Bus Parking System
+﻿// Types for the Smart Bus Parking System
 
 export interface Bus {
   id: number;
@@ -174,6 +174,8 @@ export interface Student {
   bus: number | null;
   bus_number: string | null;
   bus_route: string | null;
+  face_enrolled: boolean | null;
+  face_enrolled_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -190,16 +192,16 @@ export interface StudentInput {
   bus: number | null;
 }
 
-/** One row of GET /api/students/roster/ — a bus and everyone riding it */
+/** One row of GET /api/students/roster/ â€” a bus and everyone riding it */
 export interface BusRoster {
   bus_id: number;
   bus_number: string;
   route: string;
   student_count: number;
-  students: Pick<Student, "id" | "name" | "roll_number" | "department" | "year" | "phone" | "boarding_point">[];
+  students: Pick<Student, "id" | "name" | "roll_number" | "department" | "year" | "phone" | "boarding_point" | "face_enrolled" | "face_enrolled_at">[];
 }
 
-/** GET /api/students/summary/ — aggregate counts only, no student PII */
+/** GET /api/students/summary/ â€” aggregate counts only, no student PII */
 export interface StudentSummary {
   total: number;
   assigned: number;
@@ -312,7 +314,7 @@ export type AttendanceStatus = "PRESENT" | "ABSENT";
 export type AttendanceSlot = "MORNING" | "EVENING";
 export type AttendanceSource = "MANUAL" | "QR_FACE" | "AUTO_ABSENT";
 
-/** GET/PATCH /api/attendance/window-config/ — when the MORNING/EVENING
+/** GET/PATCH /api/attendance/window-config/ â€” when the MORNING/EVENING
  * attendance-taking windows open & close. Times are "HH:MM:SS" strings.
  * Admins and transport staff can edit; everyone else can read. */
 export interface AttendanceWindowConfig {
@@ -333,7 +335,7 @@ export interface AttendanceRosterPerson {
   locked: boolean;
 }
 
-/** GET /api/attendance/roster/ — today's (or a given date's) roster to mark */
+/** GET /api/attendance/roster/ â€” today's (or a given date's) roster to mark */
 export interface AttendanceRoster {
   bus_id: number;
   bus_number: string;
@@ -465,7 +467,7 @@ export interface MyAttendanceDay {
   source: AttendanceSource | null;
 }
 
-/** GET /api/attendance/my/ — the signed-in student's own present/absent record */
+/** GET /api/attendance/my/ â€” the signed-in student's own present/absent record */
 export interface MyAttendanceSlotBlock {
   today: MyAttendanceDay;
   recent: MyAttendanceDay[];
@@ -507,14 +509,14 @@ export interface MaintenanceLogInput {
   notes: string;
 }
 
-/** GET /api/maintenance/logs/summary/ — most recent service + most recent fuel entry */
+/** GET /api/maintenance/logs/summary/ â€” most recent service + most recent fuel entry */
 export interface MaintenanceSummary {
   bus: number | null;
   last_service: MaintenanceLog | null;
   last_fuel: MaintenanceLog | null;
 }
 
-/** One row of GET /api/attendance/sessions/ — a past day's attendance for a bus */
+/** One row of GET /api/attendance/sessions/ â€” a past day's attendance for a bus */
 export interface AttendanceSession {
   id: number;
   bus: number;
@@ -530,3 +532,5 @@ export interface AttendanceSession {
   created_at: string;
   updated_at: string;
 }
+
+
