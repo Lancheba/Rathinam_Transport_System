@@ -293,7 +293,7 @@ export interface AttendanceFlag {
   session_date: string | null;
   rule: string;
   severity: string;
-  detail: string;
+  detail: Record<string, unknown>;
   status: AttendanceFlagStatus;
   record_ids: number[];
   reviewed_by: number | null;

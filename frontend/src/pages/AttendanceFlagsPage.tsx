@@ -22,6 +22,35 @@ const RULE_LABELS: Record<string, string> = {
 };
 const ruleLabel = (rule: string): string => RULE_LABELS[rule] ?? rule;
 
+/** `detail` is a JSON object whose shape depends on `rule` — never render it raw. */
+const formatDetail = (rule: string, detail: Record<string, unknown> | null | undefined): string => {
+  if (!detail || typeof detail !== "object") return "";
+  const d = detail as Record<string, any>;
+  switch (rule) {
+    case "MANUAL_MARK_LOGGED":
+      return [
+        d.person ? `${d.person}` : null,
+        d.status ? `marked ${d.status}` : null,
+        d.marked_by ? `by ${d.marked_by}` : null,
+        d.marked_at ? `at ${new Date(d.marked_at).toLocaleString("en-IN")}` : null,
+        d.remarks ? `— ${d.remarks}` : null,
+      ].filter(Boolean).join(" ");
+    case "SAME_DEVICE_MANY_STUDENTS":
+      return `Device ${d.device_id ?? "unknown"} used for ${d.scan_count ?? "?"} scans`;
+    case "SAME_IP_BURST":
+      return `${d.count ?? "?"} scans from IP ${d.ip ?? "unknown"} in a short window`;
+    case "MANUAL_MARK_SHARE_HIGH":
+      return `${d.manual ?? "?"} of ${d.total ?? "?"} marks in this session were manual`;
+    case "SESSION_INSTANT_PRESENT":
+      return `${d.present_count ?? "?"} students marked present within ${d.span_seconds ?? "?"}s`;
+    case "HOLIDAY_ATTENDANCE":
+      return `${d.present_count ?? "?"} attendance record(s) on a declared holiday`;
+    default:
+      // Fallback: safely stringify unknown shapes instead of crashing.
+      try { return JSON.stringify(d); } catch { return ""; }
+  }
+};
+
 const severityColor = (sev: string): string => {
   const s = sev.toUpperCase();
   if (s === "HIGH" || s === "CRITICAL") return "var(--accent-red)";
@@ -83,7 +112,7 @@ const FlagCard: React.FC<{
       </div>
 
       <p style={{ margin: "0 0 10px", fontSize: 14, color: "var(--text-soft)", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-        {item.detail}
+        {formatDetail(item.rule, item.detail)}
       </p>
 
       <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 12, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
