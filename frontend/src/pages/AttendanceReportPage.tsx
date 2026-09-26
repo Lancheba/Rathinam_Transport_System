@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
-import { FileText, Download, LoaderCircle } from "lucide-react";
+﻿import React, { useEffect, useState, useMemo } from "react";
+import { FileText, Download, LoaderCircle, Search } from "lucide-react";
 import { getAttendanceReportPreview, exportAttendanceReport, getBuses } from "../api/endpoints";
 import { inputStyle, labelStyle, ghostBtn, errorText } from "./DriverAttendancePage";
 import { useAuth } from "../context/AuthContext";
@@ -20,6 +20,23 @@ const AttendanceReportPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(null);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+
+  // Match the search box against whichever columns are Roll No. / Name / Department --
+  // falls back to checking every cell if the backend ever renames or drops those headers.
+  const filteredRows = useMemo(() => {
+    if (!preview) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return preview.rows;
+    const wanted = ["roll no.", "name", "department"];
+    const idxs = preview.columns
+      .map((col, i) => (wanted.includes(col.toLowerCase()) ? i : -1))
+      .filter((i) => i !== -1);
+    const checkIdxs = idxs.length > 0 ? idxs : preview.columns.map((_, i) => i);
+    return preview.rows.filter((row) =>
+      checkIdxs.some((i) => String(row[i] ?? "").toLowerCase().includes(q))
+    );
+  }, [preview, search]);
 
   useEffect(() => {
     if (canManageBuses) getBuses().then(setBuses).catch(() => {});
@@ -111,10 +128,26 @@ const AttendanceReportPage: React.FC = () => {
       </div>
 
       <div className="liquid-glass-card st-card" style={{ padding: "18px 20px", overflowX: "auto" }}>
+        {!loading && preview && preview.rows.length > 0 && (
+          <div style={{ position: "relative", marginBottom: 14, maxWidth: 360 }}>
+            <Search size={14} style={{
+              position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
+              color: "var(--text-dim)", pointerEvents: "none",
+            }} />
+            <input
+              style={{ ...inputStyle, paddingLeft: 30 }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, roll no. or department"
+            />
+          </div>
+        )}
         {loading ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading report…</p>
         ) : !preview || preview.rows.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>No rows for this filter.</p>
+        ) : filteredRows.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>No student matches "{search}".</p>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -133,7 +166,7 @@ const AttendanceReportPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {preview.rows.map((row: (string | number)[], i: number) => (
+              {filteredRows.map((row: (string | number)[], i: number) => (
                 <tr key={i}>
                   {row.map((cell: string | number, j: number) => (
                     <td key={j} style={{ padding: "8px 10px", borderBottom: "1px solid rgb(var(--ov) / 0.06)", whiteSpace: "nowrap" }}>

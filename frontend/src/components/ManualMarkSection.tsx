@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { UserCheck, LoaderCircle, RefreshCw } from "lucide-react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { UserCheck, LoaderCircle, RefreshCw, Search } from "lucide-react";
 import api from "../api/client";
 import {
   inputStyle, labelStyle, primaryBtn, ghostBtn, errorText,
@@ -9,6 +9,7 @@ interface RosterRow {
   id: number;
   name: string;
   roll_number: string;
+  department?: string;
   status: "PRESENT" | "ABSENT";
   source: string;
 }
@@ -44,6 +45,17 @@ const ManualMarkSection: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | "">("");
   const [reason, setReason]         = useState("");
   const [markStatus, setMarkStatus] = useState<"PRESENT" | "ABSENT">("PRESENT");
+  const [search, setSearch] = useState("");
+
+  const filteredRoster = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return roster;
+    return roster.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      s.roll_number.toLowerCase().includes(q) ||
+      (s.department || "").toLowerCase().includes(q)
+    );
+  }, [roster, search]);
 
   const fetchRoster = useCallback(async () => {
     setLoading(true);
@@ -123,6 +135,22 @@ const ManualMarkSection: React.FC = () => {
         </div>
       )}
 
+      <label style={{ ...labelStyle, display: "block", marginBottom: 10, maxWidth: 460 }}>
+        Search
+        <div style={{ position: "relative", marginTop: 4 }}>
+          <Search size={14} style={{
+            position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
+            color: "var(--text-dim)", pointerEvents: "none",
+          }} />
+          <input
+            style={{ ...inputStyle, paddingLeft: 30 }}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, roll no. or department"
+          />
+        </div>
+      </label>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 460 }}>
         <label style={labelStyle}>
           Student
@@ -130,10 +158,10 @@ const ManualMarkSection: React.FC = () => {
             style={{ ...inputStyle, marginTop: 4 }}
             value={selectedId}
             onChange={e => setSelectedId(e.target.value ? Number(e.target.value) : "")}
-            disabled={loading || roster.length === 0}
+            disabled={loading || filteredRoster.length === 0}
           >
             <option value="">— pick a student —</option>
-            {roster.map(s => (
+            {filteredRoster.map(s => (
               <option key={s.id} value={s.id}>
                 {s.name} ({s.roll_number}) — {s.status}{s.source === "MANUAL" ? " · Manual" : ""}
               </option>
@@ -192,24 +220,31 @@ const ManualMarkSection: React.FC = () => {
       {roster.length > 0 && (
         <div style={{ marginTop: 18 }}>
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px", fontWeight: 600 }}>
-            TODAY'S ROSTER
+            TODAY'S ROSTER {search.trim() && `(${filteredRoster.length} of ${roster.length})`}
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {roster.map(s => (
-              <div key={s.id} style={{
-                display: "flex", alignItems: "center", gap: 10, fontSize: 13,
-                padding: "7px 12px", borderRadius: 8,
-                background: "rgba(99,102,241,0.04)",
-                border: "1px solid rgba(99,102,241,0.1)",
-              }}>
-                <span style={{ color: "var(--text-strong)", fontWeight: 600, flex: 1 }}>
-                  {s.name}
-                </span>
-                <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{s.roll_number}</span>
-                {statusBadge(s.status, s.source)}
-              </div>
-            ))}
-          </div>
+          {filteredRoster.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--text-dim)" }}>No student matches "{search}".</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {filteredRoster.map(s => (
+                <div key={s.id} style={{
+                  display: "flex", alignItems: "center", gap: 10, fontSize: 13,
+                  padding: "7px 12px", borderRadius: 8,
+                  background: "rgba(99,102,241,0.04)",
+                  border: "1px solid rgba(99,102,241,0.1)",
+                }}>
+                  <span style={{ color: "var(--text-strong)", fontWeight: 600, flex: 1 }}>
+                    {s.name}
+                  </span>
+                  {s.department && (
+                    <span style={{ color: "var(--text-dim)", fontSize: 11 }}>{s.department}</span>
+                  )}
+                  <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{s.roll_number}</span>
+                  {statusBadge(s.status, s.source)}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

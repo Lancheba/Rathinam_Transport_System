@@ -544,6 +544,7 @@ def qr_roster(request):
             'id': s.pk,
             'name': s.name,
             'roll_number': s.roll_number,
+            'department': s.department or '',
             'status': by_student.get(s.pk, {}).get('status', 'ABSENT'),
             'source': by_student.get(s.pk, {}).get('source', ''),
         }
