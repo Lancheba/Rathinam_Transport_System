@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
-import { BarChart3, Download } from "lucide-react";
-import { getInchargeAnalytics } from "../api/endpoints";
+import { BarChart3, Download, LoaderCircle } from "lucide-react";
+import { getInchargeAnalytics, exportAttendance } from "../api/endpoints";
 import { inputStyle, labelStyle, ghostBtn, errorText } from "../pages/DriverAttendancePage";
 import type { AttendanceInchargeAnalytics, AnalyticsPeriod } from "../types";
 
@@ -40,6 +40,14 @@ const InchargeAnalyticsSection: React.FC = () => {
   const [data, setData] = useState<AttendanceInchargeAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | "">("");
+
+  const doExport = async (filetype: "csv" | "xlsx" | "pdf") => {
+    setExporting(filetype);
+    try { await exportAttendance(filetype); }
+    catch { setError("Export failed."); }
+    finally { setExporting(""); }
+  };
 
   useEffect(() => {
     setLoading(true); setError("");
@@ -97,8 +105,17 @@ const InchargeAnalyticsSection: React.FC = () => {
           </label>
         )}
         <button type="button" style={ghostBtn} onClick={exportCsv} disabled={!data}>
-          <Download size={13} /> Export CSV
+          <Download size={13} /> Export summary CSV
         </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+        <span style={{ ...labelStyle, width: "auto", alignSelf: "center" }}>Download full attendance:</span>
+        {(["csv", "xlsx", "pdf"] as const).map(ft => (
+          <button key={ft} type="button" onClick={() => doExport(ft)} disabled={exporting !== ""} style={ghostBtn}>
+            {exporting === ft ? <LoaderCircle size={13} className="spin" /> : <Download size={13} />} {ft.toUpperCase()}
+          </button>
+        ))}
       </div>
 
       {error && <div role="alert" style={{ color: "var(--accent-red)", marginBottom: 14 }}>{error}</div>}
