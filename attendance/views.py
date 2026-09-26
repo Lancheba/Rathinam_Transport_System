@@ -163,9 +163,12 @@ class DriverBusView(APIView):
 
 
 def _resolve_bus(request):
-    """The bus this request is about: the driver's own bus, or ?bus=<id> for staff/admin."""
+    """The bus this request is about: the driver's own bus, the in-charge's
+    own bus, or ?bus=<id> for staff/admin."""
     if is_driver(request.user):
         return driver_bus(request.user), None
+    if is_incharge(request.user):
+        return incharge_bus(request.user), None
     bus_id = request.query_params.get("bus") or request.data.get("bus")
     if not bus_id:
         return None, Response({"detail": "Provide ?bus=<id>."}, status=400)
@@ -455,7 +458,7 @@ def attendance_export(request):
         return error
     if not bus:
         return Response({"detail": "You're not linked to a bus yet. Set it up first."}, status=400)
-    if not (is_driver(request.user) or CanManageBuses().has_permission(request, None)):
+    if not (is_driver(request.user) or is_incharge(request.user) or CanManageBuses().has_permission(request, None)):
         return Response({"detail": "Not allowed."}, status=403)
 
     # NOTE: DRF reserves the "format" query parameter for its own content
