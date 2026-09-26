@@ -177,3 +177,18 @@ class ProductionGuardTests(TestCase):
     def test_debug_can_still_be_turned_on_explicitly(self):
         r = self.import_settings(DJANGO_DEBUG="1")
         self.assertEqual(r.returncode, 0, r.stderr)
+
+class HealthzTests(SimpleTestCase):
+    def test_healthz_ok_when_db_reachable(self):
+        res = self.client.get("/healthz")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["status"], "ok")
+        self.assertEqual(res.json()["db"], "ok")
+
+    def test_healthz_503_when_db_unreachable(self):
+        from unittest.mock import patch as mock_patch
+        with mock_patch("config.healthz.connection.ensure_connection", side_effect=Exception("boom")):
+            res = self.client.get("/healthz")
+        self.assertEqual(res.status_code, 503)
+        self.assertEqual(res.json()["status"], "degraded")
+        self.assertIn("boom", res.json()["db"])
