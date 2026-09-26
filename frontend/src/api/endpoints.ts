@@ -188,6 +188,21 @@ export const getInchargeAnalytics = (params: {
   period?: AnalyticsPeriod; year?: number; month?: number;
 }) => api.get<AttendanceInchargeAnalytics>("/attendance/analytics/incharge/", { params }).then(r => r.data);
 
+// Stand-in delegation (Phase 5): the real in-charge hands off today's powers to a student on their bus.
+export interface InchargeDelegateStatus {
+  active: boolean;
+  student_id?: number | null;
+  name?: string;
+  roll_number?: string | null;
+  date?: string;
+}
+export const getInchargeDelegateStatus = () =>
+  api.get<InchargeDelegateStatus>("/attendance/incharge/delegate/").then(r => r.data);
+export const setInchargeDelegate = (studentId: number) =>
+  api.post<InchargeDelegateStatus>("/attendance/incharge/delegate/", { student_id: studentId }).then(r => r.data);
+export const endInchargeDelegate = () =>
+  api.delete<{ detail: string }>("/attendance/incharge/delegate/").then(r => r.data);
+
 // Maintenance (driver's own bus: service + fuel logs)
 export const getMaintenanceSummary = (params?: { bus?: number }) =>
   api.get<MaintenanceSummary>("/maintenance/logs/summary/", { params }).then(r => r.data);
