@@ -6,7 +6,7 @@ import type {
   DriverBusResponse, AttendanceRoster, AttendanceSubmitInput, AttendanceSession, MyStudentLink, MyAttendance, AttendanceSlot,
   MaintenanceLog, MaintenanceLogInput, MaintenanceLogType, MaintenanceSummary,
   AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
-  AttendanceWindowConfig,
+  AttendanceWindowConfig, AttendanceReportPreview,
   AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
   Teacher, TeacherInput, TeacherLoginInput, Person, LinkRequest,
 } from "../types";
@@ -117,6 +117,33 @@ export const exportAttendance = async (filetype: "csv" | "xlsx" | "pdf", params?
   const disposition = res.headers["content-disposition"] as string | undefined;
   const match = disposition?.match(/filename="?([^"]+)"?/);
   const filename = match?.[1] ?? `attendance.${filetype}`;
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+// Attendance report (roll-level summary: sessions/present/absent/% per student).
+// Auto-scoped by role on the backend (admin/staff: any bus/student via params below;
+// in-charge/driver: own cab only; student: self only).
+export const getAttendanceReportPreview = (params?: { from?: string; to?: string; bus?: string; student?: string }) =>
+  api.get<AttendanceReportPreview>("/attendance/report/", { params: { filetype: "json", ...params } }).then(r => r.data);
+
+export const exportAttendanceReport = async (
+  filetype: "csv" | "xlsx" | "pdf",
+  params?: { from?: string; to?: string; bus?: string; student?: string }
+) => {
+  const res = await api.get("/attendance/report/", {
+    params: { filetype, ...params },
+    responseType: "blob",
+  });
+  const disposition = res.headers["content-disposition"] as string | undefined;
+  const match = disposition?.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] ?? `attendance_report.${filetype}`;
   const url = window.URL.createObjectURL(new Blob([res.data]));
   const link = document.createElement("a");
   link.href = url;

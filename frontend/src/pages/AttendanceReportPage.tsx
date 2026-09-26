@@ -119,7 +119,7 @@ const AttendanceReportPage: React.FC = () => {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                {preview.columns.map((col) => (
+                {preview.columns.map((col: string) => (
                   <th
                     key={col}
                     style={{
@@ -133,9 +133,9 @@ const AttendanceReportPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {preview.rows.map((row, i) => (
+              {preview.rows.map((row: (string | number)[], i: number) => (
                 <tr key={i}>
-                  {row.map((cell, j) => (
+                  {row.map((cell: string | number, j: number) => (
                     <td key={j} style={{ padding: "8px 10px", borderBottom: "1px solid rgb(var(--ov) / 0.06)", whiteSpace: "nowrap" }}>
                       {cell}
                     </td>

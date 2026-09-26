@@ -35,6 +35,12 @@ export interface BusInput {
   is_active: boolean;
 }
 
+export interface AttendanceReportPreview {
+  columns: string[];
+  rows: (string | number)[][];
+  count: number;
+}
+
 export interface CurrentUser {
   id: number;
   username: string;
