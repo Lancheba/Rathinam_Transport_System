@@ -15,6 +15,9 @@ interface AuthContextType {
   identity: CurrentUser["identity"];
   /** Bus number this in-charge is linked to, if role is INCHARGE and a bus has been assigned */
   inchargeBusNumber: string | null;
+  /** Bus number this user is standing in as in-charge for today, if any (Phase 5) */
+  standinBusNumber: string | null;
+  isStandIn: boolean;
   setUserIdentity: (identity: "STUDENT" | "TEACHER") => Promise<void>;
   login: (u: string, p: string, cabNumber?: string) => Promise<void>;
   logout: () => void;
@@ -22,7 +25,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false, username: null, role: null, roleLabel: null, canManageBuses: false, isAdmin: false,
-  drivenBusNumber: null, identity: null, inchargeBusNumber: null,
+  drivenBusNumber: null, identity: null, inchargeBusNumber: null, standinBusNumber: null, isStandIn: false,
   setUserIdentity: async () => {},
   login: async () => {}, logout: () => {},
 });
@@ -49,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.getItem("identity") as CurrentUser["identity"] | null
   );
   const [inchargeBusNumber, setInchargeBusNumber] = useState<string | null>(localStorage.getItem("incharge_bus_number"));
+  const [standinBusNumber, setStandinBusNumber] = useState<string | null>(localStorage.getItem("standin_bus_number"));
 
   const applyUser = useCallback((me: CurrentUser | null) => {
     if (me) {
@@ -61,6 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       else localStorage.removeItem("identity");
       if (me.incharge_bus_number) localStorage.setItem("incharge_bus_number", me.incharge_bus_number);
       else localStorage.removeItem("incharge_bus_number");
+      if (me.standin_bus_number) localStorage.setItem("standin_bus_number", me.standin_bus_number);
+      else localStorage.removeItem("standin_bus_number");
     } else {
       localStorage.removeItem("role");
       localStorage.removeItem("can_manage_buses");
@@ -68,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem("driven_bus_number");
       localStorage.removeItem("identity");
       localStorage.removeItem("incharge_bus_number");
+      localStorage.removeItem("standin_bus_number");
     }
     setRole(me?.role ?? null);
     setCanManageBuses(me?.can_manage_buses ?? false);
@@ -75,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDrivenBusNumber(me?.driven_bus_number ?? null);
     setIdentityState(me?.identity ?? null);
     setInchargeBusNumber(me?.incharge_bus_number ?? null);
+    setStandinBusNumber(me?.standin_bus_number ?? null);
   }, []);
 
   // Refresh role on page load in case it changed since the last visit
@@ -111,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDrivenBusNumber(null);
     setIdentityState(null);
     setInchargeBusNumber(null);
+    setStandinBusNumber(null);
   };
 
   const setUserIdentity = async (value: "STUDENT" | "TEACHER") => {
@@ -123,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         isLoggedIn, username, role, roleLabel: labelFor(role, canManageBuses),
         canManageBuses: isLoggedIn && canManageBuses, isAdmin: isLoggedIn && isAdmin,
-        drivenBusNumber, identity, inchargeBusNumber, setUserIdentity, login, logout,
+        drivenBusNumber, identity, inchargeBusNumber, standinBusNumber, isStandIn: !!standinBusNumber, setUserIdentity, login, logout,
       }}
     >
       {children}

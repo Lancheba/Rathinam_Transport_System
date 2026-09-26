@@ -44,11 +44,12 @@ class UserSerializer(serializers.ModelSerializer):
     is_admin = serializers.SerializerMethodField()
     driven_bus_number = serializers.SerializerMethodField()
     incharge_bus_number = serializers.SerializerMethodField()
+    standin_bus_number = serializers.SerializerMethodField()
     student_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number", "student_profile"]
+        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number", "standin_bus_number", "student_profile"]
 
     def get_can_manage_buses(self, obj):
         return can_manage_buses(obj)
@@ -63,6 +64,21 @@ class UserSerializer(serializers.ModelSerializer):
     def get_incharge_bus_number(self, obj):
         bus = getattr(obj, "incharge_bus", None)
         return bus.bus_number if bus else None
+
+    def get_standin_bus_number(self, obj):
+        """
+        Bus this user is standing in as in-charge for today (Phase 5), if any.
+        Separate from incharge_bus_number, which is the permanent assignment only.
+        """
+        from django.utils import timezone
+        from attendance.models import TemporaryInchargeAssignment
+        assignment = (
+            TemporaryInchargeAssignment.objects
+            .filter(stand_in=obj, date=timezone.localdate(), is_active=True)
+            .select_related("bus")
+            .first()
+        )
+        return assignment.bus.bus_number if assignment else None
 
     def get_student_profile(self, obj):
         student = getattr(obj, "student_profile", None)

@@ -24,9 +24,9 @@ export const navItems = [
   // The driver's own cab: full bus details plus maintenance/fuel log.
   { to: "/dashboard/my-bus", label: "My Bus", short: "My Bus", icon: Bus, driverOnly: true },
   // Cab In-Charge runs QR attendance for their own bus.
-  { to: "/dashboard/incharge-attendance", label: "Take Attendance", short: "Attend", icon: QrCode, inchargeOnly: true },
+  { to: "/dashboard/incharge-attendance", label: "Take Attendance", short: "Attend", icon: QrCode, inchargeOnly: true, standInOk: true },
   // Cab In-Charge's own bus roster, scoped by the API to their assigned bus only.
-  { to: "/dashboard/incharge-students", label: "My Bus", short: "My Bus", icon: Users, inchargeOnly: true },
+  { to: "/dashboard/incharge-students", label: "My Bus", short: "My Bus", icon: Users, inchargeOnly: true, standInOk: true },
   // A student's own present/absent record, taken by their bus's driver — only
   // makes sense for STUDENT-role accounts (staff/admin/driver see the real roster instead).
   { to: "/dashboard/my-attendance", label: "My Attendance", short: "Attend",  icon: UserCheck, studentOnly: true },

@@ -10,13 +10,13 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
-  const { canManageBuses, role } = useAuth();
+  const { canManageBuses, role, isStandIn } = useAuth();
   const visibleItems = navItems.filter(
     (item) =>
       (!item.staffOnly || canManageBuses) &&
       (!item.driverOnly || role === "DRIVER") &&
       (!item.studentOnly || (role === "STUDENT" && !canManageBuses)) &&
-      (!item.inchargeOnly || role === "INCHARGE")
+      (!item.inchargeOnly || role === "INCHARGE" || (item.standInOk && isStandIn))
   );
   return (
     <aside

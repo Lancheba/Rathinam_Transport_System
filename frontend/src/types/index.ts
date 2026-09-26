@@ -56,6 +56,8 @@ export interface CurrentUser {
   driven_bus_number?: string | null;
   /** Bus number this in-charge is linked to, if role is INCHARGE and a bus has been assigned */
   incharge_bus_number?: string | null;
+  /** Bus number this user is standing in as in-charge for today, if any (Phase 5) */
+  standin_bus_number?: string | null;
   /** Present only when this user has a linked Student record */
   student_profile?: {
     roll_number: string;

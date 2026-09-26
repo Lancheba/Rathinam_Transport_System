@@ -9,7 +9,7 @@ import "./MobileNav.css";
 export const MobileNav: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
-  const { canManageBuses, role } = useAuth();
+  const { canManageBuses, role, isStandIn } = useAuth();
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Staff-only links (e.g. Students) never take one of the precious mobile tab
@@ -19,7 +19,7 @@ export const MobileNav: React.FC = () => {
       (!item.staffOnly || canManageBuses) &&
       (!item.driverOnly || role === "DRIVER") &&
       (!item.studentOnly || (role === "STUDENT" && !canManageBuses)) &&
-      (!item.inchargeOnly || role === "INCHARGE")
+      (!item.inchargeOnly || role === "INCHARGE" || (item.standInOk && isStandIn))
   );
   const tabs = visible.slice(0, MOBILE_TAB_COUNT);
   const more = [
