@@ -1,12 +1,15 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+﻿import { useRef, useState, useEffect, useCallback } from "react";
 import jsQR from "jsqr";
 import * as faceapi from "face-api.js";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
+import { DETECTOR_OPTIONS, getFaceGuidance, loadFastFaceModels } from "../utils/faceGuidance";
 
 const MODELS_URL = "/models";
+const FACE_LOCK_TIMEOUT_MS = 6000; // give up and show an error after this long
+const DETECT_INTERVAL_MS = 150;
 
-type Stage = "loading"|"scanning"|"verifying"|"done"|"error";
+type Stage = "loading" | "scanning" | "verifying" | "done" | "error";
 
 export default function ScanAttendancePage() {
   const videoRef  = useRef<HTMLVideoElement>(null);
@@ -17,15 +20,14 @@ export default function ScanAttendancePage() {
 
   const [stage, setStage]     = useState<Stage>("loading");
   const [message, setMessage] = useState("Loading face models…");
+  const [guidanceOk, setGuidanceOk] = useState(false);
   const [slot, setSlot]       = useState("");
   const [markedAt, setMarkedAt] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODELS_URL);
-      await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS_URL);
+      await loadFastFaceModels(MODELS_URL);
       if (cancelled) return;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
@@ -69,10 +71,34 @@ export default function ScanAttendancePage() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [stage, scanFrame]);
 
+  // Poll with the fast tiny-detector (no landmarks/descriptor) until a
+  // well-centered, well-sized face is seen, giving live guidance the whole
+  // time instead of blindly waiting a fixed 800ms and hoping for the best.
+  async function waitForGoodFace(): Promise<boolean> {
+    const start = Date.now();
+    while (Date.now() - start < FACE_LOCK_TIMEOUT_MS) {
+      const video = videoRef.current;
+      if (video && video.readyState >= 2) {
+        const detection = await faceapi.detectSingleFace(video, DETECTOR_OPTIONS);
+        if (!detection) {
+          setGuidanceOk(false);
+          setMessage("Bring your face into the frame");
+        } else {
+          const guidance = getFaceGuidance(detection.box, video.videoWidth, video.videoHeight);
+          setGuidanceOk(guidance.ok);
+          setMessage(guidance.text);
+          if (guidance.ok) return true;
+        }
+      }
+      await new Promise((r) => setTimeout(r, DETECT_INTERVAL_MS));
+    }
+    return false;
+  }
+
   async function handleQR(raw: string) {
     cancelAnimationFrame(rafRef.current);
     setStage("verifying");
-    setMessage("QR detected — verifying your face…");
+    setMessage("QR detected — switching to front camera…");
 
     let payload: { token: string };
     try { payload = JSON.parse(raw); }
@@ -80,17 +106,28 @@ export default function ScanAttendancePage() {
 
     // Switch to front camera for face capture
     streamRef.current?.getTracks().forEach(t => t.stop());
-    const frontStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
-    });
+    let frontStream: MediaStream;
+    try {
+      frontStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    } catch {
+      setStage("error");
+      setMessage("Could not access the front camera.");
+      return;
+    }
     streamRef.current = frontStream;
     if (videoRef.current) videoRef.current.srcObject = frontStream;
 
-    // Brief pause so the camera adjusts
-    await new Promise(r => setTimeout(r, 800));
+    const gotGoodFace = await waitForGoodFace();
+    if (!gotGoodFace) {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      setStage("error");
+      setMessage("Could not get a clear look at your face. Try again with better lighting.");
+      return;
+    }
 
+    setMessage("Hold still — verifying…");
     const detection = await faceapi
-      .detectSingleFace(videoRef.current!)
+      .detectSingleFace(videoRef.current!, DETECTOR_OPTIONS)
       .withFaceLandmarks()
       .withFaceDescriptor();
 
@@ -98,7 +135,7 @@ export default function ScanAttendancePage() {
 
     if (!detection) {
       setStage("error");
-      setMessage("No face detected. Try again with better lighting.");
+      setMessage("Lost the face — try again with better lighting.");
       return;
     }
 
@@ -128,7 +165,10 @@ export default function ScanAttendancePage() {
       <h2>Scan Attendance</h2>
 
       <video ref={videoRef} autoPlay muted playsInline
-        style={{ width: "100%", borderRadius: 12, background: "#000" }} />
+        style={{
+          width: "100%", borderRadius: 12, background: "#000",
+          border: stage === "verifying" ? `3px solid ${guidanceOk ? "#16a34a" : "#f59e0b"}` : "3px solid transparent",
+        }} />
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
       <p style={{ marginTop: "1rem", fontWeight: 500,
