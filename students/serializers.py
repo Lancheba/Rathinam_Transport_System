@@ -5,7 +5,7 @@ from attendance.permissions import is_incharge
 from .models import Student
 
 
-class FaceStatusMixin:
+class FaceStatusMixin(serializers.Serializer):
     """
     Adds face_enrolled / face_enrolled_at to a Student serializer.
 
@@ -94,3 +94,4 @@ class StudentSelfSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ["id", "name", "roll_number", "department", "year", "bus_number", "boarding_point"]
+
