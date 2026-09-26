@@ -127,6 +127,35 @@ def attendance_report(request):
         resp["Content-Disposition"] = f'attachment; filename="{name}.pdf"'
         return resp
 
+    if fmt == "json":
+        # Preview data for the frontend report page - not a download.
+        header, *body_rows = rows
+        return Response({
+            "columns": header,
+            "rows": body_rows,
+            "count": len(body_rows),
+        })
+
+    if fmt == "xlsx":
+        try:
+            from openpyxl import Workbook
+        except ImportError:
+            return Response({"detail": "Excel export needs the \'openpyxl\' package on the server."}, status=501)
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Attendance Report"
+        for row in safe_rows(rows):
+            ws.append(row)
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        resp = HttpResponse(
+            buf.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp["Content-Disposition"] = f'attachment; filename="{name}.xlsx"'
+        return resp
+
     buf = io.StringIO()
     csv.writer(buf).writerows(safe_rows(rows))  # neutralise spreadsheet formulas
     resp = HttpResponse("\ufeff" + buf.getvalue(), content_type="text/csv; charset=utf-8")
