@@ -1,10 +1,12 @@
-from io import StringIO
+﻿from io import StringIO
 from unittest import mock
+from unittest import skipUnless
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db import connection
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -45,6 +47,7 @@ class AuditChainTests(TestCase):
         call_command("verify_audit_chain", stdout=out)
         self.assertIn("Audit chain OK", out.getvalue())
 
+    @skipUnless(connection.vendor == 'postgresql', 'audit-immutability trigger only exists on Postgres')
     def test_tampering_is_detected(self):
         self._scan()
         # Before the attendance_audit_immutable Postgres trigger (migration
