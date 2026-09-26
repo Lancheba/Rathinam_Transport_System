@@ -26,3 +26,6 @@ test_results.txt
 
 .coverage
 installed.txt
+
+full_test_output.txt
+coverage.txt
