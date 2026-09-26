@@ -44,10 +44,11 @@ class UserSerializer(serializers.ModelSerializer):
     is_admin = serializers.SerializerMethodField()
     driven_bus_number = serializers.SerializerMethodField()
     incharge_bus_number = serializers.SerializerMethodField()
+    student_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number"]
+        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number", "student_profile"]
 
     def get_can_manage_buses(self, obj):
         return can_manage_buses(obj)
@@ -62,6 +63,21 @@ class UserSerializer(serializers.ModelSerializer):
     def get_incharge_bus_number(self, obj):
         bus = getattr(obj, "incharge_bus", None)
         return bus.bus_number if bus else None
+
+    def get_student_profile(self, obj):
+        student = getattr(obj, "student_profile", None)
+        if not student:
+            return None
+        return {
+            "roll_number": student.roll_number,
+            "name": student.name,
+            "department": student.department,
+            "year": student.get_year_display() if student.year else None,
+            "phone": student.phone,
+            "email": student.email,
+            "bus_number": student.bus.bus_number if student.bus else None,
+            "boarding_point": student.boarding_point,
+        }
 
 
 class UpdatePhoneSerializer(serializers.Serializer):

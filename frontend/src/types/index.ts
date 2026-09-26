@@ -45,10 +45,22 @@ export interface CurrentUser {
   can_manage_buses: boolean;
   /** Administrators only (not transport staff): may read complaints and feedback */
   is_admin: boolean;
+  phone?: string;
   /** Bus number this driver is linked to, if role is DRIVER and a bus has been claimed */
   driven_bus_number?: string | null;
   /** Bus number this in-charge is linked to, if role is INCHARGE and a bus has been assigned */
   incharge_bus_number?: string | null;
+  /** Present only when this user has a linked Student record */
+  student_profile?: {
+    roll_number: string;
+    name: string;
+    department: string;
+    year: string | null;
+    phone: string;
+    email: string;
+    bus_number: string | null;
+    boarding_point: string;
+  } | null;
 }
 
 export interface ParkingSlot {

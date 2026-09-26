@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Sliders, Wifi, Check, Loader2, Palette, Sun, Moon, Monitor, Clock } from "lucide-react";
-import { getGround, updateGround, getAttendanceWindowConfig, updateAttendanceWindowConfig } from "../api/endpoints";
-import type { ParkingGround, AttendanceWindowConfig } from "../types";
+import { Sliders, Wifi, Check, Loader2, Palette, Sun, Moon, Monitor, Clock, User } from "lucide-react";
+import { getGround, updateGround, getAttendanceWindowConfig, updateAttendanceWindowConfig, getMe } from "../api/endpoints";
+import type { ParkingGround, AttendanceWindowConfig, CurrentUser } from "../types";
 import { useTheme, type ThemePreference } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -34,6 +34,9 @@ export const SettingsPage: React.FC = () => {
   const [error,   setError]   = useState("");
   const { preference, setPreference } = useTheme();
   const { canManageBuses } = useAuth();
+
+  const [me, setMe] = useState<CurrentUser | null>(null);
+  useEffect(() => { getMe().then(setMe).catch(() => {}); }, []);
 
   // Attendance window times (when MORNING/EVENING open & close)
   const [windowConfig, setWindowConfig] = useState<AttendanceWindowConfig | null>(null);
@@ -125,6 +128,37 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(52,211,153,0.25)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <User size={18} style={{ color: "var(--accent-emerald, #34d399)" }} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>My Profile</span>
+          </div>
+          {!me ? (
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading your profile…</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px", fontSize: 13 }}>
+              <div><span style={{ color: "var(--text-muted)" }}>Username: </span>{me.username}</div>
+              <div><span style={{ color: "var(--text-muted)" }}>Role: </span>{me.role}</div>
+              {me.phone && <div><span style={{ color: "var(--text-muted)" }}>Phone: </span>{me.phone}</div>}
+              {me.student_profile ? (
+                <>
+                  <div><span style={{ color: "var(--text-muted)" }}>Roll No.: </span>{me.student_profile.roll_number}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Name: </span>{me.student_profile.name}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Department: </span>{me.student_profile.department || "-"}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Year: </span>{me.student_profile.year || "-"}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Bus: </span>{me.student_profile.bus_number || "-"}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Boarding Point: </span>{me.student_profile.boarding_point || "-"}</div>
+                </>
+              ) : (
+                <>
+                  {me.driven_bus_number && <div><span style={{ color: "var(--text-muted)" }}>Bus (driver): </span>{me.driven_bus_number}</div>}
+                  {me.incharge_bus_number && <div><span style={{ color: "var(--text-muted)" }}>Bus (in-charge): </span>{me.incharge_bus_number}</div>}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(167,139,250,0.25)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <Palette size={18} style={{ color: "var(--accent-violet)" }} />
