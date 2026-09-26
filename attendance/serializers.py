@@ -9,12 +9,14 @@ from .models import AttendanceRecord, AttendanceSession, AttendanceWindowConfig,
 
 class AttendanceWindowConfigSerializer(serializers.ModelSerializer):
     updated_by_username = serializers.CharField(source="updated_by.username", read_only=True, allow_null=True)
+    qr_token_ttl_seconds = serializers.IntegerField(min_value=5, max_value=120)
 
     class Meta:
         model = AttendanceWindowConfig
         fields = [
             "morning_start", "morning_end",
             "evening_start", "evening_end",
+            "qr_token_ttl_seconds",
             "updated_by_username", "updated_at",
         ]
 

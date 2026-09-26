@@ -41,6 +41,7 @@ export const SettingsPage: React.FC = () => {
   const [morningEnd,   setMorningEnd]   = useState("");
   const [eveningStart, setEveningStart] = useState("");
   const [eveningEnd,   setEveningEnd]   = useState("");
+  const [qrTtl, setQrTtl] = useState("");
   const [windowLoading, setWindowLoading] = useState(true);
   const [windowSaving,  setWindowSaving]  = useState(false);
   const [windowSaved,   setWindowSaved]   = useState(false);
@@ -62,6 +63,7 @@ export const SettingsPage: React.FC = () => {
         setMorningEnd(toInputTime(w.morning_end));
         setEveningStart(toInputTime(w.evening_start));
         setEveningEnd(toInputTime(w.evening_end));
+        setQrTtl(String(w.qr_token_ttl_seconds));
       })
       .catch(() => setWindowError("Could not load attendance window times."))
       .finally(() => setWindowLoading(false));
@@ -84,7 +86,8 @@ export const SettingsPage: React.FC = () => {
     morningStart !== toInputTime(windowConfig.morning_start) ||
     morningEnd   !== toInputTime(windowConfig.morning_end) ||
     eveningStart !== toInputTime(windowConfig.evening_start) ||
-    eveningEnd   !== toInputTime(windowConfig.evening_end)
+    eveningEnd   !== toInputTime(windowConfig.evening_end) ||
+    qrTtl        !== String(windowConfig.qr_token_ttl_seconds)
   );
 
   const handleSaveWindow = async () => {
@@ -95,12 +98,14 @@ export const SettingsPage: React.FC = () => {
         morning_end: toApiTime(morningEnd),
         evening_start: toApiTime(eveningStart),
         evening_end: toApiTime(eveningEnd),
+        qr_token_ttl_seconds: Number(qrTtl),
       });
       setWindowConfig(updated);
       setMorningStart(toInputTime(updated.morning_start));
       setMorningEnd(toInputTime(updated.morning_end));
       setEveningStart(toInputTime(updated.evening_start));
       setEveningEnd(toInputTime(updated.evening_end));
+      setQrTtl(String(updated.qr_token_ttl_seconds));
       setWindowSaved(true); setTimeout(() => setWindowSaved(false), 2500);
     } catch (e: any) {
       const detail = e?.response?.data && Object.values(e.response.data)[0];
@@ -263,6 +268,14 @@ export const SettingsPage: React.FC = () => {
                     disabled={!canManageBuses} />
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>24-hour: {eveningEnd || "--:--"}</div>
                 </div>
+              </div>
+
+              <div style={{ marginTop: 14, maxWidth: 260 }}>
+                <label htmlFor="aw-qr-ttl" style={{ fontSize: 12, color: "var(--text-muted)" }}>QR code expiry (seconds)</label>
+                <input id="aw-qr-ttl" type="number" min={5} max={120} value={qrTtl}
+                  onChange={e => setQrTtl(e.target.value)} style={inputStyle}
+                  disabled={!canManageBuses} />
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Between 5 and 120 seconds. How long a generated attendance QR code stays scannable.</div>
               </div>
 
               {!canManageBuses ? (

@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 
 from .models import Bus
+from students.models import Student
+from attendance.models import Teacher
 
 PAYLOAD = {
     "bus_number": "B09",
@@ -117,3 +119,87 @@ class AddBusValidationTests(APITestCase):
         bus_id = self.client.post(self.url, PAYLOAD, format="json").data["id"]
         res = self.client.patch(f"{self.url}{bus_id}/", {"route": "New route"}, format="json")
         self.assertEqual(res.status_code, 200, res.data)
+
+
+class AssignRemoveInchargeTests(APITestCase):
+    def setUp(self):
+        self.bus = Bus.objects.create(**{**PAYLOAD, "length_m": 12, "width_m": 2.5})
+        self.other_bus = Bus.objects.create(**{**PAYLOAD, "bus_number": "B10", "rfid_uid": "RFID-010", "length_m": 12, "width_m": 2.5})
+        self.staff = make_user("staff1", "STAFF")
+
+    def assign_url(self, bus):
+        return f"/api/buses/{bus.id}/assign-incharge/"
+
+    def remove_url(self, bus):
+        return f"/api/buses/{bus.id}/remove-incharge/"
+
+    def test_assign_student_with_no_linked_user_returns_400(self):
+        student = Student.objects.create(name="No Login", roll_number="R001")
+        self.client.force_authenticate(self.staff)
+        res = self.client.post(self.assign_url(self.bus), {"source_type": "STUDENT", "source_id": student.id}, format="json")
+        self.assertEqual(res.status_code, 400, res.data)
+
+    def test_assign_teacher_with_no_linked_user_returns_400(self):
+        teacher = Teacher.objects.create(name="No Login Teacher", staff_id="T001")
+        self.client.force_authenticate(self.staff)
+        res = self.client.post(self.assign_url(self.bus), {"source_type": "TEACHER", "source_id": teacher.id}, format="json")
+        self.assertEqual(res.status_code, 400, res.data)
+
+    def test_assign_already_privileged_account_returns_400(self):
+        driver_user = make_user("drv1", "DRIVER")
+        student = Student.objects.create(name="Driver Student", roll_number="R002", linked_user=driver_user)
+        self.client.force_authenticate(self.staff)
+        res = self.client.post(self.assign_url(self.bus), {"source_type": "STUDENT", "source_id": student.id}, format="json")
+        self.assertEqual(res.status_code, 400, res.data)
+        driver_user.refresh_from_db()
+        self.assertEqual(driver_user.profile.role, "DRIVER")
+
+    def test_assign_second_incharge_reverts_first_to_student(self):
+        user1 = make_user("stu1", "STUDENT")
+        student1 = Student.objects.create(name="First Incharge", roll_number="R003", linked_user=user1)
+        user2 = make_user("stu2", "STUDENT")
+        student2 = Student.objects.create(name="Second Incharge", roll_number="R004", linked_user=user2)
+
+        self.client.force_authenticate(self.staff)
+        res1 = self.client.post(self.assign_url(self.bus), {"source_type": "STUDENT", "source_id": student1.id}, format="json")
+        self.assertEqual(res1.status_code, 200, res1.data)
+        user1.refresh_from_db()
+        self.assertEqual(user1.profile.role, "INCHARGE")
+
+        res2 = self.client.post(self.assign_url(self.bus), {"source_type": "STUDENT", "source_id": student2.id}, format="json")
+        self.assertEqual(res2.status_code, 200, res2.data)
+        user1.refresh_from_db()
+        user2.refresh_from_db()
+        self.assertEqual(user1.profile.role, "STUDENT")
+        self.assertEqual(user2.profile.role, "INCHARGE")
+        self.bus.refresh_from_db()
+        self.assertEqual(self.bus.incharge_id, user2.id)
+
+    def test_remove_incharge_reverts_role_and_clears_bus(self):
+        user = make_user("stu3", "STUDENT")
+        student = Student.objects.create(name="To Remove", roll_number="R005", linked_user=user)
+        self.client.force_authenticate(self.staff)
+        self.client.post(self.assign_url(self.bus), {"source_type": "STUDENT", "source_id": student.id}, format="json")
+
+        res = self.client.post(self.remove_url(self.bus), {}, format="json")
+        self.assertEqual(res.status_code, 200, res.data)
+        user.refresh_from_db()
+        self.bus.refresh_from_db()
+        self.assertEqual(user.profile.role, "STUDENT")
+        self.assertIsNone(self.bus.incharge)
+
+    def test_student_cannot_call_assign_incharge(self):
+        user = make_user("stu4", "STUDENT")
+        student = Student.objects.create(name="Requester", roll_number="R006", linked_user=user)
+        self.client.force_authenticate(make_user("stu5", "STUDENT"))
+        res = self.client.post(self.assign_url(self.bus), {"source_type": "STUDENT", "source_id": student.id}, format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_student_cannot_call_remove_incharge(self):
+        self.client.force_authenticate(make_user("stu6", "STUDENT"))
+        res = self.client.post(self.remove_url(self.bus), {}, format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_anonymous_cannot_call_assign_or_remove(self):
+        self.assertEqual(self.client.post(self.assign_url(self.bus), {}, format="json").status_code, 401)
+        self.assertEqual(self.client.post(self.remove_url(self.bus), {}, format="json").status_code, 401)

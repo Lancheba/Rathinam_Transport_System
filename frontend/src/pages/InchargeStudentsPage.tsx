@@ -1,8 +1,9 @@
 ﻿import React, { useEffect, useState } from "react";
-import { Users, Bus as BusIcon, GraduationCap } from "lucide-react";
-import { getStudents } from "../api/endpoints";
+import { Users, GraduationCap } from "lucide-react";
+import { getStudents, getBuses } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
-import type { Student } from "../types";
+import { CabDetailsCard } from "../components/CabDetailsCard";
+import type { Student, Bus } from "../types";
 
 const YEAR_LABEL: Record<number, string> = { 1: "1st Yr", 2: "2nd Yr", 3: "3rd Yr", 4: "4th Yr" };
 
@@ -14,13 +15,17 @@ const YEAR_LABEL: Record<number, string> = { 1: "1st Yr", 2: "2nd Yr", 3: "3rd Y
 const InchargeStudentsPage: React.FC = () => {
   const { inchargeBusNumber } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
+  const [bus, setBus] = useState<Bus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!inchargeBusNumber) { setLoading(false); return; }
     setLoading(true);
-    getStudents()
-      .then((data) => setStudents([...data].sort((a, b) => a.name.localeCompare(b.name))))
+    Promise.all([getStudents(), getBuses()])
+      .then(([studentData, busData]) => {
+        setStudents([...studentData].sort((a, b) => a.name.localeCompare(b.name)));
+        setBus(busData.find((b) => b.bus_number === inchargeBusNumber) ?? null);
+      })
       .finally(() => setLoading(false));
   }, [inchargeBusNumber]);
 
@@ -44,12 +49,14 @@ const InchargeStudentsPage: React.FC = () => {
           <Users size={20} strokeWidth={1.9} /> My Bus
         </h2>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 13 }}>
-          <BusIcon size={14} /> {inchargeBusNumber} &middot; {students.length} student{students.length === 1 ? "" : "s"}
+          {students.length} student{students.length === 1 ? "" : "s"}
         </span>
       </div>
       <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 18 }}>
         Read-only: only students riding your own cab.
       </p>
+
+      {!loading && bus && <CabDetailsCard bus={bus} />}
 
       {loading ? (
         <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "32px 0", textAlign: "center" }}>Loading roster...</div>
