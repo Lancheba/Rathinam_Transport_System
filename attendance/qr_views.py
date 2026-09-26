@@ -110,7 +110,7 @@ def qr_generate(request):
     if changed_fields:
         session.save(update_fields=changed_fields)
 
-    ttl = getattr(settings, 'QR_TOKEN_TTL_SECONDS', 60)
+    ttl = getattr(settings, 'QR_TOKEN_TTL_SECONDS', 10)
 
     # 2.8: a session should only ever have one live token; refreshing
     # (or re-opening) must not leave older tokens scannable.

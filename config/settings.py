@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -281,7 +281,7 @@ if not DEBUG:
 # MORNING/EVENING attendance windows are edited in the app (Settings page);
 # code reads them through attendance.services.get_windows().
 FACE_MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.5"))  # Euclidean distance; dlib 128-d embeddings: 0.5 rejects most impostors
-QR_TOKEN_TTL_SECONDS = int(os.environ.get("QR_TOKEN_TTL_SECONDS", "25"))  # target 20-30 once the frontend auto-refreshes
+QR_TOKEN_TTL_SECONDS = int(os.environ.get("QR_TOKEN_TTL_SECONDS", "10"))  # QR refreshes every 10s on the incharge screen
 FACE_SCAN_MAX_ATTEMPTS_PER_SESSION = 5
 
 
