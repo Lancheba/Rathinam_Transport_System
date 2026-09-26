@@ -1,4 +1,4 @@
-"""
+﻿"""
 attendance/detection.py  -  Step 6 cheat-detection (plan items 2A.5, 2A.6)
 
 Call run_detection(session) after any attendance change to check that session
@@ -36,7 +36,7 @@ def _create_flag(session, rule, severity, detail, records=None):
 
 
 # ---------------------------------------------------------------------------
-# Rule 1 — one device used to scan many students
+# Rule 1 â€” one device used to scan many students
 # ---------------------------------------------------------------------------
 def _check_same_device(session):
     threshold = getattr(settings, 'FLAG_SAME_DEVICE_THRESHOLD', 3)
@@ -63,7 +63,7 @@ def _check_same_device(session):
 
 
 # ---------------------------------------------------------------------------
-# Rule 2 — burst of scans from one IP in a short window
+# Rule 2 â€” burst of scans from one IP in a short window
 # ---------------------------------------------------------------------------
 def _check_ip_burst(session):
     window_secs = getattr(settings, 'FLAG_IP_BURST_WINDOW_SECONDS', 30)
@@ -103,7 +103,7 @@ def _check_ip_burst(session):
 
 
 # ---------------------------------------------------------------------------
-# Rule 3 — unusually high share of manual marks
+# Rule 3 â€” unusually high share of manual marks
 # ---------------------------------------------------------------------------
 def _check_manual_share(session):
     threshold = getattr(settings, 'FLAG_MANUAL_SHARE_RATIO', 0.4)
@@ -120,7 +120,7 @@ def _check_manual_share(session):
 
 
 # ---------------------------------------------------------------------------
-# Rule 4 — everyone marked present within one minute
+# Rule 4 â€” everyone marked present within one minute
 # ---------------------------------------------------------------------------
 def _check_instant_present(session):
     threshold = getattr(settings, 'FLAG_INSTANT_PRESENT_SECONDS', 60)
@@ -145,7 +145,7 @@ def _check_instant_present(session):
 
 
 # ---------------------------------------------------------------------------
-# Rule 5 — attendance recorded on a declared holiday
+# Rule 5 â€” attendance recorded on a declared holiday
 # ---------------------------------------------------------------------------
 def _check_holiday_attendance(session):
     if not session.is_holiday:
@@ -181,3 +181,21 @@ def run_detection(session):
         logging.getLogger(__name__).exception(
             'Detection error for session %s', session.pk
         )
+
+def log_manual_mark(record, actor=None):
+    who = getattr(record.student, 'name', None) or getattr(record.teacher, 'name', None) or 'Unknown'
+    AttendanceFlag.objects.create(
+        session=record.session,
+        rule='MANUAL_MARK_LOGGED',
+        severity='LOW',
+        detail={
+            'person': who,
+            'status': record.status,
+            'remarks': record.remarks,
+            'marked_by': getattr(actor, 'username', None),
+            'marked_at': record.marked_at.isoformat() if record.marked_at else None,
+        },
+        records=[record.pk] if record.pk else None,
+    )
+
+

@@ -8,7 +8,7 @@ import type {
   AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
   AttendanceWindowConfig,
   AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
-  Teacher, TeacherInput, TeacherLoginInput, Person,
+  Teacher, TeacherInput, TeacherLoginInput, Person, LinkRequest,
 } from "../types";
 
 // Buses
@@ -193,3 +193,13 @@ export const assignIncharge = (busId: number, data: { source_type: "STUDENT" | "
   api.post(`/buses/${busId}/assign-incharge/`, data).then(r => r.data);
 export const removeIncharge = (busId: number) =>
   api.post(`/buses/${busId}/remove-incharge/`).then(r => r.data);
+
+// Staff queue: teacher self-registration link requests (Section 4/5 approval path)
+export const getLinkRequests = (status?: LinkRequest["status"] | "ALL", kind?: LinkRequest["kind"]) =>
+  api.get<{ count: number; results: LinkRequest[] }>("/auth/link-requests/", {
+    params: { ...(status ? { status } : {}), ...(kind ? { kind } : {}) },
+  }).then(r => r.data);
+export const approveLinkRequest = (id: number, note?: string) =>
+  api.post<LinkRequest>(`/auth/link-requests/${id}/approve/`, note ? { note } : {}).then(r => r.data);
+export const rejectLinkRequest = (id: number, note?: string) =>
+  api.post<LinkRequest>(`/auth/link-requests/${id}/reject/`, note ? { note } : {}).then(r => r.data);

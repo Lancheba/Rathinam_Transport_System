@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Users, ShieldAlert, UserCog, Bus as BusIcon, GraduationCap, UserCheck2, X, Search } from "lucide-react";
+﻿import React, { useEffect, useMemo, useState } from "react";
+import { Users, ShieldAlert, UserCog, Bus as BusIcon, GraduationCap, UserCheck2, X, Search, Inbox } from "lucide-react";
 import axios from "axios";
-import { getPeople, getStudents, getTeachers, getBuses, assignIncharge, removeIncharge } from "../api/endpoints";
+import { getPeople, getStudents, getTeachers, getBuses, assignIncharge, removeIncharge, createTeacherLogin, getLinkRequests, approveLinkRequest, rejectLinkRequest, createTeacher } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
-import type { Person, Student, Teacher, Bus } from "../types";
+import type { Person, Student, Teacher, Bus, LinkRequest, TeacherInput, TeacherLoginInput } from "../types";
 
-type TabKey = "STAFF" | "DRIVER" | "INCHARGE" | "TEACHER" | "STUDENT";
+type TabKey = "STAFF" | "DRIVER" | "INCHARGE" | "TEACHER" | "STUDENT" | "REQUESTS";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "STAFF", label: "Staff & Admins", icon: UserCog },
@@ -13,6 +13,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "INCHARGE", label: "In-Charges", icon: UserCheck2 },
   { key: "TEACHER", label: "Teachers", icon: GraduationCap },
   { key: "STUDENT", label: "Students", icon: Users },
+  { key: "REQUESTS", label: "Requests", icon: Inbox },
 ];
 
 type AssignTarget = { source_type: "STUDENT" | "TEACHER"; source_id: number; name: string };
@@ -24,6 +25,7 @@ const PeoplePage: React.FC = () => {
   const [people, setPeople] = useState<Person[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [linkRequests, setLinkRequests] = useState<LinkRequest[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
@@ -36,11 +38,29 @@ const PeoplePage: React.FC = () => {
   const [pickedBusId, setPickedBusId] = useState<number | "">("");
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
+  const [loginTarget, setLoginTarget] = useState<{ id: number; name: string } | null>(null);
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [revealedLogin, setRevealedLogin] = useState<{ username: string; password: string } | null>(null);
+
+  const [showAddTeacher, setShowAddTeacher] = useState(false);
+  const [newTeacherName, setNewTeacherName] = useState("");
+  const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
+  const [newTeacherDept, setNewTeacherDept] = useState("");
+  const [newTeacherPhone, setNewTeacherPhone] = useState("");
+  const [newTeacherEmail, setNewTeacherEmail] = useState("");
+  const [newTeacherBusId, setNewTeacherBusId] = useState<number | "">("");
+  const [newTeacherWithLogin, setNewTeacherWithLogin] = useState(false);
+  const [newTeacherUsername, setNewTeacherUsername] = useState("");
+  const [newTeacherPassword, setNewTeacherPassword] = useState("");
+  const [addTeacherError, setAddTeacherError] = useState<string | null>(null);
+
   const loadAll = () => {
     setLoading(true);
     setForbidden(false);
-    Promise.all([getPeople(), getStudents(), getTeachers(), getBuses()])
-      .then(([p, s, t, b]) => { setPeople(p); setStudents(s); setTeachers(t); setBuses(b); })
+    Promise.all([getPeople(), getStudents(), getTeachers(), getBuses(), getLinkRequests("PENDING")])
+      .then(([p, s, t, b, lr]) => { setPeople(p); setStudents(s); setTeachers(t); setBuses(b); setLinkRequests(lr); })
       .catch((err) => {
         if (axios.isAxiosError(err) && (err.response?.status === 403 || err.response?.status === 401)) {
           setForbidden(true);
@@ -86,6 +106,7 @@ const PeoplePage: React.FC = () => {
     INCHARGE: "Search by username...",
     TEACHER: "Search by name or staff ID...",
     STUDENT: "Search by name or roll number...",
+    REQUESTS: "Search requests...",
   };
 
   const handleAssignSubmit = async () => {
@@ -139,6 +160,90 @@ const PeoplePage: React.FC = () => {
     );
   }
 
+  const handleCreateLoginSubmit = async () => {
+    if (!loginTarget || !loginUsername.trim() || !loginPassword) return;
+    setBusyKey(`login-${loginTarget.id}`);
+    setLoginError(null);
+    try {
+      await createTeacherLogin(loginTarget.id, { username: loginUsername.trim(), password: loginPassword });
+      setRevealedLogin({ username: loginUsername.trim(), password: loginPassword });
+      setLoginTarget(null);
+      setLoginUsername("");
+      setLoginPassword("");
+      loadAll();
+    } catch (err) {
+      const msg = axios.isAxiosError(err) && err.response?.data
+        ? JSON.stringify(err.response.data)
+        : "Couldn't create login. Check the username and password and try again.";
+      setLoginError(msg);
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleApproveRequest = async (req: LinkRequest) => {
+    setBusyKey(`approve-${req.id}`);
+    try {
+      await approveLinkRequest(req.id);
+      setNotice(`Request from ${req.user.username} approved.`);
+      loadAll();
+    } catch {
+      window.alert("Couldn't approve that request. Check your connection or permissions and try again.");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleRejectRequest = async (req: LinkRequest) => {
+    if (!window.confirm(`Reject the request from ${req.user.username}?`)) return;
+    setBusyKey(`reject-${req.id}`);
+    try {
+      await rejectLinkRequest(req.id);
+      setNotice(`Request from ${req.user.username} rejected.`);
+      loadAll();
+    } catch {
+      window.alert("Couldn't reject that request. Check your connection or permissions and try again.");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleAddTeacherSubmit = async () => {
+    if (!newTeacherName.trim() || !newTeacherStaffId.trim()) return;
+    if (newTeacherWithLogin && (!newTeacherUsername.trim() || !newTeacherPassword)) return;
+    setBusyKey("add-teacher");
+    setAddTeacherError(null);
+    try {
+      const payload: TeacherInput & Partial<TeacherLoginInput> = {
+        name: newTeacherName.trim(),
+        staff_id: newTeacherStaffId.trim(),
+        department: newTeacherDept.trim(),
+        phone: newTeacherPhone.trim(),
+        email: newTeacherEmail.trim(),
+        boarding_point: "",
+        bus: newTeacherBusId === "" ? null : Number(newTeacherBusId),
+        ...(newTeacherWithLogin
+          ? { username: newTeacherUsername.trim(), password: newTeacherPassword }
+          : {}),
+      };
+      await createTeacher(payload);
+      setShowAddTeacher(false);
+      if (newTeacherWithLogin) {
+        setRevealedLogin({ username: newTeacherUsername.trim(), password: newTeacherPassword });
+      } else {
+        setNotice(`${newTeacherName.trim()} added to the teacher roster.`);
+      }
+      loadAll();
+    } catch (err) {
+      const msg = axios.isAxiosError(err) && err.response?.data
+        ? JSON.stringify(err.response.data)
+        : "Couldn't add that teacher. Check the details and try again.";
+      setAddTeacherError(msg);
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   const thStyle: React.CSSProperties = {
     textAlign: "left", padding: "10px 12px", fontSize: 11.5, fontWeight: 700,
     textTransform: "uppercase", letterSpacing: 0.4, color: "var(--text-muted)",
@@ -179,19 +284,35 @@ const PeoplePage: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ position: "relative", maxWidth: 360, marginBottom: 20 }}>
-        <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)" }} />
-        <input
-          type="text" enterKeyHint="search" autoComplete="off"
-          aria-label={searchPlaceholder[activeTab]}
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder={searchPlaceholder[activeTab]}
-          style={{
-            width: "100%", padding: "9px 14px 9px 36px", borderRadius: 10,
-            border: "1px solid rgba(96,165,250,0.2)", background: "rgba(96,165,250,0.05)",
-            color: "var(--text-strong)", fontSize: 13.5, outline: "none",
-          }}
-        />
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+        <div style={{ position: "relative", maxWidth: 360, flex: 1 }}>
+          <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)" }} />
+          <input
+            type="text" enterKeyHint="search" autoComplete="off"
+            aria-label={searchPlaceholder[activeTab]}
+            value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder[activeTab]}
+            style={{
+              width: "100%", padding: "9px 14px 9px 36px", borderRadius: 10,
+              border: "1px solid rgba(96,165,250,0.2)", background: "rgba(96,165,250,0.05)",
+              color: "var(--text-strong)", fontSize: 13.5, outline: "none",
+            }}
+          />
+        </div>
+        {activeTab === "TEACHER" && (
+          <button
+            type="button"
+            onClick={() => {
+              setNewTeacherName(""); setNewTeacherStaffId(""); setNewTeacherDept("");
+              setNewTeacherPhone(""); setNewTeacherEmail(""); setNewTeacherBusId("");
+              setNewTeacherWithLogin(false); setNewTeacherUsername(""); setNewTeacherPassword("");
+              setAddTeacherError(null); setShowAddTeacher(true);
+            }}
+            style={{ ...actionBtnStyle, background: "var(--text-strong)", color: "var(--btn-fg)", border: "1px solid var(--text-strong)", whiteSpace: "nowrap" }}
+          >
+            Add Teacher
+          </button>
+        )}
       </div>
 
       {notice && (
@@ -284,7 +405,7 @@ const PeoplePage: React.FC = () => {
                         : <span style={{ color: "var(--text-dim)" }}>No login</span>}
                     </td>
                     <td style={{ padding: "8px 12px" }}>
-                      {t.has_login && (
+                      {t.has_login ? (
                         <button
                           type="button"
                           onClick={() => setAssignTarget({ source_type: "TEACHER", source_id: t.id, name: t.name })}
@@ -292,7 +413,60 @@ const PeoplePage: React.FC = () => {
                         >
                           Assign as in-charge
                         </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setLoginTarget({ id: t.id, name: t.name }); setLoginUsername(""); setLoginPassword(""); setLoginError(null); }}
+                          style={{ ...actionBtnStyle, color: "var(--accent-green)", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.35)" }}
+                        >
+                          Create login
+                        </button>
                       )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </>
+          )}
+
+          {activeTab === "REQUESTS" && tableWrap(
+            <>
+              <thead><tr><th style={thStyle}>Username</th><th style={thStyle}>Kind</th><th style={thStyle}>Details</th><th style={thStyle}>Requested</th><th style={thStyle} /></tr></thead>
+              <tbody>
+                {linkRequests.length === 0 && (
+                  <tr><td colSpan={5} style={{ padding: "16px 12px", color: "var(--text-muted)", textAlign: "center" }}>No pending requests.</td></tr>
+                )}
+                {linkRequests.map((req) => (
+                  <tr key={req.id}>
+                    <td style={{ padding: "8px 12px" }}>{req.user.username}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--text-muted)" }}>{req.kind === "TEACHER" ? "Teacher" : "Driver / Bus"}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--text-muted)" }}>
+                      {req.kind === "TEACHER" && req.teacher && "name" in req.teacher
+                        ? `${req.teacher.name} (${req.teacher.staff_id})`
+                        : req.kind === "DRIVER_BUS" && req.bus
+                        ? `${req.bus.bus_number} — ${req.bus.route}`
+                        : "-"}
+                    </td>
+                    <td style={{ padding: "8px 12px", color: "var(--text-dim)", fontSize: 12.5 }}>
+                      {req.created_at ? new Date(req.created_at).toLocaleDateString() : "-"}
+                    </td>
+                    <td style={{ padding: "8px 12px", display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => handleApproveRequest(req)}
+                        disabled={busyKey === `approve-${req.id}`}
+                        style={{ ...actionBtnStyle, color: "var(--accent-green)", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.35)" }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRejectRequest(req)}
+                        disabled={busyKey === `reject-${req.id}`}
+                        style={{ ...actionBtnStyle, color: "var(--accent-red)", background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.25)" }}
+                      >
+                        Reject
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -358,8 +532,178 @@ const PeoplePage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {loginTarget && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50,
+        }}>
+          <div style={{ background: "var(--bg-elevated, #111827)", borderRadius: 12, padding: 24, width: 360, border: "1px solid rgba(96,165,250,0.2)" }}>
+            <h3 style={{ color: "var(--text-strong)", marginTop: 0 }}>Create login for {loginTarget.name}</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              This creates a normal account for {loginTarget.name}. The password is shown once after creation — save it before closing.
+            </p>
+            <input
+              type="text"
+              placeholder="Username"
+              value={loginUsername}
+              onChange={(e) => setLoginUsername(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            <input
+              type="text"
+              placeholder="Initial password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 14, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            {loginError && <p style={{ color: "var(--accent-red)", fontSize: 12.5 }}>{loginError}</p>}
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => { setLoginTarget(null); setLoginError(null); }}
+                style={{ ...actionBtnStyle, background: "none", border: "1px solid rgba(96,165,250,0.2)", color: "var(--text-muted)" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateLoginSubmit}
+                disabled={!loginUsername.trim() || !loginPassword || busyKey !== null}
+                style={{ ...actionBtnStyle, background: "var(--text-strong)", color: "var(--btn-fg)", border: "1px solid var(--text-strong)" }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {revealedLogin && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60,
+        }}>
+          <div style={{ background: "var(--bg-elevated, #111827)", borderRadius: 12, padding: 24, width: 360, border: "1px solid rgba(74,222,128,0.35)" }}>
+            <h3 style={{ color: "var(--accent-green)", marginTop: 0 }}>Login created</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              Copy this password now — it won't be shown again.
+            </p>
+            <div style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 8, padding: 12, marginBottom: 14, fontFamily: "monospace", fontSize: 13.5 }}>
+              <div style={{ color: "var(--text-muted)", fontSize: 11 }}>Username</div>
+              <div style={{ color: "var(--text-strong)", marginBottom: 8 }}>{revealedLogin.username}</div>
+              <div style={{ color: "var(--text-muted)", fontSize: 11 }}>Password</div>
+              <div style={{ color: "var(--text-strong)" }}>{revealedLogin.password}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setRevealedLogin(null)}
+                style={{ ...actionBtnStyle, background: "var(--text-strong)", color: "var(--btn-fg)", border: "1px solid var(--text-strong)" }}
+              >
+                Done, I saved it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddTeacher && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50,
+        }}>
+          <div style={{ background: "var(--bg-elevated, #111827)", borderRadius: 12, padding: 24, width: 400, maxHeight: "85vh", overflowY: "auto", border: "1px solid rgba(96,165,250,0.2)" }}>
+            <h3 style={{ color: "var(--text-strong)", marginTop: 0 }}>Add Teacher</h3>
+            <input
+              type="text" placeholder="Full name"
+              value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            <input
+              type="text" placeholder="Staff ID"
+              value={newTeacherStaffId} onChange={(e) => setNewTeacherStaffId(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            <input
+              type="text" placeholder="Department"
+              value={newTeacherDept} onChange={(e) => setNewTeacherDept(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            <input
+              type="text" placeholder="Phone"
+              value={newTeacherPhone} onChange={(e) => setNewTeacherPhone(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            <input
+              type="text" placeholder="Email"
+              value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+            />
+            <select
+              value={newTeacherBusId}
+              onChange={(e) => setNewTeacherBusId(e.target.value ? Number(e.target.value) : "")}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 14, border: "1px solid rgba(96,165,250,0.2)" }}
+            >
+              <option value="">No bus assigned</option>
+              {buses.map((b) => <option key={b.id} value={b.id}>{b.bus_number}</option>)}
+            </select>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 13, color: "var(--text-muted)", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={newTeacherWithLogin}
+                onChange={(e) => setNewTeacherWithLogin(e.target.checked)}
+              />
+              Create a login for this teacher
+            </label>
+
+            {newTeacherWithLogin && (
+              <>
+                <input
+                  type="text" placeholder="Username"
+                  value={newTeacherUsername} onChange={(e) => setNewTeacherUsername(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 10, border: "1px solid rgba(96,165,250,0.2)" }}
+                />
+                <input
+                  type="text" placeholder="Initial password"
+                  value={newTeacherPassword} onChange={(e) => setNewTeacherPassword(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, marginBottom: 14, border: "1px solid rgba(96,165,250,0.2)" }}
+                />
+              </>
+            )}
+
+            {addTeacherError && <p style={{ color: "var(--accent-red)", fontSize: 12.5 }}>{addTeacherError}</p>}
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => { setShowAddTeacher(false); setAddTeacherError(null); }}
+                style={{ ...actionBtnStyle, background: "none", border: "1px solid rgba(96,165,250,0.2)", color: "var(--text-muted)" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddTeacherSubmit}
+                disabled={
+                  !newTeacherName.trim() || !newTeacherStaffId.trim() ||
+                  (newTeacherWithLogin && (!newTeacherUsername.trim() || !newTeacherPassword)) ||
+                  busyKey !== null
+                }
+                style={{ ...actionBtnStyle, background: "var(--text-strong)", color: "var(--btn-fg)", border: "1px solid var(--text-strong)" }}
+              >
+                Add Teacher
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default PeoplePage;
+
+
+

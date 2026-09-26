@@ -1,4 +1,4 @@
-from datetime import time
+﻿from datetime import time
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -30,6 +30,10 @@ class AttendanceWindowConfig(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name="attendance_window_updates",
+    )
+    qr_token_ttl_seconds = models.PositiveIntegerField(
+        default=10,
+        help_text="How many seconds a generated attendance QR code stays valid before it expires.",
     )
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -300,6 +304,7 @@ class AttendanceFlag(models.Model):
         ('MANUAL_MARK_SHARE_HIGH', 'Unusually high share of manual marks in a session'),
         ('SESSION_INSTANT_PRESENT', 'Everyone marked present within one minute'),
         ('HOLIDAY_ATTENDANCE', 'Attendance recorded on a declared holiday'),
+        ('MANUAL_MARK_LOGGED', 'Manual mark by in-charge (informational)'),
     ]
     SEVERITY_CHOICES = [('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High')]
     STATUS_CHOICES = [('OPEN', 'Open'), ('REVIEWED', 'Reviewed'), ('DISMISSED', 'Dismissed')]
@@ -326,3 +331,4 @@ class AttendanceFlag(models.Model):
 
     def __str__(self):
         return f'Flag({self.rule} session={self.session_id} {self.status})'
+

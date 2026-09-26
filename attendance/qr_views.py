@@ -1,4 +1,4 @@
-from .net import client_ip, device_id as request_device_id, user_agent as request_user_agent
+﻿from .net import client_ip, device_id as request_device_id, user_agent as request_user_agent
 import logging
 import math
 import numpy as np
@@ -18,7 +18,7 @@ from rest_framework.response import Response
 
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
-from attendance.detection import run_detection
+from attendance.detection import run_detection, log_manual_mark
 from attendance.services import get_windows, is_school_day, set_attendance
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
@@ -110,7 +110,7 @@ def qr_generate(request):
     if changed_fields:
         session.save(update_fields=changed_fields)
 
-    ttl = getattr(settings, 'QR_TOKEN_TTL_SECONDS', 10)
+    ttl = AttendanceWindowConfig.get_solo().qr_token_ttl_seconds
 
     # 2.8: a session should only ever have one live token; refreshing
     # (or re-opening) must not leave older tokens scannable.
@@ -480,6 +480,7 @@ def qr_manual_mark(request):
     )
 
     run_detection(session)
+    log_manual_mark(record, actor=request.user)
     return Response({
         'status': 'PRESENT',
         'source': 'MANUAL',
@@ -550,3 +551,6 @@ def qr_roster(request):
     ]
 
     return Response({'session_open': session is not None, 'students': rows})
+
+
+

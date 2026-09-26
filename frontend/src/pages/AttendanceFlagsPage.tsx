@@ -10,6 +10,18 @@ const STATUSES: { value: AttendanceFlagStatus; label: string; color: string }[] 
   { value: "DISMISSED",  label: "Dismissed",  color: "var(--text-muted)" },
 ];
 
+const RULE_LABELS: Record<string, string> = {
+  SAME_DEVICE_MANY_STUDENTS: "One device used for many students",
+  SAME_IP_BURST: "Many scans from one IP in a short window",
+  EMBEDDING_CLONE: "Two students share a near-identical face embedding",
+  IDENTICAL_SCORES: "Many scans share an unusually exact match score",
+  MANUAL_MARK_SHARE_HIGH: "Unusually high share of manual marks in a session",
+  SESSION_INSTANT_PRESENT: "Everyone marked present within one minute",
+  HOLIDAY_ATTENDANCE: "Attendance recorded on a declared holiday",
+  MANUAL_MARK_LOGGED: "Manual mark by in-charge",
+};
+const ruleLabel = (rule: string): string => RULE_LABELS[rule] ?? rule;
+
 const severityColor = (sev: string): string => {
   const s = sev.toUpperCase();
   if (s === "HIGH" || s === "CRITICAL") return "var(--accent-red)";
@@ -65,7 +77,7 @@ const FlagCard: React.FC<{
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span style={badge(severityColor(item.severity))}>{item.severity.toUpperCase()}</span>
-          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{item.rule}</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{ruleLabel(item.rule)}</span>
         </div>
         <span style={badge(statusColor(item.status))}>{item.status}</span>
       </div>
@@ -190,3 +202,5 @@ const AttendanceFlagsPage: React.FC = () => {
 };
 
 export default AttendanceFlagsPage;
+
+

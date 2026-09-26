@@ -323,6 +323,7 @@ export interface AttendanceWindowConfig {
   morning_end: string;
   evening_start: string;
   evening_end: string;
+  qr_token_ttl_seconds: number;
   updated_by_username: string | null;
   updated_at: string;
 }
@@ -563,4 +564,18 @@ export interface TeacherInput {
 export interface TeacherLoginInput {
   username: string;
   password: string;
+}
+
+/** One row in the staff link-request queue (teacher self-registration approvals). */
+export interface LinkRequest {
+  id: number;
+  kind: "TEACHER" | "DRIVER_BUS";
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+  user: { id: number; username: string };
+  teacher: { id: number; staff_id: string; name: string; department: string } | { staff_id: string } | null;
+  bus: { id: number; bus_number: string; route: string } | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string;
+  created_at: string | null;
 }
