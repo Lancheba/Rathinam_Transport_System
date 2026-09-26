@@ -196,7 +196,7 @@ export const removeIncharge = (busId: number) =>
 
 // Staff queue: teacher self-registration link requests (Section 4/5 approval path)
 export const getLinkRequests = (status?: LinkRequest["status"] | "ALL", kind?: LinkRequest["kind"]) =>
-  api.get<{ count: number; results: LinkRequest[] }>("/auth/link-requests/", {
+  api.get<LinkRequest[]>("/auth/link-requests/", {
     params: { ...(status ? { status } : {}), ...(kind ? { kind } : {}) },
   }).then(r => r.data);
 export const approveLinkRequest = (id: number, note?: string) =>
