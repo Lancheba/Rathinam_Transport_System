@@ -31,6 +31,7 @@ export default function FaceEnrollmentPage() {
   const [status, setStatus] = useState<Step>("idle");
   const [message, setMessage] = useState("");
   const [guidanceOk, setGuidanceOk] = useState(false);
+  const [progress, setProgress] = useState(0); // 0..1, how close to auto-capture
   const [canForceCapture, setCanForceCapture] = useState(false);
 
   function stopDetectionLoop() {
@@ -74,6 +75,7 @@ export default function FaceEnrollmentPage() {
     if (!detection) {
       stableCountRef.current = 0;
       setGuidanceOk(false);
+      setProgress(0);
       setMessage("Bring your face into the frame");
       return;
     }
@@ -84,11 +86,13 @@ export default function FaceEnrollmentPage() {
 
     if (guidance.ok) {
       stableCountRef.current += 1;
+      setProgress(Math.min(stableCountRef.current / STABLE_FRAMES_REQUIRED, 1));
       if (stableCountRef.current >= STABLE_FRAMES_REQUIRED) {
         void finalizeCapture();
       }
     } else {
       stableCountRef.current = 0;
+      setProgress(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -118,6 +122,7 @@ export default function FaceEnrollmentPage() {
     setMessage("Position your face in the frame");
     stableCountRef.current = 0;
     capturingRef.current = false;
+    setProgress(0);
     setCanForceCapture(false);
 
     // A manual override appears after a few seconds in case auto-detect
@@ -131,6 +136,7 @@ export default function FaceEnrollmentPage() {
     if (capturingRef.current) return;
     capturingRef.current = true;
     stopDetectionLoop();
+    setProgress(1);
     setStatus("processing");
     setMessage("Hold still — capturing…");
 
@@ -150,6 +156,7 @@ export default function FaceEnrollmentPage() {
       // resume the live loop instead of failing the whole attempt.
       capturingRef.current = false;
       setStatus("capturing");
+      setProgress(0);
       setMessage("Lost the face — hold position and try again");
       intervalRef.current = window.setInterval(runDetectionTick, DETECT_INTERVAL_MS);
       return;
@@ -255,6 +262,30 @@ export default function FaceEnrollmentPage() {
   // ---- Not enrolled yet, or retaking ----
   return (
     <div style={{ maxWidth: 480, margin: "2rem auto", padding: "1rem" }}>
+      <style>{`
+        @keyframes faceScanLine {
+          0%   { top: 10%; opacity: 0.9; }
+          50%  { top: 86%; opacity: 0.9; }
+          100% { top: 10%; opacity: 0.9; }
+        }
+        @keyframes faceGlowPulseWarn {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
+          50%      { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+        }
+        @keyframes faceGlowPulseOk {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+          50%      { box-shadow: 0 0 0 16px rgba(22, 163, 74, 0); }
+        }
+        @keyframes popIn {
+          0%   { transform: scale(0.5); opacity: 0; }
+          70%  { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+
       <h2>{retaking ? "Retake Face Enrollment" : "Face Enrollment"}</h2>
       <p style={{ fontSize: "0.9rem", color: "var(--text-secondary, #666)" }}>
         Your face data is converted to a numeric vector inside your browser.
@@ -283,19 +314,95 @@ export default function FaceEnrollmentPage() {
         </>
       )}
 
-      <div style={{ position: "relative", display: status === "capturing" || status === "processing" ? "block" : "none" }}>
+      {status === "loading" && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "1rem" }}>
+          <span
+            style={{
+              width: 20, height: 20, borderRadius: "50%",
+              border: "3px solid #e5e7eb", borderTopColor: "#2563eb",
+              display: "inline-block", animation: "spin 0.8s linear infinite",
+            }}
+          />
+          <span>{message}</span>
+        </div>
+      )}
+
+      <div
+        style={{
+          position: "relative", marginTop: "1rem",
+          display: status === "capturing" || status === "processing" ? "block" : "none",
+        }}
+      >
         <video
           ref={videoRef}
           autoPlay
           muted
           playsInline
           style={{
-            width: "100%", borderRadius: 12, marginTop: "1rem",
+            width: "100%", borderRadius: 12, display: "block",
             transform: "scaleX(-1)", // natural selfie view; guidance math accounts for this
-            border: status === "capturing" ? `3px solid ${guidanceOk ? "#16a34a" : "#f59e0b"}` : "3px solid transparent",
           }}
         />
+
+        {/* Face guide + live animation overlay */}
+        {(status === "capturing" || status === "processing") && (
+          <div
+            style={{
+              position: "absolute", inset: 0, display: "flex",
+              alignItems: "center", justifyContent: "center", pointerEvents: "none",
+            }}
+          >
+            <div
+              style={{
+                width: "56%", aspectRatio: "3 / 4", borderRadius: "50%",
+                border: `3px dashed ${guidanceOk ? "#16a34a" : "#f59e0b"}`,
+                position: "relative", overflow: "hidden",
+                transition: "border-color 0.2s ease",
+                animation: `${guidanceOk ? "faceGlowPulseOk" : "faceGlowPulseWarn"} 1.4s ease-in-out infinite`,
+              }}
+            >
+              {status === "capturing" && !guidanceOk && (
+                <div
+                  style={{
+                    position: "absolute", left: "8%", right: "8%", height: 3,
+                    background: "linear-gradient(90deg, transparent, #f59e0b, transparent)",
+                    animation: "faceScanLine 1.8s ease-in-out infinite",
+                    borderRadius: 2,
+                  }}
+                />
+              )}
+              {status === "processing" && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span
+                    style={{
+                      width: 44, height: 44, borderRadius: "50%",
+                      background: "#16a34a", color: "#fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "1.5rem", animation: "popIn 0.35s ease-out",
+                    }}
+                  >
+                    &#10003;
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {status === "capturing" && (
+        <div style={{ marginTop: "0.6rem" }}>
+          <div style={{ height: 6, borderRadius: 3, background: "#e5e7eb", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%", width: `${Math.round(progress * 100)}%`,
+                background: guidanceOk ? "#16a34a" : "#f59e0b",
+                transition: "width 0.15s ease, background-color 0.2s ease",
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {status === "capturing" && canForceCapture && (
         <button
@@ -309,7 +416,7 @@ export default function FaceEnrollmentPage() {
         </button>
       )}
 
-      {message && (
+      {message && status !== "loading" && (
         <p style={{ marginTop: "1rem", fontWeight: 500, color: messageColor }}>{message}</p>
       )}
 
