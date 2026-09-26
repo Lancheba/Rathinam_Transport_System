@@ -1,4 +1,4 @@
-import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert } from "lucide-react";
+import { Home, Map, Bus, Cpu, BarChart3, Radio, Settings, Users, MessageSquareWarning, ClipboardCheck, UserCheck, LineChart, QrCode, ShieldAlert, UserCog } from "lucide-react";
 
 /**
  * Single source of truth for app navigation.
@@ -11,7 +11,8 @@ export const navItems = [
   { to: "/dashboard/buses",    label: "Bus Information",   short: "Buses",    icon: Bus },
   // Roll numbers, phone numbers etc. are personal data — only admins/transport staff see this link.
   // The API enforces this too, so hiding the link is just for a clean menu, not the real gate.
-  { to: "/dashboard/students", label: "Students",          short: "Students", icon: Users, staffOnly: true },
+  { to: "/dashboard/students", label: "Cab Rosters",        short: "Rosters",  icon: Users, staffOnly: true },
+  { to: "/dashboard/people", label: "People", short: "People", icon: UserCog, staffOnly: true },
   // Preview run is harmless, but applying a layout change is staff-only — keep the whole
   // feature out of the student's menu so it doesn't look like something they can do.
   { to: "/dashboard/optimize", label: "Optimisation",      short: "Optimise", icon: Cpu, staffOnly: true },

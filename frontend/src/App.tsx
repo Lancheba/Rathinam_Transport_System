@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import ParkingPage from "./pages/ParkingPage";
 import BusesPage from "./pages/BusesPage";
 import StudentsPage from "./pages/StudentsPage";
+import PeoplePage from "./pages/PeoplePage";
 import BusFinder from "./pages/BusFinder";
 import OptimizePage from "./pages/OptimizePage";
 import SensorsPage from "./pages/SensorsPage";
@@ -154,6 +155,7 @@ export const App: React.FC = () => {
                   <Route path="parking" element={<ParkingPage />} />
                   <Route path="buses" element={<BusesPage />} />
                   <Route path="students" element={<StudentsPage />} />
+                  <Route path="people" element={<PeoplePage />} />
                   <Route path="optimize" element={<OptimizePage />} />
                   <Route path="sensors" element={<SensorsPage />} />
                   <Route path="reports" element={<ReportsPage />} />

@@ -8,6 +8,7 @@ import type {
   AttendanceRecord, AttendanceAnalyticsOverview, AttendanceStudentAnalytics, AnalyticsPeriod,
   AttendanceWindowConfig,
   AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
+  Teacher, TeacherInput, TeacherLoginInput, Person,
 } from "../types";
 
 // Buses
@@ -171,3 +172,24 @@ export const getFlags = (status?: AttendanceFlagStatus | "ALL") =>
   api.get<AttendanceFlag[]>("/attendance/flags/", { params: status ? { status } : undefined }).then(r => r.data);
 export const reviewFlag = (id: number, data: AttendanceFlagReviewInput) =>
   api.patch<AttendanceFlag>(`/attendance/flags/${id}/review/`, data).then(r => r.data);
+
+// Teacher roster CRUD (Section 4) — admin/staff only
+export const getTeachers = (busId?: number) =>
+  api.get<Teacher[]>("/attendance/teachers/", { params: busId ? { bus: String(busId) } : undefined }).then(r => r.data);
+export const createTeacher = (data: TeacherInput & Partial<TeacherLoginInput>) =>
+  api.post<Teacher>("/attendance/teachers/", data).then(r => r.data);
+export const updateTeacher = (id: number, data: Partial<TeacherInput>) =>
+  api.patch<Teacher>(`/attendance/teachers/${id}/`, data).then(r => r.data);
+export const deleteTeacher = (id: number) => api.delete(`/attendance/teachers/${id}/`);
+export const createTeacherLogin = (teacherId: number, data: TeacherLoginInput) =>
+  api.post<Teacher>(`/attendance/teachers/${teacherId}/create-login/`, data).then(r => r.data);
+
+// Unified People page (Section 5) — admin/staff only
+export const getPeople = (role?: Person["role"]) =>
+  api.get<Person[]>("/auth/people/", { params: role ? { role } : undefined }).then(r => r.data);
+
+// Assign / remove cab in-charge (Section 3) — admin/staff only
+export const assignIncharge = (busId: number, data: { source_type: "STUDENT" | "TEACHER"; source_id: number }) =>
+  api.post(`/buses/${busId}/assign-incharge/`, data).then(r => r.data);
+export const removeIncharge = (busId: number) =>
+  api.post(`/buses/${busId}/remove-incharge/`).then(r => r.data);
