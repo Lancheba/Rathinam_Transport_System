@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 from accounts.permissions import can_manage_buses
-from attendance.permissions import is_driver
+from attendance.permissions import is_driver, is_incharge
 
 
 class CanManageOwnBusStudents(permissions.BasePermission):
@@ -15,11 +15,11 @@ class CanManageOwnBusStudents(permissions.BasePermission):
     that's what controls which rows a driver can see or reach by id at all.
     """
 
-    message = "Only admins and transport staff can manage students; drivers have read-only access to their own bus."
+    message = "Only admins and transport staff can manage students; drivers and cab in-charges have read-only access to their own bus."
 
     def has_permission(self, request, view):
         if can_manage_buses(request.user):
             return True
-        if is_driver(request.user):
+        if is_driver(request.user) or is_incharge(request.user):
             return request.method in permissions.SAFE_METHODS
         return False

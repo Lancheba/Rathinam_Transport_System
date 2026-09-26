@@ -4,7 +4,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from accounts.permissions import CanManageBuses, can_manage_buses, IsStudent
-from attendance.permissions import driver_bus, is_driver
+from attendance.permissions import driver_bus, is_driver, incharge_bus, is_incharge
 from buses.models import Bus
 from .models import Student
 from .permissions import CanManageOwnBusStudents
@@ -19,10 +19,12 @@ class StudentViewSet(viewsets.ModelViewSet):
     and transport staff can see and manage every student, the same as
     before. Drivers get read-only access to their own bus's roster: get_queryset below
     enforces that boundary (a driver requesting another bus's student by id just
-    won't find it), and the permission class blocks every driver write.
+    won't find it), and the permission class blocks every driver write. Cab
+    in-charges get the same read-only, own-bus-only view as drivers, so they can
+    see whoever is riding "their" bus.
     """
 
-    queryset = Student.objects.select_related("bus").all()
+    queryset = Student.objects.select_related("bus", "face_profile").all()
     serializer_class = StudentSerializer
     permission_classes = [CanManageOwnBusStudents]
     filter_backends = [filters.SearchFilter]
@@ -32,10 +34,17 @@ class StudentViewSet(viewsets.ModelViewSet):
         """True when the caller is a driver acting on their own bus, not staff/admin."""
         return is_driver(self.request.user) and not can_manage_buses(self.request.user)
 
+    def _incharge_only(self):
+        """True when the caller is a cab in-charge acting on their own bus, not staff/admin."""
+        return is_incharge(self.request.user) and not can_manage_buses(self.request.user)
+
     def get_queryset(self):
         qs = super().get_queryset()
         if self._driver_only():
             bus = driver_bus(self.request.user)
+            return qs.filter(bus=bus) if bus else qs.none()
+        if self._incharge_only():
+            bus = incharge_bus(self.request.user)
             return qs.filter(bus=bus) if bus else qs.none()
 
         bus_id = self.request.query_params.get("bus")
@@ -61,7 +70,9 @@ class StudentViewSet(viewsets.ModelViewSet):
                 "route": bus.route,
                 "student_count": bus.students.count(),
                 "students": StudentBriefSerializer(
-                    bus.students.all().order_by("roll_number"), many=True
+                    bus.students.all().order_by("roll_number").select_related("face_profile"),
+                    many=True,
+                    context={"request": request},
                 ).data,
             }
             for bus in buses
