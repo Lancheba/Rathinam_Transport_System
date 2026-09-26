@@ -1,4 +1,5 @@
 from .revoke_views import attendance_revoke
+from .delegate_views import incharge_delegate
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -44,6 +45,7 @@ urlpatterns = [
     path("qr/scan/", qr_scan, name="attendance-qr-scan"),
     path("qr/manual/", qr_manual_mark, name="attendance-qr-manual"),
     path("qr/roster/", qr_roster, name="attendance-qr-roster"),
+    path("incharge/delegate/", incharge_delegate, name="attendance-incharge-delegate"),
     path("flags/", flag_list, name="attendance-flag-list"),
     path("flags/<int:flag_id>/review/", flag_review, name="attendance-flag-review"),
     path("", include(router.urls)),

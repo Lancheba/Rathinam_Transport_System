@@ -105,13 +105,26 @@ class IsStudent(permissions.BasePermission):
 
 
 def is_incharge(user):
-    """True for accounts tagged as Cab In-Charge (the INCHARGE role)."""
+    """
+    True for accounts tagged as Cab In-Charge (the INCHARGE role), OR a
+    student currently standing in for their cab's in-charge for today
+    (see attendance.models.TemporaryInchargeAssignment / Phase 5).
+    """
     if not user or not user.is_authenticated:
         return False
     if user.is_superuser or user.is_staff:
         return False
     profile = getattr(user, "profile", None)
-    return bool(profile and profile.role == "INCHARGE")
+    if profile and profile.role == "INCHARGE":
+        return True
+
+    # Local import: attendance imports is_incharge from here, so importing
+    # attendance.models at module scope would create an import cycle.
+    from django.utils import timezone
+    from attendance.models import TemporaryInchargeAssignment
+    return TemporaryInchargeAssignment.objects.filter(
+        stand_in=user, date=timezone.localdate(), is_active=True,
+    ).exists()
 
 
 class IsCabInCharge(permissions.BasePermission):

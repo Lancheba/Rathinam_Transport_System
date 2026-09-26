@@ -24,8 +24,22 @@ from accounts.permissions import is_incharge  # single source of truth
 
 
 def incharge_bus(user):
-    """The Bus this in-charge is linked to, or None."""
-    return getattr(user, "incharge_bus", None)
+    """
+    The Bus this in-charge is linked to: their permanent Bus.incharge link,
+    or -- if none -- the bus they're standing in for today (Phase 5).
+    """
+    bus = getattr(user, "incharge_bus", None)
+    if bus:
+        return bus
+    from django.utils import timezone
+    from .models import TemporaryInchargeAssignment
+    assignment = (
+        TemporaryInchargeAssignment.objects
+        .filter(stand_in=user, date=timezone.localdate(), is_active=True)
+        .select_related("bus")
+        .first()
+    )
+    return assignment.bus if assignment else None
 
 
 class IsInCharge(permissions.BasePermission):

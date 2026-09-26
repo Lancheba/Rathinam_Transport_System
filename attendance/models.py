@@ -332,3 +332,47 @@ class AttendanceFlag(models.Model):
     def __str__(self):
         return f'Flag({self.rule} session={self.session_id} {self.status})'
 
+
+# ---------------------------------------------------------------------------
+# Phase 5: let a bus's permanent in-charge (or an admin) temporarily hand off
+# in-charge powers -- QR generation, manual marking, roster view, analytics,
+# export -- to a student riding the same cab, for a single day, WITHOUT
+# touching the permanent Bus.incharge assignment.
+#
+# is_incharge()/incharge_bus() (accounts/permissions.py, attendance/permissions.py)
+# are the single source of truth every in-charge-gated view relies on, so
+# once those two look here as well, a stand-in automatically gets QR/manual
+# mark/roster/analytics/export access with no further changes to those views.
+#
+# Scoped to "today" on purpose: is_active is only ever meaningful alongside
+# date == the day it was created for, so nothing needs an expiry job --
+# tomorrow's lookup (date=today) simply no longer matches this row.
+# ---------------------------------------------------------------------------
+class TemporaryInchargeAssignment(models.Model):
+    bus = models.ForeignKey(
+        'buses.Bus', on_delete=models.CASCADE, related_name='temporary_incharge_assignments',
+    )
+    stand_in = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stand_in_assignments',
+    )
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='assigned_stand_ins',
+    )
+    date = models.DateField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['bus', 'date'],
+                condition=models.Q(is_active=True),
+                name='one_active_standin_per_bus_per_day',
+            ),
+        ]
+
+    def __str__(self):
+        return f'StandIn(bus={self.bus_id} -> {self.stand_in_id} on {self.date})'
+
