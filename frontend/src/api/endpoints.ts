@@ -10,7 +10,7 @@ import type {
   AttendanceFlag, AttendanceFlagStatus, AttendanceFlagReviewInput,
   HistoryEvent, HistoryEventType,
   CabCombination, CabCombinationInput,
-  Teacher, TeacherInput, TeacherLoginInput, Person, LinkRequest,
+  Teacher, TeacherInput, TeacherLoginInput, Person, LinkRequest, TeacherLinkState,
 } from "../types";
 
 // Buses
@@ -81,6 +81,13 @@ export const getMyStudentLink = () => api.get<MyStudentLink>("/students/me/").th
 export const linkMyStudentProfile = (roll_number: string) =>
   api.post<MyStudentLink>("/students/me/", { roll_number }).then(r => r.data);
 export const unlinkMyStudentProfile = () => api.delete<MyStudentLink>("/students/me/").then(r => r.data);
+
+// Teacher self-service: file a request to link my own login to my staff record by staff ID
+export const getMyTeacherLink = () => api.get<TeacherLinkState>("/auth/me/teacher-link/").then(r => r.data);
+export const requestTeacherLink = (staff_id: string) =>
+  api.post<TeacherLinkState>("/auth/me/teacher-link/", { staff_id }).then(r => r.data);
+export const cancelMyTeacherLinkRequest = () =>
+  api.delete<{ cancelled: boolean }>("/auth/me/teacher-link/").then(r => r.data);
 
 // Camera tracking (YOLO). Staff can tell the system which bus an unidentified track really is.
 export const getVisionTracks = () => api.get<VisionTrack[]>("/vision/tracks/").then(r => r.data);

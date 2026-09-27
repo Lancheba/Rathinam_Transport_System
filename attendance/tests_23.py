@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -13,6 +15,11 @@ MANUAL_URL = '/api/attendance/qr/manual/'
 
 class ManualMarkTests(TestCase):
     def setUp(self):
+        # Manual marking is refused outright on weekends/holidays (is_school_day),
+        # so pin it to True regardless of what day these tests actually run on.
+        patcher = patch("attendance.qr_views.is_school_day", return_value=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.client = APIClient()
         self.incharge = User.objects.create_user('ic1', password='pass')
         self.incharge.profile.role = 'INCHARGE'

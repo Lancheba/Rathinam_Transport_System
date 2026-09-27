@@ -103,8 +103,15 @@ def approve(lr, decided_by, note=""):
             raise LinkError("This account is already linked to a different teacher record.")
         teacher.linked_user = user
         teacher.save(update_fields=["linked_user"])
-        user.profile.identity = "TEACHER"
-        user.profile.save(update_fields=["identity"])
+        profile = user.profile
+        profile.identity = "TEACHER"
+        update_fields = ["identity"]
+        # Only flip the default STUDENT role -- an admin/staff/driver/in-charge
+        # picking "Teacher" as their personal identity keeps their job role.
+        if profile.role == "STUDENT":
+            profile.role = "TEACHER"
+            update_fields.append("role")
+        profile.save(update_fields=update_fields)
     else:
         bus = Bus.objects.select_for_update().get(pk=lr.bus_id)
         if bus.driver_id and bus.driver_id != user.id:
@@ -151,8 +158,10 @@ def create_teacher_login(teacher, username, password):
     validate_password(password)
 
     user = User.objects.create_user(username=username, password=password)
-    user.profile.identity = "TEACHER"
-    user.profile.save(update_fields=["identity"])
+    profile = user.profile
+    profile.identity = "TEACHER"
+    profile.role = "TEACHER"
+    profile.save(update_fields=["identity", "role"])
     teacher.linked_user = user
     teacher.save(update_fields=["linked_user"])
     return user

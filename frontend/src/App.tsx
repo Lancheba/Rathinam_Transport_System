@@ -81,7 +81,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="app-shell">
-      {role === "INCHARGE" && !identity && <IdentityPromptModal />}
+      {(role === "INCHARGE" || role === "STUDENT") && !identity && <IdentityPromptModal />}
       {/* Background Liquid Glass Fluid Waveforms — Strictly fixed, never in-flow */}
       <div className="liquid-bg-waves" />
       <svg

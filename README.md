@@ -59,14 +59,21 @@ attendance** for the cab fleet, all behind a role-based web dashboard.
 **Attendance**
 - Cab in-charge generates a short-lived **QR code**; students scan it and verify with a **face match**
 - Morning and evening sessions with an automatic close-out that marks non-scanners absent
-- Per-student and cohort analytics, holiday marking, admin corrections
-- Export to **Excel / PDF / CSV**
+- Per-student, per-bus (in-charge) and cohort analytics, holiday marking, admin corrections and revokes
+- A tamper-evident **audit hash-chain** over every attendance change, verified nightly
+- Rule-based **anomaly flags** (same device/IP bursts, identical scores, suspiciously fast scans, high manual share) with an admin/staff review queue
+- An **in-charge manual-mark** screen and a **stand-in delegation** flow for when the regular in-charge is absent
+- **Cab combinations**: temporarily merge two buses' rosters under one session when buses are combined
+- A live **activity/history feed** of attendance and roster events
+- Export to **Excel / PDF / CSV / JSON preview**
 
 **Transport management**
 - Student and teacher rosters linked to buses, with boarding points
 - Driver "My Bus" page with maintenance and fuel logs
 - Announcements (Info / Important / Urgent) posted by staff
 - Complaints, feedback and suggestions (optionally anonymous, admin-only inbox)
+- **My Profile** card in Settings for every role (roll no., department, year, phone, bus, boarding point, etc.)
+- A unified **Attendance Report** page (date range + bus filter, live preview, CSV/XLSX/PDF download) available to every role, auto-scoped to what that role can see
 - Light / dark / system theme, mobile bottom navigation
 
 ---
@@ -90,8 +97,8 @@ Public sign-up always creates a **Student** account. Every other role is assigne
 | **Admin** (superuser / `ADMIN`) | Everything: manage buses, students, announcements, corrections, read complaints, apply optimiser layouts |
 | **Transport Staff** (`STAFF`) | Manage buses/students, post announcements, view analytics and sensors, apply optimisation. Cannot read the complaints inbox |
 | **Driver** (`DRIVER`) | See their own bus, roster and maintenance log; view attendance for their bus. Login also requires the **cab number** to match their assigned bus |
-| **Cab In-Charge** (`INCHARGE`) | Generate QR codes and run attendance for their own bus; export their bus's report |
-| **Student** (`STUDENT`) | Find buses, enrol their face, scan QR for attendance, view their own attendance, send feedback |
+| **Cab In-Charge** (`INCHARGE`) | Generate QR codes, manually mark students and run attendance for their own bus; view their own-bus analytics; export their bus's report; delegate a **stand-in** student for a day when absent |
+| **Student** (`STUDENT`) | Find buses, enrol their face, scan QR for attendance, view their own attendance, send feedback; a student can also act as a **stand-in in-charge** on a day they are delegated |
 
 Devices (ESP32 readers, camera script) have no user account and authenticate with the
 `X-Device-Key` header instead.
@@ -135,15 +142,28 @@ flowchart LR
    *Face Enrolment*. Explicit consent is required. The browser computes a 128-value embedding and
    only that embedding is stored, not a photo. Students get **3 enrolments** (first + retakes);
    after that an admin must reset it.
-2. **QR.** During an open window, the bus's cab in-charge taps *Generate QR*. The token is valid for
-   **60 seconds** (`QR_TOKEN_TTL_SECONDS`) and is tied to one bus, date and slot.
+2. **QR.** During an open window, the bus's cab in-charge (or a delegated **stand-in**) taps
+   *Generate QR*. The token refreshes every **10 seconds** by default (`QR_TOKEN_TTL_SECONDS`, also
+   overridable per-deployment via the `AttendanceWindowConfig` row) and is tied to one bus, date and
+   slot. An in-charge who can't reach a phone can use the **manual-mark** screen instead
+   (`qr/manual/`), which is logged the same way as a scan.
 3. **Scan.** The student scans the QR, and their face is compared with the enrolled embedding
-   (cosine distance, threshold `FACE_MATCH_THRESHOLD = 0.6`). A match creates a `PRESENT` record with
-   source `QR_FACE`. The scan endpoint is throttled to 12 requests/min per user.
+   (Euclidean distance, threshold `FACE_MATCH_THRESHOLD = 0.6`). A match creates a `PRESENT` record with
+   source `QR_FACE`. The scan endpoint is throttled to 12 requests/min per user, and the match score is
+   never returned to the client — only logged server-side.
 4. **Close-out.** The in-charge can stop the session, or the clock closes it automatically and marks
    every unmarked student `ABSENT` (source `AUTO_ABSENT`).
-5. **Corrections.** Marked records lock. `PRESENT` can't be flipped by the driver, and `ABSENT`→`PRESENT`
-   can only be done by an admin/staff **correction**, which is recorded with who and when.
+5. **Corrections and revokes.** Marked records lock. `PRESENT` can't be flipped by the driver;
+   `ABSENT`→`PRESENT` can only be done by an admin/staff **correction**, and an already-`PRESENT` record
+   can only be walked back to `ABSENT` by an admin **revoke** with a reason of 10+ characters. Every
+   change (manual mark, correction, revoke) is written to an immutable `AttendanceAudit` trail that is
+   chained with SHA-256 hashes and verified nightly by `verify_audit_chain`.
+6. **Anomaly review.** Background rules watch for suspicious patterns — many scans from one device or
+   IP in a short window, repeated identical face-match scores, a high share of manual marks, or
+   implausibly fast back-to-back scans — and raise an `AttendanceFlag` that admin/staff can review and
+   resolve.
+7. **Combined cabs.** If two buses are temporarily combined (e.g. one is under maintenance), a
+   `CabCombination` lets the in-charge run one shared session across both rosters until it's ended.
 
 ### Attendance windows (Asia/Kolkata)
 
@@ -158,10 +178,16 @@ Alternatively, schedule `finalize_attendance --slot=MORNING|EVENING` with a Rail
 
 ### Reports and analytics
 
-- Export attendance as Excel / PDF (`/api/attendance/export/`) or CSV report (`/api/attendance/report/`)
-  with roll no., name, department, year, bus, route, boarding point, sessions, present, absent, %
-- Analytics overview (cohort trend by month) and a per-student drill-down (staff/admin)
-- Students see their own morning/evening history on *My Attendance*
+- The **Attendance Report** page (`/api/attendance/report/`) is available to every role, auto-scoped
+  to what that role can see (a student sees only their own row; a driver/in-charge sees their bus; staff
+  and admin can filter by bus and date range). It offers a live JSON preview plus CSV, XLSX and PDF
+  downloads, with roll no., name, department, year, bus, route, boarding point, sessions, present,
+  absent, %.
+- `/api/attendance/export/` remains the original driver-dashboard Excel/PDF export.
+- Analytics overview (cohort trend by month, staff/admin), a per-in-charge, own-bus analytics view
+  (`analytics/incharge/`), and a per-student drill-down (staff/admin).
+- Students see their own morning/evening history on *My Attendance*; every role can browse the
+  attendance/roster **activity history feed** (`/api/attendance/history/`).
 
 ---
 
@@ -209,14 +235,13 @@ optimization/    Departure-time optimiser
 announcements/   Staff notices
 feedback/        Complaints / feedback / suggestions
 maintenance/     Service and fuel logs per bus
+scripts/         One-off data/demo helper scripts (add_buses, park_buses, reset_buses, seed_cab_buses, relink_students_demo)
 edge/            vision_tracker.py (YOLO), calibration, geometry tests
 hardware/        ESP32 sketches + HARDWARE.md
 frontend/        React + TypeScript dashboard (Vite)
 Procfile         web + clock processes for Railway
 ```
 
-`patch_*.py`, `add_buses.py`, `park_buses.py` and `reset_buses.py` in the repo root are one-off
-helper scripts used during development and are not needed to run the app.
 
 ---
 
@@ -311,6 +336,18 @@ so Vercel builds it fresh on every deploy.
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF | none |
 | `DATABASE_URL` | Postgres URL (auto-set on Railway) | local SQLite |
 | `DEVICE_API_KEY` | Shared secret for ESP32 and camera script | `dev-device-key` |
+| `REDIS_URL` | Shared cache for rate limits and login lockouts (Railway Redis add-on). Unset = per-process, in-memory cache | unset |
+| `SENTRY_DSN` | Enables Sentry error tracking when set | unset |
+| `DJANGO_NUM_PROXIES` | Proxies in front of the app, for DRF throttle client-IP resolution | `1` |
+| `ACCESS_TOKEN_MINUTES` | JWT access token lifetime (minutes) | `20` |
+| `FACE_EMBEDDING_KEY` | Fernet key used to encrypt stored face embeddings at rest | insecure dev key |
+| `FACE_MATCH_THRESHOLD` | Max Euclidean distance to accept a face match | `0.6` |
+| `FACE_ENROLL_DUPE_THRESHOLD` | Tighter distance used to catch duplicate enrolments | `0.55` |
+| `FACE_SCAN_MAX_ATTEMPTS_PER_SESSION` | Failed scan attempts allowed before lockout | `5` |
+| `QR_TOKEN_TTL_SECONDS` | QR token lifetime / in-charge screen refresh interval | `10` |
+| `ATTENDANCE_START_DATE` | Earliest date attendance history/analytics consider | unset |
+| `DET_SAME_DEVICE_MIN_STUDENTS`, `DET_SAME_IP_BURST_MIN_SCANS`, `DET_SAME_IP_BURST_WINDOW_SECONDS`, `DET_IDENTICAL_SCORE_MIN_COUNT`, `DET_MANUAL_SHARE_THRESHOLD`, `DET_MANUAL_SHARE_MIN_RECORDS`, `DET_INSTANT_PRESENT_WINDOW_SECONDS`, `DET_INSTANT_PRESENT_MIN_RECORDS` | Thresholds for the attendance anomaly detector | see `config/settings.py` |
+| `FLAG_SAME_DEVICE_THRESHOLD`, `FLAG_IP_BURST_WINDOW_SECONDS`, `FLAG_IP_BURST_THRESHOLD`, `FLAG_MANUAL_SHARE_RATIO`, `FLAG_INSTANT_PRESENT_SECONDS` | Thresholds for raising an `AttendanceFlag` | see `config/settings.py` |
 | `VISION_MAX_SLOT_DISTANCE_M` | Max detection-to-slot distance | `4.0` |
 | `VISION_STABLE_FRAMES` | Frames before "parked here" | `3` |
 | `VISION_LINK_MIN_FRAMES` | Frames before matching to an ENTRY | `5` |
@@ -342,8 +379,14 @@ feedback 20/hour.
 | POST | `/api/auth/login/` | JWT login (drivers must also send `cab_number`) |
 | POST | `/api/auth/refresh/` | Refresh token |
 | POST | `/api/auth/register/` | Student sign-up |
-| GET | `/api/auth/me/` | Current user and role |
+| GET | `/api/auth/me/` | Current user, role and (for students) profile summary |
+| POST | `/api/auth/logout/` | Blacklist the refresh token |
 | PATCH | `/api/auth/me/identity/` | Set student / teacher identity |
+| POST | `/api/auth/me/teacher-link/` | Link the current account to a teacher record |
+| GET | `/api/auth/people/` | Directory lookup for account-linking (staff/admin) |
+| GET, POST | `/api/auth/link-requests/` | Student/teacher account-link requests |
+| POST | `/api/auth/link-requests/<id>/approve/`, `/reject/` | Approve or reject a link request (staff/admin) |
+| GET | `/healthz` | Liveness/readiness probe (DB check, no auth) |
 
 **Core**
 
@@ -366,11 +409,19 @@ feedback 20/hour.
 | `my-bus/`, `teachers/` | Driver's bus; teacher roster |
 | `roster/`, `submit/`, `sessions/` | Roster, submissions, session history |
 | `records/<id>/correct/` | Admin/staff correction |
-| `qr/generate/`, `qr/status/`, `qr/tally/`, `qr/stop/` | In-charge QR session control |
+| `records/<id>/revoke/` | Admin-only PRESENT→ABSENT revoke (reason required) |
+| `qr/generate/`, `qr/status/`, `qr/tally/`, `qr/stop/`, `qr/window/` | In-charge QR session control |
 | `qr/scan/` | Student QR + face scan |
+| `qr/manual/` | In-charge manual mark (no QR/phone needed) |
+| `qr/roster/` | In-charge's own bus roster + today's session status |
+| `incharge/delegate/` | In-charge delegates a stand-in for a day |
+| `flags/`, `flags/<id>/review/` | Anomaly flag queue and review (admin/staff) |
+| `history/` | Attendance/roster activity feed |
+| `combinations/`, `combinations/<id>/` | Start/end a temporary cab combination |
+| `window-config/` | Read the current attendance window / QR TTL config |
 | `my/` | Student's own attendance |
-| `export/`, `report/` | Excel / PDF / CSV exports |
-| `analytics/overview/`, `analytics/student/<id>/` | Analytics |
+| `export/`, `report/` | Excel / PDF export; unified CSV/XLSX/PDF/JSON-preview report |
+| `analytics/overview/`, `analytics/incharge/`, `analytics/student/<id>/` | Analytics |
 
 **Device endpoints** (header `X-Device-Key: <DEVICE_API_KEY>`)
 
@@ -387,13 +438,22 @@ feedback 20/hour.
 | Model | Key fields |
 |---|---|
 | `UserProfile` | `user`, `role` (ADMIN / STAFF / DRIVER / STUDENT / INCHARGE), `identity`, `phone` |
+| `LinkRequest` | account-link request between a user and a `Student`/`Teacher` record, approval state |
+| `Device` | `X-Device-Key`-authenticated device identity for ESP32/camera hardware |
 | `Bus` | `bus_number`, `rfid_uid`, `route`, `departure_time`, `length_m`, `width_m`, `driver`, `incharge`, `student_capacity`, `teacher_capacity` |
 | `Student` | `roll_number`, `name`, `department`, `year`, `bus`, `boarding_point`, `linked_user` |
-| `FaceProfile` | `student`, `embedding` (128-d), `consent_given`, `retake_count` |
+| `FaceProfile` / `FaceProfileAudit` | `student`, `embedding` (128-d, encrypted at rest), `consent_given`, `retake_count`; audit trail of enrolment/reset events |
 | `Teacher` | `staff_id`, `name`, `department`, `bus`, `boarding_point` |
+| `AttendanceWindowConfig` | singleton config: `morning_start/end`, `evening_start/end`, `qr_token_ttl_seconds`, `updated_by` |
 | `AttendanceSession` | `bus`, `date`, `slot`, `is_holiday`, `auto_finalized`, `opened_at`, `closed_at` |
 | `AttendanceRecord` | `session`, `student` / `teacher`, `status`, `source` (MANUAL / QR_FACE / AUTO_ABSENT), `face_match_score`, `locked_at`, correction fields |
 | `AttendanceQRToken` | `bus`, `date`, `slot`, `token`, `expires_at` |
+| `AttendanceAudit` | hash-chained log of every mark/correct/revoke: `record`, `action`, `old_status`, `new_status`, `actor`, `reason`, `ip_address`, `user_agent` |
+| `AttendanceFlag` | anomaly raised by the detector: `session`, `rule`, `severity`, `detail` (JSON), `records` (M2M), review state |
+| `Holiday` | `date`, `reason`, `created_by` |
+| `TemporaryInchargeAssignment` | `bus`, `stand_in`, `assigned_by`, `date`, `is_active` — one-day delegate stand-in |
+| `HistoryEvent` | `event_type`, `bus`, `actor`, `description`, `detail` (JSON) — feeds the activity history endpoint |
+| `CabCombination` | `buses` (M2M), `date`, `reason`, `created_by`, `is_active`, `ended_by`/`ended_at` |
 | `ParkingGround` / `ParkingSlot` | dimensions; `row`, `slot_number`, `x/y_position_m`, `bus`, `is_occupied`, `is_blocked` |
 | `Sensor` / `ParkingEvent` | `sensor_id`, `sensor_type`, `last_seen`; `event_type` (ENTRY / EXIT / DETECTED / MOVED / PARKED) |
 | `VisionTrack` | `camera_id`, `track_id`, `bus`, `slot`, `x_m`, `y_m`, `confidence`, `is_active` |
@@ -411,6 +471,11 @@ feedback 20/hour.
 | `create_slots --name ... --length ... --width ... --entrance-width ... --exit-width ... --rows N --slots-per-row N` | Create a ground and its slot grid (safe to re-run) |
 | `run_attendance_clock` | Long-running scheduler: finalises attendance at 09:31 and 19:31 IST |
 | `finalize_attendance --slot MORNING\|EVENING` | Close open sessions and mark non-scanners absent |
+| `verify_audit_chain` | Verify the SHA-256 hash chain over `AttendanceAudit`; raises on tamper/break. Run nightly by the clock |
+| `cleanup_expired_qr_tokens` | Delete expired `AttendanceQRToken` rows |
+| `create_device --name "..."` | Register a device identity and print its `X-Device-Key` |
+| `import_students <csv_path>` | Bulk-import students from a CSV file |
+| `seed_students [--count N]` | Demo student records |
 | `seed_sensors [--cameras N --offline N --clear]` | Demo sensors |
 | `seed_attendance_history [--days 45 --present-rate 0.85]` | Demo attendance history |
 | `seed_cab_attendance` | Demo cab attendance |
@@ -440,7 +505,7 @@ python vision_tracker.py --source rtsp://user:pass@CAMERA/stream \
 ## Testing
 
 ```bash
-python manage.py test                        # backend suite (~130 tests)
+python manage.py test                        # backend suite (500+ tests)
 cd edge && python -m unittest test_geometry  # calibration maths
 cd frontend && npm run build                 # type-check + production build
 ```
@@ -468,9 +533,11 @@ cd frontend && npm run build                 # type-check + production build
 - Camera-to-RFID matching is by arrival order, so two buses entering together can be swapped
 - RC522 reads only ~3–5 cm; use UHF RFID for buses driving through a gate
 - Face matching runs on browser-computed embeddings without a liveness check, so a photo of a
-  student could in principle fool it. Treat it as a convenience layer over the QR, not high security
+  student could in principle fool it. The anomaly-flag rules and audit chain make bulk gaming visible
+  after the fact, but they don't prevent a single well-executed spoof in real time
 - Optimiser fills row A first; spreading across rows is a known improvement
-- The attendance clock is a single always-on process; if it is down, sessions aren't auto-closed
+- The attendance clock is a single always-on process; if it is down, sessions aren't auto-closed and
+  `verify_audit_chain` isn't run nightly
 
 ---
 

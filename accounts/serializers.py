@@ -121,8 +121,17 @@ class SetIdentitySerializer(serializers.Serializer):
     def save(self, **kwargs):
         user = self.context["request"].user
         profile = user.profile
-        profile.identity = self.validated_data["identity"]
-        profile.save(update_fields=["identity"])
+        identity = self.validated_data["identity"]
+        profile.identity = identity
+        # A self-registered account always starts as STUDENT; once it declares
+        # which it actually is, its role should match. Job-assigned roles
+        # (In-Charge, Admin, Staff, Driver) are never overwritten here — only
+        # the STUDENT <-> TEACHER swap that a fresh sign-up can make itself.
+        if identity == "TEACHER" and profile.role == "STUDENT":
+            profile.role = "TEACHER"
+        elif identity == "STUDENT" and profile.role == "TEACHER":
+            profile.role = "STUDENT"
+        profile.save(update_fields=["identity", "role"])
         return profile
 
 

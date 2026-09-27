@@ -196,6 +196,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+        {canManageBuses && (
         <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(129,140,248,0.25)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <Sliders size={18} style={{ color: "var(--accent-indigo)" }} />
@@ -257,7 +258,9 @@ export const SettingsPage: React.FC = () => {
             </>
           )}
         </div>
+        )}
 
+        {canManageBuses && (
         <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(52,211,153,0.25)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <Clock size={18} style={{ color: "var(--accent-green, #34d399)" }} />
@@ -348,6 +351,7 @@ export const SettingsPage: React.FC = () => {
             </>
           )}
         </div>
+        )}
 
         <div className="liquid-glass-card st-card" style={{ padding: "20px 24px", borderColor: "rgba(34,211,238,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>

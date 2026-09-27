@@ -45,7 +45,7 @@ export interface CurrentUser {
   id: number;
   username: string;
   email: string;
-  role: "ADMIN" | "STAFF" | "DRIVER" | "STUDENT" | "INCHARGE";
+  role: "ADMIN" | "STAFF" | "DRIVER" | "STUDENT" | "TEACHER" | "INCHARGE";
   /** Underlying Student/Teacher identity, separate from role. Null until the one-time prompt is answered. */
   identity?: "STUDENT" | "TEACHER" | null;
   can_manage_buses: boolean;
@@ -576,7 +576,7 @@ export interface Person {
   id: number;
   username: string;
   email: string;
-  role: "ADMIN" | "STAFF" | "DRIVER" | "STUDENT" | "INCHARGE";
+  role: "ADMIN" | "STAFF" | "DRIVER" | "STUDENT" | "TEACHER" | "INCHARGE";
   identity: "STUDENT" | "TEACHER" | null;
   phone: string;
   driven_bus_number: string | null;
@@ -598,6 +598,13 @@ export interface TeacherInput {
 export interface TeacherLoginInput {
   username: string;
   password: string;
+}
+
+/** GET/POST/DELETE /api/auth/me/teacher-link/ -- what the Settings "link as teacher" card needs. */
+export interface TeacherLinkState {
+  linked: boolean;
+  teacher: { id: number; staff_id: string; name: string; department: string } | null;
+  request: LinkRequest | null;
 }
 
 /** One row in the staff link-request queue (teacher self-registration approvals). */

@@ -34,6 +34,7 @@ const labelFor = (role: CurrentUser["role"] | null, canManage: boolean): string 
   if (role === "STAFF") return "Transport Staff";
   if (role === "ADMIN") return "Administrator";
   if (role === "DRIVER") return "Driver";
+  if (role === "TEACHER") return "Teacher";
   // Django superusers keep the default STUDENT profile but can manage buses
   if (canManage) return "Administrator";
   return role === "STUDENT" ? "Student" : null;

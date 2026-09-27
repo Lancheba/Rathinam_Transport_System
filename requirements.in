@@ -24,4 +24,3 @@ coverage>=7.6
 numpy
 sentry-sdk
 cryptography
-cryptography

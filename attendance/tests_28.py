@@ -24,6 +24,11 @@ class QRTallyMatchesRosterTests(APITestCase):
         patcher = patch("attendance.qr_views._current_slot", return_value="MORNING")
         patcher.start()
         self.addCleanup(patcher.stop)
+        # generate/ refuses weekends/holidays via is_school_day; pin it to True
+        # so these tests don't flake depending on what day they're run.
+        day_patcher = patch("attendance.qr_views.is_school_day", return_value=True)
+        day_patcher.start()
+        self.addCleanup(day_patcher.stop)
 
     def _mark(self, person, status="PRESENT"):
         session = AttendanceSession.objects.get(bus=self.bus, date=timezone.localdate(), slot="MORNING")
