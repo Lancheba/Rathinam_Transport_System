@@ -38,20 +38,28 @@ const StudentsPage: React.FC = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadRoster, []);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); loadRoster(); })();
+  }, []);
 
   // Debounced cross-bus search by name / roll number / department
   useEffect(() => {
     const q = search.trim();
-    if (!q) { setSearchResults(null); return; }
-    setSearching(true);
+    let cancelled = false;
+
+    if (!q) {
+      (async () => { await Promise.resolve(); if (!cancelled) setSearchResults(null); })();
+      return () => { cancelled = true; };
+    }
+
+    (async () => { await Promise.resolve(); if (!cancelled) setSearching(true); })();
     const t = setTimeout(() => {
       searchStudents(q)
-        .then(setSearchResults)
-        .catch(() => setSearchResults([]))
-        .finally(() => setSearching(false));
+        .then((r) => { if (!cancelled) setSearchResults(r); })
+        .catch(() => { if (!cancelled) setSearchResults([]); })
+        .finally(() => { if (!cancelled) setSearching(false); });
     }, 300);
-    return () => clearTimeout(t);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [search]);
 
   useEffect(() => {

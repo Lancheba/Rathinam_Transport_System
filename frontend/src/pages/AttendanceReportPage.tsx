@@ -60,7 +60,9 @@ const AttendanceReportPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadPreview(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    (async () => { await Promise.resolve(); loadPreview(); })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExport = async (filetype: "csv" | "xlsx" | "pdf") => {
     setExporting(filetype);

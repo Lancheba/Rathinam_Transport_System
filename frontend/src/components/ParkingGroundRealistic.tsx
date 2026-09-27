@@ -86,7 +86,7 @@ export const ParkingGroundRealistic: React.FC<ParkingGroundRealisticProps> = ({
   }, []);
 
   useEffect(() => {
-    load();
+    (async () => { await Promise.resolve(); load(); })();
     if (!refreshIntervalMs) return;
     const id = setInterval(load, refreshIntervalMs);
     return () => clearInterval(id);

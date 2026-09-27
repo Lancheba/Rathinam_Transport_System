@@ -31,9 +31,7 @@ export const navItems = [
   // makes sense for STUDENT-role accounts (staff/admin/driver see the real roster instead).
   { to: "/dashboard/my-attendance", label: "My Attendance", short: "Attend",  icon: UserCheck, studentOnly: true },
   { to: "/dashboard/reports",  label: "Reports",           short: "Reports",  icon: BarChart3 },
-  // Roll number, route and % attendance across students is a management view — the API already
-  // refuses non-staff ("Not allowed"), so hide the link too instead of showing a dead end.
-  { to: "/dashboard/attendance-report", label: "Attendance Report", short: "Report", icon: FileText, staffOnly: true },
+  { to: "/dashboard/attendance-report", label: "Attendance Report", short: "Report", icon: FileText },
   // Attendance analytics (cohort trend, per-student drill-down) is a management view, not a driver task.
   { to: "/dashboard/attendance-analytics", label: "Attendance Analytics", short: "Attend. Analytics", icon: LineChart, staffOnly: true },
   // Automatic cheat-detection flags from Step 6 detection.py  14 staff/admin review only.

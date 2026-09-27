@@ -12,7 +12,6 @@ class UserProfile(models.Model):
         ("STAFF", "Transport Staff"),
         ("DRIVER", "Driver"),
         ("STUDENT", "Student"),
-        ("TEACHER", "Teacher"),
         ("INCHARGE", "Cab In-Charge"),
     ]
 

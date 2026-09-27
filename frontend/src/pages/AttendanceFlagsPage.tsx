@@ -178,7 +178,9 @@ const AttendanceFlagsPage: React.FC = () => {
       .catch(() => setError("Couldn't load flags."))
       .finally(() => setLoading(false));
   }, [status]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); load(); })();
+  }, [load]);
 
   const replace = (f: AttendanceFlag) => setItems(prev => prev.filter(i => i.id !== f.id));
 

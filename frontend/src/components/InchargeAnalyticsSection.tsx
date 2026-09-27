@@ -50,11 +50,21 @@ const InchargeAnalyticsSection: React.FC = () => {
   };
 
   useEffect(() => {
-    setLoading(true); setError("");
-    getInchargeAnalytics({ period, year, ...(period === "monthly" ? { month } : {}) })
-      .then(setData)
-      .catch(err => setError(errorText(err, "Couldn't load your cab's attendance analytics.")))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true); setError("");
+      try {
+        const res = await getInchargeAnalytics({ period, year, ...(period === "monthly" ? { month } : {}) });
+        if (!cancelled) setData(res);
+      } catch (err) {
+        if (!cancelled) setError(errorText(err, "Couldn't load your cab's attendance analytics."));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [period, year, month]);
 
   const exportCsv = () => {

@@ -63,16 +63,26 @@ const AttendanceAnalyticsPage: React.FC = () => {
   useEffect(() => { getBuses().then(setBuses).catch(() => {}); }, []);
 
   useEffect(() => {
-    setLoading(true); setError("");
-    getAttendanceAnalyticsOverview({
-      period, year,
-      ...(period === "monthly" ? { month } : {}),
-      ...(busId ? { bus: Number(busId) } : {}),
-      ...(department.trim() ? { department: department.trim() } : {}),
-    })
-      .then(setOverview)
-      .catch(err => setError(errorText(err, "Couldn't load attendance analytics.")))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true); setError("");
+      try {
+        const data = await getAttendanceAnalyticsOverview({
+          period, year,
+          ...(period === "monthly" ? { month } : {}),
+          ...(busId ? { bus: Number(busId) } : {}),
+          ...(department.trim() ? { department: department.trim() } : {}),
+        });
+        if (!cancelled) setOverview(data);
+      } catch (err) {
+        if (!cancelled) setError(errorText(err, "Couldn't load attendance analytics."));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [period, year, month, busId, department]);
 
   const runSearch = (q: string) => {

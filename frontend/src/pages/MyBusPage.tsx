@@ -65,7 +65,11 @@ const LogForm: React.FC<{
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => setForm(editing ? toForm(editing) : emptyForm()), [editing]);
+  const [prevEditing, setPrevEditing] = useState(editing);
+  if (prevEditing !== editing) {
+    setPrevEditing(editing);
+    setForm(editing ? toForm(editing) : emptyForm());
+  }
 
   const set = <K extends keyof FormState>(key: K, value: string) => setForm((f) => ({ ...f, [key]: value }));
 

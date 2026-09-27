@@ -70,9 +70,9 @@ class BusViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="assign-incharge")
     def assign_incharge(self, request, pk=None):
         """
-        Make a student or teacher (an ordinary role=STUDENT/TEACHER login)
-        the in-charge of this bus. If the bus already has an in-charge, that
-        person is automatically demoted back to their prior role first.
+        Make a student or teacher (an ordinary role=STUDENT login) the
+        in-charge of this bus. If the bus already has an in-charge, that
+        person is automatically demoted back to STUDENT first.
         """
         bus = self.get_object()
         source_type = (request.data.get("source_type") or "").strip().upper()
@@ -98,9 +98,9 @@ class BusViewSet(viewsets.ModelViewSet):
             return Response({"detail": "This person has no login account yet."}, status=400)
 
         profile = getattr(user, "profile", None)
-        if not profile or profile.role not in ("STUDENT", "TEACHER"):
+        if not profile or profile.role != "STUDENT":
             return Response(
-                {"detail": "Only an ordinary student/teacher account (role STUDENT or TEACHER) can be made in-charge."},
+                {"detail": "Only an ordinary student/teacher account (role STUDENT) can be made in-charge."},
                 status=400,
             )
 
@@ -109,9 +109,7 @@ class BusViewSet(viewsets.ModelViewSet):
             if old_incharge and old_incharge.id != user.id:
                 old_profile = getattr(old_incharge, "profile", None)
                 if old_profile:
-                    # Restore whichever they were before (student or teacher),
-                    # not a hardcoded STUDENT -- a demoted teacher stays a teacher.
-                    old_profile.role = old_profile.identity or "STUDENT"
+                    old_profile.role = "STUDENT"
                     old_profile.save(update_fields=["role"])
 
             # If this user is already in-charge of a different bus, free that bus first.
@@ -135,7 +133,7 @@ class BusViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             profile = getattr(user, "profile", None)
             if profile:
-                profile.role = profile.identity or "STUDENT"
+                profile.role = "STUDENT"
                 profile.save(update_fields=["role"])
             bus.incharge = None
             bus.save(update_fields=["incharge"])

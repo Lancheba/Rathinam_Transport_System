@@ -82,7 +82,9 @@ const CombinedCabsPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [date]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); load(); })();
+  }, [load]);
   useEffect(() => { if (canManageBuses) getBuses().then(setBuses).catch(() => {}); }, [canManageBuses]);
 
   const toggleBus = (id: number) => {

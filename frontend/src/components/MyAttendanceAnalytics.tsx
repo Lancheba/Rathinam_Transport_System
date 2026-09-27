@@ -50,12 +50,20 @@ const MyAttendanceAnalytics: React.FC<{ studentId: number }> = ({ studentId }) =
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError("");
-    getStudentAttendanceAnalytics(studentId, { year, ...(mode === "month" ? { month } : {}) })
-      .then((res) => { if (!cancelled) setData(res); })
-      .catch(() => { if (!cancelled) setError("Couldn't load your attendance summary."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      setError("");
+      try {
+        const res = await getStudentAttendanceAnalytics(studentId, { year, ...(mode === "month" ? { month } : {}) });
+        if (!cancelled) setData(res);
+      } catch {
+        if (!cancelled) setError("Couldn't load your attendance summary.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => { cancelled = true; };
   }, [studentId, mode, year, month]);
 

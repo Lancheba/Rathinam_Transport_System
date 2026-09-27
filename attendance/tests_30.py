@@ -53,11 +53,6 @@ class QRTokenCleanupTests(TestCase):
         )
         patcher2.start()
         self.addCleanup(patcher2.stop)
-        # generate/ also refuses weekends/holidays via is_school_day; pin it to
-        # True so this suite doesn't flake depending on what day it's run.
-        day_patcher = patch("attendance.qr_views.is_school_day", return_value=True)
-        day_patcher.start()
-        self.addCleanup(day_patcher.stop)
 
     def _generate(self):
         client = APIClient()

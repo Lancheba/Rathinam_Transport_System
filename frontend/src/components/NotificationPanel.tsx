@@ -92,7 +92,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
   // fetch parking events when the Activity tab is showing
   useEffect(() => {
-    if (showingActivity) fetchEvents();
+    if (!showingActivity) return;
+    (async () => { await Promise.resolve(); fetchEvents(); })();
   }, [showingActivity, fetchEvents]);
 
   // auto-refresh every 15 s while Activity is showing

@@ -16,14 +16,26 @@ export const ComplaintsTab: React.FC<{ unreadCount: number }> = ({ unreadCount }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    api.get('/api/feedback/?status=NEW')
-      .then((res: any) => {
+    let cancelled = false;
+    (async () => {
+      // Yield a tick first: this keeps the loading-state reset out of the
+      // effect's own synchronous call frame (see set-state-in-effect),
+      // while still showing "loading" again on every unreadCount refetch.
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      try {
+        const res: any = await api.get('/api/feedback/?status=NEW');
+        if (cancelled) return;
         const data = Array.isArray(res.data) ? res.data : res.data?.results ?? [];
         setItems(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [unreadCount]);
 
   if (loading) return (

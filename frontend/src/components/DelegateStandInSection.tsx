@@ -44,7 +44,9 @@ const DelegateStandInSection: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); fetchAll(); })();
+  }, [fetchAll]);
 
   const handleHandOff = async () => {
     if (!selectedId) { setError("Select a student first."); return; }

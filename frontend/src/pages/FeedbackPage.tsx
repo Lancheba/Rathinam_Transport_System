@@ -282,7 +282,9 @@ const Inbox: React.FC = () => {
       .catch(() => setError("Couldn't load the inbox."))
       .finally(() => setLoading(false));
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); load(); })();
+  }, [load]);
 
   const counts = useMemo(() => ({
     NEW: items.filter(i => i.status === "NEW").length,

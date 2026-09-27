@@ -39,11 +39,9 @@ class AddBusPermissionTests(APITestCase):
         self.assertEqual(res.status_code, 201, res.data)
 
     def test_superuser_with_default_role_can_add_bus(self):
-        # createsuperuser now gets role=ADMIN on the profile automatically
-        # (accounts/signals.py); is_superuser alone was already enough to
-        # pass CanManageBuses, so this still checks that path stays working.
+        # createsuperuser leaves the profile role as STUDENT
         root = User.objects.create_superuser("root", "r@x.com", "pass1234")
-        self.assertEqual(root.profile.role, "ADMIN")
+        self.assertEqual(root.profile.role, "STUDENT")
         self.client.force_authenticate(root)
         self.assertEqual(self.client.post(self.url, PAYLOAD, format="json").status_code, 201)
 

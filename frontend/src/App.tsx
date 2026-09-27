@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -6,34 +6,44 @@ import { TopNav } from "./components/TopNav";
 import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
 import { useIsMobile } from "./hooks/useMediaQuery";
-import Dashboard from "./pages/Dashboard";
-import ParkingPage from "./pages/ParkingPage";
-import BusesPage from "./pages/BusesPage";
-import StudentsPage from "./pages/StudentsPage";
-import PeoplePage from "./pages/PeoplePage";
-import BusFinder from "./pages/BusFinder";
-import OptimizePage from "./pages/OptimizePage";
-import SensorsPage from "./pages/SensorsPage";
-import ReportsPage from "./pages/ReportsPage";
-import FeedbackPage from "./pages/FeedbackPage";
-import SettingsPage from "./pages/SettingsPage";
-import LoginPage from "./pages/LoginPage";
-import LandingPage from "./pages/LandingPage";
-import SignUpPage from "./pages/SignUpPage";
-import DriverAttendancePage from "./pages/DriverAttendancePage";
-import DriverStudentsPage from "./pages/DriverStudentsPage";
-import InchargeAttendancePage from "./pages/InchargeAttendancePage";
-import InchargeStudentsPage from "./pages/InchargeStudentsPage";
-import MyBusPage from "./pages/MyBusPage";
-import MyAttendancePage from "./pages/MyAttendancePage";
-import FaceEnrollmentPage from "./pages/FaceEnrollmentPage";
-import ScanAttendancePage from "./pages/ScanAttendancePage";
-import AttendanceAnalyticsPage from "./pages/AttendanceAnalyticsPage";
-import AttendanceReportPage from "./pages/AttendanceReportPage";
-import AttendanceFlagsPage from "./pages/AttendanceFlagsPage";
-import HistoryPage from "./pages/HistoryPage";
-import CombinedCabsPage from "./pages/CombinedCabsPage";
 import { IdentityPromptModal } from "./components/IdentityPromptModal";
+
+// Route-level code splitting: each page (and anything it imports, e.g.
+// face-api.js on FaceEnrollmentPage/ScanAttendancePage) becomes its own
+// chunk loaded on demand, instead of one ~1.44 MB upfront bundle.
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ParkingPage = lazy(() => import("./pages/ParkingPage"));
+const BusesPage = lazy(() => import("./pages/BusesPage"));
+const StudentsPage = lazy(() => import("./pages/StudentsPage"));
+const PeoplePage = lazy(() => import("./pages/PeoplePage"));
+const BusFinder = lazy(() => import("./pages/BusFinder"));
+const OptimizePage = lazy(() => import("./pages/OptimizePage"));
+const SensorsPage = lazy(() => import("./pages/SensorsPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const FeedbackPage = lazy(() => import("./pages/FeedbackPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const SignUpPage = lazy(() => import("./pages/SignUpPage"));
+const DriverAttendancePage = lazy(() => import("./pages/DriverAttendancePage"));
+const DriverStudentsPage = lazy(() => import("./pages/DriverStudentsPage"));
+const InchargeAttendancePage = lazy(() => import("./pages/InchargeAttendancePage"));
+const InchargeStudentsPage = lazy(() => import("./pages/InchargeStudentsPage"));
+const MyBusPage = lazy(() => import("./pages/MyBusPage"));
+const MyAttendancePage = lazy(() => import("./pages/MyAttendancePage"));
+const FaceEnrollmentPage = lazy(() => import("./pages/FaceEnrollmentPage"));
+const ScanAttendancePage = lazy(() => import("./pages/ScanAttendancePage"));
+const AttendanceAnalyticsPage = lazy(() => import("./pages/AttendanceAnalyticsPage"));
+const AttendanceReportPage = lazy(() => import("./pages/AttendanceReportPage"));
+const AttendanceFlagsPage = lazy(() => import("./pages/AttendanceFlagsPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const CombinedCabsPage = lazy(() => import("./pages/CombinedCabsPage"));
+
+const RouteFallback: React.FC = () => (
+  <div className="route-loading" role="status" aria-live="polite">
+    Loading...
+  </div>
+);
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
@@ -46,7 +56,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const { roleLabel } = useAuth();
-  const { role, identity, canManageBuses } = useAuth();
+  const { role, identity } = useAuth();
   const isMobile = useIsMobile();
 
   const onFindPage = pathname === "/dashboard/find";
@@ -81,10 +91,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="app-shell">
-      {/* Never ask admins/staff to declare Student/Teacher, even if their
-          profile.role field is stale (e.g. a superuser created outside the
-          admin "Add user" form) -- canManageBuses is the effective check. */}
-      {(role === "INCHARGE" || role === "STUDENT") && !identity && !canManageBuses && <IdentityPromptModal />}
+      {role === "INCHARGE" && !identity && <IdentityPromptModal />}
       {/* Background Liquid Glass Fluid Waveforms — Strictly fixed, never in-flow */}
       <div className="liquid-bg-waves" />
       <svg
@@ -145,47 +152,51 @@ export const App: React.FC = () => {
     <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          {/* Standalone Landing & Login routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            {/* Standalone Landing & Login routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
 
-          {/* App Dashboard and Inner Pages with Sidebar & TopNav */}
-          <Route
-            path="/dashboard/*"
-            element={
-              <MainLayout>
-                <Routes>
-                  <Route path="" element={<Dashboard />} />
-                  <Route path="parking" element={<ParkingPage />} />
-                  <Route path="buses" element={<BusesPage />} />
-                  <Route path="students" element={<StudentsPage />} />
-                  <Route path="people" element={<PeoplePage />} />
-                  <Route path="optimize" element={<OptimizePage />} />
-                  <Route path="sensors" element={<SensorsPage />} />
-                  <Route path="reports" element={<ReportsPage />} />
-                  <Route path="feedback" element={<FeedbackPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="find" element={<BusFinder />} />
-                  <Route path="attendance" element={<DriverAttendancePage />} />
-                  <Route path="my-students" element={<DriverStudentsPage />} />
-                  <Route path="incharge-attendance" element={<InchargeAttendancePage />} />
-                  <Route path="incharge-students" element={<InchargeStudentsPage />} />
-                  <Route path="my-bus" element={<MyBusPage />} />
-                  <Route path="my-attendance" element={<MyAttendancePage />} />
-                  <Route path="face-enrollment" element={<FaceEnrollmentPage />} />
-                  <Route path="scan-attendance" element={<ScanAttendancePage />} />
-                  <Route path="attendance-analytics" element={<AttendanceAnalyticsPage />} />
-                  <Route path="attendance-report" element={<AttendanceReportPage />} />
-                  <Route path="attendance-flags" element={<AttendanceFlagsPage />} />
-                  <Route path="history" element={<HistoryPage />} />
-                  <Route path="combined-cabs" element={<CombinedCabsPage />} />
-                </Routes>
-              </MainLayout>
-            }
-          />
-        </Routes>
+            {/* App Dashboard and Inner Pages with Sidebar & TopNav */}
+            <Route
+              path="/dashboard/*"
+              element={
+                <MainLayout>
+                  <Suspense fallback={<RouteFallback />}>
+                    <Routes>
+                      <Route path="" element={<Dashboard />} />
+                      <Route path="parking" element={<ParkingPage />} />
+                      <Route path="buses" element={<BusesPage />} />
+                      <Route path="students" element={<StudentsPage />} />
+                      <Route path="people" element={<PeoplePage />} />
+                      <Route path="optimize" element={<OptimizePage />} />
+                      <Route path="sensors" element={<SensorsPage />} />
+                      <Route path="reports" element={<ReportsPage />} />
+                      <Route path="feedback" element={<FeedbackPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route path="find" element={<BusFinder />} />
+                      <Route path="attendance" element={<DriverAttendancePage />} />
+                      <Route path="my-students" element={<DriverStudentsPage />} />
+                      <Route path="incharge-attendance" element={<InchargeAttendancePage />} />
+                      <Route path="incharge-students" element={<InchargeStudentsPage />} />
+                      <Route path="my-bus" element={<MyBusPage />} />
+                      <Route path="my-attendance" element={<MyAttendancePage />} />
+                      <Route path="face-enrollment" element={<FaceEnrollmentPage />} />
+                      <Route path="scan-attendance" element={<ScanAttendancePage />} />
+                      <Route path="attendance-analytics" element={<AttendanceAnalyticsPage />} />
+                      <Route path="attendance-report" element={<AttendanceReportPage />} />
+                      <Route path="attendance-flags" element={<AttendanceFlagsPage />} />
+                      <Route path="history" element={<HistoryPage />} />
+                      <Route path="combined-cabs" element={<CombinedCabsPage />} />
+                    </Routes>
+                  </Suspense>
+                </MainLayout>
+              }
+            />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
     </ThemeProvider>

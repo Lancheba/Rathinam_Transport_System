@@ -97,7 +97,7 @@ export default function QRDisplaySection() {
   }
 
   useEffect(() => {
-    fetchWindow();
+    (async () => { await Promise.resolve(); fetchWindow(); })();
     const id = setInterval(fetchWindow, 60_000);
     return () => clearInterval(id);
   }, []);

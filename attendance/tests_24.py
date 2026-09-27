@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from django.test import TestCase
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -22,12 +20,6 @@ def make_user(username, role):
 
 class AuditTrailTests(TestCase):
     def setUp(self):
-        # test_manual_mark_writes_audit_row below hits the manual-mark endpoint,
-        # which refuses weekends/holidays via is_school_day; pin it to True so
-        # this suite doesn't flake depending on what day it's run.
-        patcher = patch("attendance.qr_views.is_school_day", return_value=True)
-        patcher.start()
-        self.addCleanup(patcher.stop)
         self.client = APIClient()
         self.staff = make_user('staff1', 'STAFF')
         self.incharge = make_user('ic1', 'INCHARGE')

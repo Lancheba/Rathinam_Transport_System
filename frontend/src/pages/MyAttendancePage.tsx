@@ -185,7 +185,9 @@ export const MyAttendancePage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); load(); })();
+  }, [load]);
 
   const handleUnlink = async () => {
     if (!window.confirm("Unlink your account from this roll number?")) return;
@@ -215,7 +217,10 @@ export const MyAttendancePage: React.FC = () => {
   const alreadyMarked = !!qrStatus?.already_marked;
 
   // When the session opens/closes or this student gets marked, refresh the attendance table.
-  useEffect(() => { if (qrStatus) load(); }, [qrStatus?.open, qrStatus?.already_marked]);
+  useEffect(() => {
+    if (!qrStatus) return;
+    (async () => { await Promise.resolve(); load(); })();
+  }, [qrStatus?.open, qrStatus?.already_marked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const slotBlock = attendance ? attendance[activeSlot === "MORNING" ? "morning" : "evening"] : null;
 

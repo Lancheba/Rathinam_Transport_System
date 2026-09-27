@@ -71,7 +71,9 @@ const ManualMarkSection: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { fetchRoster(); }, [fetchRoster]);
+  useEffect(() => {
+    (async () => { await fetchRoster(); })();
+  }, [fetchRoster]);
 
   const handleMark = async () => {
     if (!selectedId) { setError("Select a student first."); return; }

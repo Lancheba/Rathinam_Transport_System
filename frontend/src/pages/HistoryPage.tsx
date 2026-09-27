@@ -72,7 +72,9 @@ const HistoryPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [bus, eventType, date]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); load(); })();
+  }, [load]);
   useEffect(() => { if (canManageBuses) getBuses().then(setBuses).catch(() => {}); }, [canManageBuses]);
 
   if (!canManageBuses) {

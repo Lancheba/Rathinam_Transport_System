@@ -69,7 +69,9 @@ const PeoplePage: React.FC = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadAll, []);
+  useEffect(() => {
+    (async () => { await Promise.resolve(); loadAll(); })();
+  }, []);
 
   useEffect(() => {
     if (!notice) return;

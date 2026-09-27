@@ -20,6 +20,11 @@ class SensorViewSet(viewsets.ModelViewSet):
 
 
 class ParkingEventViewSet(viewsets.ReadOnlyModelViewSet):
+    # This table grows on every sensor edge event and has no natural upper
+    # bound, so unlike the small operational tables (buses, slots, sensors)
+    # it must always be capped -- see CONTRIBUTING.md's pagination convention.
+    LIST_LIMIT = 500
+
     queryset = ParkingEvent.objects.select_related("bus", "sensor", "parking_slot").order_by("-timestamp")
     serializer_class = ParkingEventSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -30,12 +35,13 @@ class ParkingEventViewSet(viewsets.ReadOnlyModelViewSet):
         limit = self.request.query_params.get("limit")
         if bus_id:
             qs = qs.filter(bus_id=bus_id)
+        cap = self.LIST_LIMIT
         if limit:
             try:
-                qs = qs[: int(limit)]
+                cap = int(limit)
             except ValueError:
                 pass
-        return qs
+        return qs[:cap]
 
 
 def _touch_sensor(sensor_id_str, last_reading):

@@ -20,14 +20,22 @@ const InchargeStudentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!effectiveBusNumber) { setLoading(false); return; }
-    setLoading(true);
-    Promise.all([getStudents(), getBuses()])
-      .then(([studentData, busData]) => {
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      if (!effectiveBusNumber) { setLoading(false); return; }
+      setLoading(true);
+      try {
+        const [studentData, busData] = await Promise.all([getStudents(), getBuses()]);
+        if (cancelled) return;
         setStudents([...studentData].sort((a, b) => a.name.localeCompare(b.name)));
         setBus(busData.find((b) => b.bus_number === effectiveBusNumber) ?? null);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [effectiveBusNumber]);
 
   if (!effectiveBusNumber) {

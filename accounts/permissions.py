@@ -71,8 +71,6 @@ def role_label(user):
         return "Cab In-Charge"
     if profile and profile.role == "DRIVER":
         return "Driver"
-    if profile and profile.role == "TEACHER":
-        return "Teacher"
     return "Student"
 
 

@@ -1,5 +1,3 @@
-from datetime import date as date_cls
-
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -18,7 +16,7 @@ from attendance.services import log_history
 @permission_classes([CanManageBuses])
 def combination_list_create(request):
     if request.method == "GET":
-        day = request.query_params.get("date") or str(date_cls.today())
+        day = request.query_params.get("date") or str(timezone.localdate())
         qs = CabCombination.objects.filter(date=day, is_active=True).prefetch_related("buses")
         return Response(CabCombinationSerializer(qs, many=True).data)
 

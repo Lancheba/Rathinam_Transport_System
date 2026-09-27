@@ -117,10 +117,15 @@ export const Dashboard: React.FC = () => {
   }, [canManageBuses]);
 
   useEffect(() => {
-    loadSummary();
-    loadBuses();
-    loadSensors();
-    loadStudents();
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      loadSummary();
+      loadBuses();
+      loadSensors();
+      loadStudents();
+    })();
     // Poll every 15s so the top metric cards stay in sync with the live ground
     // view instead of freezing at whatever the first successful fetch returned.
     const id = setInterval(() => {
@@ -129,7 +134,7 @@ export const Dashboard: React.FC = () => {
       loadSensors();
       loadStudents();
     }, 15000);
-    return () => clearInterval(id);
+    return () => { cancelled = true; clearInterval(id); };
   }, [loadSummary, loadBuses, loadSensors, loadStudents]);
 
   return (
