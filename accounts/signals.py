@@ -7,7 +7,12 @@ from .models import UserProfile
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        UserProfile.objects.create(user=instance)
+        # Superusers/staff made with `createsuperuser` (or any other path that
+        # skips the admin "Add user" form) would otherwise keep the default
+        # STUDENT profile role -- which both mislabels their profile and
+        # wrongly triggers the "Are you a student or teacher?" prompt.
+        role = "ADMIN" if (instance.is_superuser or instance.is_staff) else "STUDENT"
+        UserProfile.objects.create(user=instance, role=role)
 
 
 @receiver(post_save, sender=User)

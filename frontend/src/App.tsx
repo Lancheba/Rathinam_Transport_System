@@ -46,7 +46,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const { roleLabel } = useAuth();
-  const { role, identity } = useAuth();
+  const { role, identity, canManageBuses } = useAuth();
   const isMobile = useIsMobile();
 
   const onFindPage = pathname === "/dashboard/find";
@@ -81,7 +81,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="app-shell">
-      {(role === "INCHARGE" || role === "STUDENT") && !identity && <IdentityPromptModal />}
+      {/* Never ask admins/staff to declare Student/Teacher, even if their
+          profile.role field is stale (e.g. a superuser created outside the
+          admin "Add user" form) -- canManageBuses is the effective check. */}
+      {(role === "INCHARGE" || role === "STUDENT") && !identity && !canManageBuses && <IdentityPromptModal />}
       {/* Background Liquid Glass Fluid Waveforms — Strictly fixed, never in-flow */}
       <div className="liquid-bg-waves" />
       <svg
