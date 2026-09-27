@@ -2,6 +2,12 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+
+CANNOT_DELETE_WITH_HISTORY = (
+    "This student has attendance history and can't be deleted, because their "
+    "audit trail rows are immutable (they can't be cascade-deleted either). "
+    "Unassign them from their bus instead of deleting the roster row."
+)
 from rest_framework.views import APIView
 from accounts.permissions import CanManageBuses, can_manage_buses, IsStudent
 from attendance.permissions import driver_bus, is_driver, incharge_bus, is_incharge
@@ -54,6 +60,17 @@ class StudentViewSet(viewsets.ModelViewSet):
         if unassigned is not None and unassigned.lower() == "true":
             qs = qs.filter(bus__isnull=True)
         return qs
+
+    def perform_destroy(self, instance):
+        # AttendanceRecord.student and AttendanceAudit.record are both
+        # on_delete=CASCADE, but migration 0010's Postgres trigger makes
+        # AttendanceAudit rows immutable -- it rejects DELETE even when it
+        # arrives via a cascade, not just a direct one. Without this check,
+        # deleting a student with any attendance history raises a raw
+        # InternalError mid-cascade and surfaces as an unhandled 500.
+        if instance.attendance_records.exists():
+            raise ValidationError(CANNOT_DELETE_WITH_HISTORY)
+        instance.delete()
 
     @action(detail=False, methods=["get"], url_path="roster", permission_classes=[CanManageBuses])
     def roster(self, request):

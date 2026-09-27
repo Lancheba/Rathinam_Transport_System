@@ -173,3 +173,42 @@ class MyStudentLinkTests(APITestCase):
         self.assertFalse(res.data["linked"])
         self.alice.refresh_from_db()
         self.assertIsNone(self.alice.linked_user_id)
+
+
+class DeleteStudentWithAttendanceHistoryTests(APITestCase):
+    """
+    AttendanceRecord.student and AttendanceAudit.record are both
+    on_delete=CASCADE, but the Postgres trigger from migration 0010 makes
+    AttendanceAudit rows immutable even against a cascaded DELETE. Without
+    a guard, deleting a student with attendance history raises a raw
+    InternalError mid-cascade -> unhandled 500 in production. This should
+    instead be a clean 400 telling the caller why.
+    """
+
+    def setUp(self):
+        self.admin = make_user("stu_del_admin", None)
+        self.admin.is_staff = True
+        self.admin.save(update_fields=["is_staff"])
+        self.bus = make_bus("DEL1")
+        self.client.force_authenticate(self.admin)
+
+    def test_cannot_delete_student_with_attendance_history(self):
+        from datetime import date
+        from attendance.models import AttendanceRecord, AttendanceSession
+
+        student = Student.objects.create(name="Has History", roll_number="DELHIST1", bus=self.bus)
+        session = AttendanceSession.objects.create(bus=self.bus, date=date.today(), slot="MORNING")
+        AttendanceRecord.objects.create(
+            session=session, person_type="STUDENT", student=student, status="PRESENT",
+        )
+
+        res = self.client.delete(f"/api/students/{student.pk}/")
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue(Student.objects.filter(pk=student.pk).exists())
+
+    def test_can_delete_student_with_no_attendance_history(self):
+        student = Student.objects.create(name="Clean Slate", roll_number="DELNOHIST1", bus=self.bus)
+
+        res = self.client.delete(f"/api/students/{student.pk}/")
+        self.assertEqual(res.status_code, 204)
+        self.assertFalse(Student.objects.filter(pk=student.pk).exists())

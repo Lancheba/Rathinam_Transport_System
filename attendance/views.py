@@ -11,6 +11,7 @@ from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import api_view, action, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -74,6 +75,21 @@ class TeacherViewSet(viewsets.ModelViewSet):
         if bus_id:
             qs = qs.filter(bus_id=bus_id)
         return qs
+
+    def perform_destroy(self, instance):
+        # Same issue as StudentViewSet.perform_destroy: AttendanceRecord.teacher
+        # and AttendanceAudit.record are on_delete=CASCADE, but migration
+        # 0010's Postgres trigger rejects any DELETE on attendance_attendanceaudit,
+        # cascaded or not. Check up front instead of letting the cascade hit
+        # the trigger and surface as an unhandled 500.
+        if instance.attendance_records.exists():
+            raise ValidationError(
+                "This teacher has attendance history and can't be deleted, "
+                "because their audit trail rows are immutable (they can't be "
+                "cascade-deleted either). Unassign them from their bus instead "
+                "of deleting the roster row."
+            )
+        instance.delete()
 
     @action(detail=True, methods=["post"], url_path="create-login")
     def create_login(self, request, pk=None):
