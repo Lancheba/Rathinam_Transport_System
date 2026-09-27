@@ -1,41 +1,62 @@
-"""
-Same issue as students/tests.py::DeleteStudentWithAttendanceHistoryTests:
-AttendanceRecord.teacher and AttendanceAudit.record are both
-on_delete=CASCADE, but migration 0010's Postgres trigger makes
-AttendanceAudit rows immutable even against a cascaded DELETE. Deleting a
-teacher with attendance history used to raise a raw InternalError mid-cascade
--- an unhandled 500 in production -- instead of a clean 400.
-"""
 from datetime import date
-
+from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+from attendance.models import AttendanceSession, AttendanceRecord, AttendanceAudit, Teacher
+from buses.models import Bus
 
-from .models import AttendanceRecord, AttendanceSession, Teacher
-from .tests import make_bus, make_user
+User = get_user_model()
 
 
-class DeleteTeacherWithAttendanceHistoryTests(APITestCase):
+def make_bus(bus_number):
+    return Bus.objects.create(
+        bus_number=bus_number,
+        route=f"Route for {bus_number}",
+        rfid_uid=f"RFID-TCH-{bus_number}",
+        departure_time="08:00",
+        length_m="10.00",
+        width_m="2.50",
+    )
+
+
+class DeleteTeacherTests(APITestCase):
+    """
+    Deleting a teacher must work regardless of attendance history:
+    AttendanceRecord.teacher is SET_NULL (migration 0018) so the FK is nulled,
+    the audit trail is preserved, and the immutable-audit trigger is never touched.
+    """
+
     def setUp(self):
-        self.admin = make_user("teach_del_admin", None)
-        self.admin.is_staff = True
-        self.admin.save(update_fields=["is_staff"])
-        self.bus = make_bus("TDEL1")
-        self.client.force_authenticate(self.admin)
-
-    def test_cannot_delete_teacher_with_attendance_history(self):
-        teacher = Teacher.objects.create(name="Has History", staff_id="TDELHIST1", bus=self.bus)
-        session = AttendanceSession.objects.create(bus=self.bus, date=date.today(), slot="MORNING")
-        AttendanceRecord.objects.create(
-            session=session, person_type="TEACHER", teacher=teacher, status="PRESENT",
+        self.admin = User.objects.create_superuser("admin_tch_del", password="pw")
+        self.bus = make_bus("T1")
+        self.teacher = Teacher.objects.create(
+            name="Del Teacher", staff_id="TCH001", bus=self.bus
         )
 
-        res = self.client.delete(f"/api/attendance/teachers/{teacher.pk}/")
-        self.assertEqual(res.status_code, 400)
-        self.assertTrue(Teacher.objects.filter(pk=teacher.pk).exists())
+    def test_delete_teacher_with_history_returns_204_and_nulls_fk(self):
+        session = AttendanceSession.objects.create(
+            bus=self.bus, date=date.today(), slot="MORNING"
+        )
+        record = AttendanceRecord.objects.create(
+            session=session, person_type="TEACHER", teacher=self.teacher,
+            status="PRESENT",
+        )
+        AttendanceAudit.objects.create(
+            record=record, action="CREATE", new_status="PRESENT",
+            actor=self.admin, session=session,
+        )
+        self.client.force_authenticate(user=self.admin)
+        url = f"/api/attendance/teachers/{self.teacher.id}/"
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Teacher.objects.filter(id=self.teacher.id).exists())
+        # Record survives; FK is nulled
+        record.refresh_from_db()
+        self.assertIsNone(record.teacher_id)
+        self.assertTrue(AttendanceAudit.objects.filter(record=record).exists())
 
-    def test_can_delete_teacher_with_no_attendance_history(self):
-        teacher = Teacher.objects.create(name="Clean Slate", staff_id="TDELNOHIST1", bus=self.bus)
-
-        res = self.client.delete(f"/api/attendance/teachers/{teacher.pk}/")
-        self.assertEqual(res.status_code, 204)
-        self.assertFalse(Teacher.objects.filter(pk=teacher.pk).exists())
+    def test_delete_teacher_without_history_returns_204(self):
+        self.client.force_authenticate(user=self.admin)
+        url = f"/api/attendance/teachers/{self.teacher.id}/"
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Teacher.objects.filter(id=self.teacher.id).exists())

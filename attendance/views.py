@@ -77,18 +77,9 @@ class TeacherViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_destroy(self, instance):
-        # Same issue as StudentViewSet.perform_destroy: AttendanceRecord.teacher
-        # and AttendanceAudit.record are on_delete=CASCADE, but migration
-        # 0010's Postgres trigger rejects any DELETE on attendance_attendanceaudit,
-        # cascaded or not. Check up front instead of letting the cascade hit
-        # the trigger and surface as an unhandled 500.
-        if instance.attendance_records.exists():
-            raise ValidationError(
-                "This teacher has attendance history and can't be deleted, "
-                "because their audit trail rows are immutable (they can't be "
-                "cascade-deleted either). Unassign them from their bus instead "
-                "of deleting the roster row."
-            )
+        # AttendanceRecord.teacher is SET_NULL so deleting a teacher just
+        # nulls the FK on their records — the audit trail is preserved,
+        # and the immutable-audit trigger is never touched.
         instance.delete()
 
     @action(detail=True, methods=["post"], url_path="create-login")

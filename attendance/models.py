@@ -154,13 +154,13 @@ class AttendanceRecord(models.Model):
     person_type = models.CharField(max_length=10, choices=PERSON_TYPES)
     student = models.ForeignKey(
         "students.Student",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name="attendance_records",
     )
     teacher = models.ForeignKey(
         Teacher,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name="attendance_records",
     )

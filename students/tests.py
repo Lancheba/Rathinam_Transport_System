@@ -175,14 +175,11 @@ class MyStudentLinkTests(APITestCase):
         self.assertIsNone(self.alice.linked_user_id)
 
 
-class DeleteStudentWithAttendanceHistoryTests(APITestCase):
+class DeleteStudentTests(APITestCase):
     """
-    AttendanceRecord.student and AttendanceAudit.record are both
-    on_delete=CASCADE, but the Postgres trigger from migration 0010 makes
-    AttendanceAudit rows immutable even against a cascaded DELETE. Without
-    a guard, deleting a student with attendance history raises a raw
-    InternalError mid-cascade -> unhandled 500 in production. This should
-    instead be a clean 400 telling the caller why.
+    AttendanceRecord.student is SET_NULL (migration 0018), so deleting a
+    student with attendance history now works: the FK is nulled, the audit
+    trail is preserved, and the immutable-audit trigger is never touched.
     """
 
     def setUp(self):
@@ -192,19 +189,22 @@ class DeleteStudentWithAttendanceHistoryTests(APITestCase):
         self.bus = make_bus("DEL1")
         self.client.force_authenticate(self.admin)
 
-    def test_cannot_delete_student_with_attendance_history(self):
+    def test_can_delete_student_with_attendance_history(self):
         from datetime import date
         from attendance.models import AttendanceRecord, AttendanceSession
 
         student = Student.objects.create(name="Has History", roll_number="DELHIST1", bus=self.bus)
         session = AttendanceSession.objects.create(bus=self.bus, date=date.today(), slot="MORNING")
-        AttendanceRecord.objects.create(
+        record = AttendanceRecord.objects.create(
             session=session, person_type="STUDENT", student=student, status="PRESENT",
         )
 
         res = self.client.delete(f"/api/students/{student.pk}/")
-        self.assertEqual(res.status_code, 400)
-        self.assertTrue(Student.objects.filter(pk=student.pk).exists())
+        self.assertEqual(res.status_code, 204)
+        self.assertFalse(Student.objects.filter(pk=student.pk).exists())
+        # Record survives with FK nulled
+        record.refresh_from_db()
+        self.assertIsNone(record.student_id)
 
     def test_can_delete_student_with_no_attendance_history(self):
         student = Student.objects.create(name="Clean Slate", roll_number="DELNOHIST1", bus=self.bus)
