@@ -46,10 +46,11 @@ class UserSerializer(serializers.ModelSerializer):
     incharge_bus_number = serializers.SerializerMethodField()
     standin_bus_number = serializers.SerializerMethodField()
     student_profile = serializers.SerializerMethodField()
+    teacher_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number", "standin_bus_number", "student_profile"]
+        fields = ["id", "username", "email", "role", "identity", "phone", "can_manage_buses", "is_admin", "driven_bus_number", "incharge_bus_number", "standin_bus_number", "student_profile", "teacher_profile"]
 
     def get_can_manage_buses(self, obj):
         return can_manage_buses(obj)
@@ -95,11 +96,30 @@ class UserSerializer(serializers.ModelSerializer):
             "boarding_point": student.boarding_point,
         }
 
+    def get_teacher_profile(self, obj):
+        teacher = getattr(obj, "teacher_profile", None)
+        if not teacher:
+            return None
+        return {
+            "staff_id": teacher.staff_id,
+            "name": teacher.name,
+            "department": teacher.department,
+            "phone": teacher.phone,
+            "email": teacher.email,
+            "bus_number": teacher.bus.bus_number if teacher.bus else None,
+            "boarding_point": teacher.boarding_point,
+        }
+
 
 class UpdatePhoneSerializer(serializers.Serializer):
-    """item 2.9 / Step 4: lets a signed-in user set their own contact number."""
+    """
+    item 2.9 / Step 4: lets a signed-in user set their own contact number,
+    and (for a linked Student or Teacher) their own bus stop / boarding point --
+    the "Bus Stop" field on the My Profile card in Settings.
+    """
 
-    phone = serializers.CharField(allow_blank=True, max_length=20)
+    phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    boarding_point = serializers.CharField(required=False, allow_blank=True, max_length=150)
 
     def validate_phone(self, value):
         value = value.strip()
@@ -107,12 +127,23 @@ class UpdatePhoneSerializer(serializers.Serializer):
             raise serializers.ValidationError("Enter a valid phone number.")
         return value
 
+    def validate_boarding_point(self, value):
+        return value.strip()
+
     def save(self, **kwargs):
         user = self.context["request"].user
-        profile = user.profile
-        profile.phone = self.validated_data["phone"]
-        profile.save(update_fields=["phone"])
-        return profile
+        if "phone" in self.validated_data:
+            profile = user.profile
+            profile.phone = self.validated_data["phone"]
+            profile.save(update_fields=["phone"])
+        if "boarding_point" in self.validated_data:
+            # Whichever identity this login is linked to (a person only ever
+            # has one) is the one whose stop gets updated.
+            person = getattr(user, "student_profile", None) or getattr(user, "teacher_profile", None)
+            if person is not None:
+                person.boarding_point = self.validated_data["boarding_point"]
+                person.save(update_fields=["boarding_point"])
+        return user
 
 
 class SetIdentitySerializer(serializers.Serializer):

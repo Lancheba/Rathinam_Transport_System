@@ -69,6 +69,16 @@ export interface CurrentUser {
     bus_number: string | null;
     boarding_point: string;
   } | null;
+  /** Present only when this user has a linked Teacher record */
+  teacher_profile?: {
+    staff_id: string;
+    name: string;
+    department: string;
+    phone: string;
+    email: string;
+    bus_number: string | null;
+    boarding_point: string;
+  } | null;
 }
 
 export interface ParkingSlot {

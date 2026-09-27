@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Sliders, Wifi, Check, Loader2, Palette, Sun, Moon, Monitor, Clock, User } from "lucide-react";
-import { getGround, updateGround, getAttendanceWindowConfig, updateAttendanceWindowConfig, getMe } from "../api/endpoints";
+import { Sliders, Wifi, Check, Loader2, Palette, Sun, Moon, Monitor, Clock, User, MapPin, Pencil, X as XIcon } from "lucide-react";
+import { getGround, updateGround, getAttendanceWindowConfig, updateAttendanceWindowConfig, getMe, updateMyProfile } from "../api/endpoints";
 import type { ParkingGround, AttendanceWindowConfig, CurrentUser } from "../types";
 import { useTheme, type ThemePreference } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -37,6 +37,36 @@ export const SettingsPage: React.FC = () => {
 
   const [me, setMe] = useState<CurrentUser | null>(null);
   useEffect(() => { getMe().then(setMe).catch(() => {}); }, []);
+
+  // Bus Stop editor — lets the signed-in student or teacher set their own
+  // boarding point; it then shows up here and everywhere staff view their
+  // roster (Students / People pages read the same field).
+  const [editingStop, setEditingStop] = useState(false);
+  const [stopValue, setStopValue] = useState("");
+  const [stopSaving, setStopSaving] = useState(false);
+  const [stopError, setStopError] = useState("");
+
+  const myBoardingPoint = me?.student_profile?.boarding_point ?? me?.teacher_profile?.boarding_point ?? null;
+  const canEditBoardingPoint = !!(me?.student_profile || me?.teacher_profile);
+
+  const startEditStop = () => {
+    setStopValue(myBoardingPoint || "");
+    setStopError("");
+    setEditingStop(true);
+  };
+
+  const handleSaveStop = async () => {
+    setStopSaving(true); setStopError("");
+    try {
+      const updated = await updateMyProfile({ boarding_point: stopValue.trim() });
+      setMe(updated);
+      setEditingStop(false);
+    } catch {
+      setStopError("Couldn't save your bus stop. Please try again.");
+    } finally {
+      setStopSaving(false);
+    }
+  };
 
   // Attendance window times (when MORNING/EVENING open & close)
   const [windowConfig, setWindowConfig] = useState<AttendanceWindowConfig | null>(null);
@@ -147,13 +177,91 @@ export const SettingsPage: React.FC = () => {
                   <div><span style={{ color: "var(--text-muted)" }}>Department: </span>{me.student_profile.department || "-"}</div>
                   <div><span style={{ color: "var(--text-muted)" }}>Year: </span>{me.student_profile.year || "-"}</div>
                   <div><span style={{ color: "var(--text-muted)" }}>Bus: </span>{me.student_profile.bus_number || "-"}</div>
-                  <div><span style={{ color: "var(--text-muted)" }}>Boarding Point: </span>{me.student_profile.boarding_point || "-"}</div>
+                </>
+              ) : me.teacher_profile ? (
+                <>
+                  <div><span style={{ color: "var(--text-muted)" }}>Staff ID: </span>{me.teacher_profile.staff_id}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Name: </span>{me.teacher_profile.name}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Department: </span>{me.teacher_profile.department || "-"}</div>
+                  <div><span style={{ color: "var(--text-muted)" }}>Bus: </span>{me.teacher_profile.bus_number || "-"}</div>
                 </>
               ) : (
                 <>
                   {me.driven_bus_number && <div><span style={{ color: "var(--text-muted)" }}>Bus (driver): </span>{me.driven_bus_number}</div>}
                   {me.incharge_bus_number && <div><span style={{ color: "var(--text-muted)" }}>Bus (in-charge): </span>{me.incharge_bus_number}</div>}
                 </>
+              )}
+            </div>
+          )}
+
+          {canEditBoardingPoint && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(96,165,250,0.12)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: editingStop ? 8 : 0 }}>
+                <MapPin size={15} style={{ color: "var(--accent-emerald, #34d399)" }} />
+                <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Bus Stop:</span>
+                {!editingStop && (
+                  <span style={{ fontSize: 13, color: "var(--text-strong)", fontWeight: 600 }}>
+                    {myBoardingPoint || "Not set"}
+                  </span>
+                )}
+                {!editingStop && (
+                  <button
+                    type="button"
+                    onClick={startEditStop}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto",
+                      padding: "5px 10px", fontSize: 12, fontWeight: 600, borderRadius: 7,
+                      color: "var(--accent-emerald, #34d399)", background: "rgba(52,211,153,0.08)",
+                      border: "1px solid rgba(52,211,153,0.3)", cursor: "pointer",
+                    }}
+                  >
+                    <Pencil size={12} /> Bus Stop
+                  </button>
+                )}
+              </div>
+
+              {editingStop && (
+                <div>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={stopValue}
+                    onChange={(e) => setStopValue(e.target.value)}
+                    placeholder="e.g. Gandhipuram signal"
+                    style={inputStyle}
+                  />
+                  {stopError && <p style={{ color: "var(--accent-red)", fontSize: 12, marginTop: 6 }}>{stopError}</p>}
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => { setEditingStop(false); setStopError(""); }}
+                      disabled={stopSaving}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        padding: "6px 12px", fontSize: 12.5, fontWeight: 600, borderRadius: 7,
+                        color: "var(--text-muted)", background: "none",
+                        border: "1px solid rgba(96,165,250,0.2)", cursor: "pointer",
+                      }}
+                    >
+                      <XIcon size={12} /> Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveStop}
+                      disabled={stopSaving}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        padding: "6px 12px", fontSize: 12.5, fontWeight: 600, borderRadius: 7,
+                        color: "#fff", background: "var(--accent-emerald, #34d399)",
+                        border: "1px solid var(--accent-emerald, #34d399)", cursor: stopSaving ? "default" : "pointer",
+                        opacity: stopSaving ? 0.7 : 1,
+                      }}
+                    >
+                      {stopSaving ? <Loader2 size={12} className="spin" /> : <Check size={12} />}
+                      Save
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}

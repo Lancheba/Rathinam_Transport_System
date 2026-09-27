@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { Users, Search, Bus as BusIcon, Plus, Trash2, X, ShieldAlert, ArrowLeft } from "lucide-react";
+import { Users, Search, Bus as BusIcon, Plus, Trash2, X, ShieldAlert, ArrowLeft, MapPin, Check } from "lucide-react";
 import axios from "axios";
-import { getBuses, getBusRoster, searchStudents, deleteStudent } from "../api/endpoints";
+import { getBuses, getBusRoster, searchStudents, deleteStudent, updateStudent } from "../api/endpoints";
 import { AddStudentModal } from "../components/AddStudentModal";
 import { ExportButton } from "../components/ExportButton";
 import { useAuth } from "../context/AuthContext";
@@ -24,6 +24,38 @@ const StudentsPage: React.FC = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Inline "Bus Stop" editing for a single row — staff can set/correct a
+  // student's boarding point directly from the roster; the same field the
+  // student sees (and can set themselves) on their own Settings page.
+  const [editingStopId, setEditingStopId] = useState<number | null>(null);
+  const [stopValue, setStopValue] = useState("");
+  const [stopSaving, setStopSaving] = useState(false);
+  const [stopError, setStopError] = useState("");
+
+  const startEditStop = (student: BusRoster["students"][number] | Student) => {
+    setEditingStopId(student.id);
+    setStopValue(student.boarding_point || "");
+    setStopError("");
+  };
+
+  const handleSaveStop = async (studentId: number) => {
+    setStopSaving(true); setStopError("");
+    try {
+      await updateStudent(studentId, { boarding_point: stopValue.trim() });
+      setEditingStopId(null);
+      loadRoster();
+      if (searchResults) {
+        setSearchResults((prev) =>
+          prev ? prev.map((s) => (s.id === studentId ? { ...s, boarding_point: stopValue.trim() } : s)) : prev
+        );
+      }
+    } catch {
+      setStopError("Couldn't save. Try again.");
+    } finally {
+      setStopSaving(false);
+    }
+  };
 
   const loadRoster = () => {
     setLoading(true);
@@ -125,7 +157,62 @@ const StudentsPage: React.FC = () => {
           {"bus_number" in s ? (s.bus_number ?? <span style={{ color: "var(--text-dim)" }}>Unassigned</span>) : "-"}
         </td>
       )}
-      <td style={{ color: "var(--text-muted)" }}>{s.boarding_point || "-"}</td>
+      <td style={{ color: "var(--text-muted)", minWidth: 160 }}>
+        {editingStopId === s.id ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              autoFocus
+              value={stopValue}
+              onChange={(e) => setStopValue(e.target.value)}
+              placeholder="e.g. Gandhipuram signal"
+              style={{
+                width: 130, padding: "4px 8px", borderRadius: 6, fontSize: 12.5,
+                border: "1px solid rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.05)",
+                color: "var(--text-strong)", outline: "none",
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveStop(s.id); if (e.key === "Escape") setEditingStopId(null); }}
+            />
+            <button
+              type="button" onClick={() => handleSaveStop(s.id)} disabled={stopSaving}
+              aria-label="Save bus stop"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 5, border: "1px solid rgba(74,222,128,0.35)", background: "rgba(74,222,128,0.08)", color: "var(--accent-green)", cursor: "pointer" }}
+            >
+              <Check size={12} />
+            </button>
+            <button
+              type="button" onClick={() => setEditingStopId(null)} disabled={stopSaving}
+              aria-label="Cancel"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 5, border: "1px solid rgba(96,165,250,0.2)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span>{s.boarding_point || "-"}</span>
+            {canManageBuses && (
+              <button
+                type="button"
+                onClick={() => startEditStop(s)}
+                aria-label={`Set bus stop for ${s.name}`}
+                title="Bus Stop"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px",
+                  fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: "pointer",
+                  color: "var(--accent-emerald, #34d399)", background: "rgba(52,211,153,0.08)",
+                  border: "1px solid rgba(52,211,153,0.3)",
+                }}
+              >
+                <MapPin size={10} /> Bus Stop
+              </button>
+            )}
+          </div>
+        )}
+        {editingStopId === s.id && stopError && (
+          <div style={{ color: "var(--accent-red)", fontSize: 11, marginTop: 4 }}>{stopError}</div>
+        )}
+      </td>
       {renderFaceCell(s)}
       {canManageBuses && (
         <td>

@@ -51,6 +51,11 @@ export const login = (username: string, password: string, cab_number?: string) =
 export const getMe = () => api.get<CurrentUser>("/auth/me/").then(r => r.data);
 export const setIdentity = (identity: "STUDENT" | "TEACHER") =>
   api.patch<CurrentUser>("/auth/me/identity/", { identity }).then(r => r.data);
+// Self-service profile edits (currently just the bus stop / boarding point,
+// shown on the My Profile card in Settings) for whichever Student or Teacher
+// record this login is linked to.
+export const updateMyProfile = (data: { boarding_point?: string; phone?: string }) =>
+  api.patch<CurrentUser>("/auth/me/", data).then(r => r.data);
 
 // Sensors: create / delete
 export const createSensor = (data: SensorInput) => api.post<Sensor>("/sensors/", data).then(r => r.data);
