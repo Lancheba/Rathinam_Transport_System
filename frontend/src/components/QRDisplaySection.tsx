@@ -58,7 +58,18 @@ export default function QRDisplaySection() {
       const res = await api.post<QRData>("/attendance/qr/generate/");
       setQrData(res.data);
       setError("");
-      setCountdown(10);
+
+      // Derive the countdown/refresh cadence from the server's expires_at
+      // (which reflects the admin-configured qr_token_ttl_seconds) instead
+      // of hardcoding it, so a custom TTL actually takes effect here.
+      const ttlMs = new Date(res.data.expires_at).getTime() - Date.now();
+      const ttlSeconds = Math.max(1, Math.round(ttlMs / 1000));
+      setCountdown(ttlSeconds);
+
+      // Re-arm the poll timer to match this TTL, in case the admin changed
+      // it since the last cycle started.
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(fetchQR, ttlSeconds * 1_000);
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? "Failed to generate QR.");
     }
@@ -82,8 +93,7 @@ export default function QRDisplaySection() {
 
   function start() {
     setActive(true);
-    fetchQR();
-    pollRef.current  = setInterval(fetchQR, 10_000);
+    fetchQR(); // fetchQR() itself arms pollRef.current with the correct TTL
     timerRef.current = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : 0)), 1_000);
     tallyRef.current = setInterval(fetchTally, 7_000);
   }
