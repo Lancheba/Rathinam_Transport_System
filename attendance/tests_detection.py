@@ -84,15 +84,29 @@ class SameDeviceRuleTests(DetectionTestBase):
 
 
 class IpBurstRuleTests(DetectionTestBase):
+    # Audit rows are append-only (migration 0010's Postgres trigger rejects
+    # UPDATE/DELETE outright), so create()-then-.update() to backdate
+    # created_at no longer works. bulk_create() looks like the fix but isn't:
+    # Django's auto_now_add is applied by DateTimeField.pre_save(), and
+    # bulk_create() still calls pre_save() for each object, so it silently
+    # overwrites any created_at you pass in with the real current time.
+    # The only way left to control created_at on an append-only,
+    # auto_now_add field is to control what auto_now_add resolves to -- by
+    # mocking django.utils.timezone.now() while a normal .create() (a plain
+    # INSERT, which the trigger allows) runs.
+    def _audit_at(self, record, ip, when):
+        with patch("django.utils.timezone.now", return_value=when):
+            return AttendanceAudit.objects.create(
+                record=record, session=self.session, action="SCAN",
+                new_status="PRESENT", ip_address=ip,
+            )
+
     @override_settings(FLAG_IP_BURST_WINDOW_SECONDS=30, FLAG_IP_BURST_THRESHOLD=3)
     def test_flags_burst_from_same_ip(self):
         now = timezone.now()
         for i, student in enumerate(self.students[:3]):
             r = self._record(student, source="QR_FACE")
-            audit = AttendanceAudit.objects.create(
-                record=r, session=self.session, action="SCAN", new_status="PRESENT", ip_address="10.0.0.5",
-            )
-            AttendanceAudit.objects.filter(pk=audit.pk).update(created_at=now + timedelta(seconds=i))
+            self._audit_at(r, "10.0.0.5", now + timedelta(seconds=i))
         run_detection(self.session)
         flag = AttendanceFlag.objects.get(session=self.session, rule="SAME_IP_BURST")
         self.assertEqual(flag.detail["ip"], "10.0.0.5")
@@ -102,10 +116,7 @@ class IpBurstRuleTests(DetectionTestBase):
         now = timezone.now()
         for i, student in enumerate(self.students[:3]):
             r = self._record(student, source="QR_FACE")
-            audit = AttendanceAudit.objects.create(
-                record=r, session=self.session, action="SCAN", new_status="PRESENT", ip_address="10.0.0.6",
-            )
-            AttendanceAudit.objects.filter(pk=audit.pk).update(created_at=now + timedelta(seconds=i * 60))
+            self._audit_at(r, "10.0.0.6", now + timedelta(seconds=i * 60))
         run_detection(self.session)
         self.assertFalse(AttendanceFlag.objects.filter(session=self.session, rule="SAME_IP_BURST").exists())
 

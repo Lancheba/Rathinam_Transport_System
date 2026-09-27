@@ -2,6 +2,7 @@
 Tests for attendance/history_views.py::history_feed (item #6 audit gap --
 this module had 19 lines and 11 uncovered, i.e. essentially no test file).
 """
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from .models import HistoryEvent
@@ -52,7 +53,13 @@ class HistoryFeedTests(APITestCase):
 
     def test_filter_by_date(self):
         self.client.force_authenticate(self.admin)
-        today = self.event_a.created_at.date().isoformat()
+        # created_at is stored as a UTC-aware datetime; the view's ?date=
+        # filter (created_at__date) is evaluated in the project's local
+        # timezone (settings.TIME_ZONE="Asia/Kolkata", USE_TZ=True), so the
+        # expected date string must be the localized calendar date rather
+        # than the raw UTC date -- otherwise this flakes near the UTC/IST
+        # day boundary, where the two dates disagree.
+        today = timezone.localtime(self.event_a.created_at).date().isoformat()
         res = self.client.get(self.url, {"date": today})
         self.assertEqual(len(res.data), 2)
 
