@@ -254,6 +254,10 @@ class AttendanceAudit(models.Model):
     prev_hash  = models.CharField(max_length=64, blank=True)
     device_id  = models.CharField(max_length=128, blank=True)
     row_hash   = models.CharField(max_length=64, blank=True)
+    # Permanent copy of the actor's id at write time. `actor` becomes NULL when the
+    # user is deleted, but row_hash was computed with the id, so the chain verifier
+    # needs this to keep validating the row.
+    actor_ref  = models.IntegerField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -265,6 +269,8 @@ class AttendanceAudit(models.Model):
     def save(self, *args, **kwargs):
         if self.pk:
             raise ValueError('AttendanceAudit rows are append-only and cannot be updated.')
+        if self.actor_ref is None and self.actor_id is not None:
+            self.actor_ref = self.actor_id
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

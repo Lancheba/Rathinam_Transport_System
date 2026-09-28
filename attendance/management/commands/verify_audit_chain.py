@@ -8,10 +8,12 @@ from attendance.models import AttendanceAudit
 def _candidate_hashes(row, prev):
     """Older rows may have hashed a missing IP as 'None'; accept both forms."""
     ip = row.ip_address
+    # actor is NULLed when a user is deleted; actor_ref keeps the id the hash used.
+    actor_id = row.actor_ref if row.actor_ref is not None else row.actor_id
     for ip_text in {ip or "", str(ip)}:
         data = (
             f"{row.record_id}|{row.action}|{row.old_status}|{row.new_status}"
-            f"|{row.actor_id}|{ip_text}|{prev}"
+            f"|{actor_id}|{ip_text}|{prev}"
         )
         yield hashlib.sha256(data.encode()).hexdigest()
 
