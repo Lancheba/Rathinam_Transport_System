@@ -177,8 +177,11 @@ REST_FRAMEWORK = {
     # gunicorn is reached directly, with no proxy.
     "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", 1)),
     "DEFAULT_THROTTLE_RATES": {
-        "login": "10/min",
-        "register": "10/hour",
+        # Login/register are limited per IP. A whole class on one college Wi-Fi shares a single
+        # public IP, so these are raised (and env-overridable) to avoid locking out honest
+        # students. Password guessing is still stopped by the per-username lockout below.
+        "login": os.environ.get("THROTTLE_LOGIN", "100/min"),
+        "register": os.environ.get("THROTTLE_REGISTER", "100/hour"),
         "optimize": "30/min",
         "face_scan": "12/min",
         "feedback": "20/hour",
