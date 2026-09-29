@@ -168,3 +168,108 @@ export async function captureAveragedDescriptor(
   mean = meanVector(kept);
   return { descriptor: mean, frames: kept.length };
 }
+
+// ---------------------------------------------------------------------------
+// Guided multi-pose capture (used by face enrollment only)
+// ---------------------------------------------------------------------------
+
+export type PoseKind = "front" | "turn";
+
+export type PoseResult = {
+  descriptor: number[];
+  frames: number;
+  sign: number; // 0 for the front pose, +1 = turned to the user's left, -1 = right
+};
+
+const POSE_FRONT_MAX = 0.1;
+const POSE_TURN_MIN = 0.12;
+const POSE_TURN_MAX = 0.32;
+const POSE_TARGET_FRAMES = 4;
+const POSE_MIN_FRAMES = 2;
+const POSE_MIN_SCORE = 0.6;
+
+// Signed head-turn estimate from the landmarks: 0 = looking straight at the camera,
+// positive = head turned to the user's left, negative = to the user's right.
+// (The raw camera frame is not mirrored, so the user's left is on the image's right.)
+function yawOffset(landmarks: faceapi.FaceLandmarks68): number | null {
+  const avgX = (pts: faceapi.Point[]) => pts.reduce((s, p) => s + p.x, 0) / pts.length;
+  const a = avgX(landmarks.getLeftEye());
+  const b = avgX(landmarks.getRightEye());
+  const nose = landmarks.positions[30].x;
+  const span = Math.abs(b - a);
+  if (span < 1) return null;
+  return (nose - Math.min(a, b)) / span - 0.5;
+}
+
+/**
+ * Capture one pose of the enrollment sequence.
+ *  - kind "front": head straight.
+ *  - kind "turn":  head turned slightly; wantSign +1 = left, -1 = right, 0 = either side.
+ * Averages a few frames of that pose and reports which way the head was turned.
+ * Returns null if no acceptable pose was held before timeoutMs.
+ */
+export async function capturePoseDescriptor(
+  video: HTMLVideoElement,
+  kind: PoseKind,
+  wantSign: number,
+  timeoutMs: number,
+  onHint?: (text: string) => void
+): Promise<PoseResult | null> {
+  const samples: Float32Array[] = [];
+  const signs: number[] = [];
+  const start = Date.now();
+  await sleep(300);
+
+  while (samples.length < POSE_TARGET_FRAMES && Date.now() - start < timeoutMs) {
+    if (video.readyState >= 2) {
+      const frame = normalizeFrame(video);
+      if (frame && frame.tooDark) {
+        onHint?.("Too dark - move toward a light");
+      } else if (frame) {
+        const det = await faceapi
+          .detectSingleFace(frame.canvas, CAPTURE_OPTIONS)
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+        const off = det ? yawOffset(det.landmarks) : null;
+
+        if (!det || off === null || det.detection.score < POSE_MIN_SCORE) {
+          onHint?.("Keep your face inside the oval");
+        } else if (kind === "front") {
+          if (Math.abs(off) <= POSE_FRONT_MAX) {
+            samples.push(det.descriptor);
+            signs.push(0);
+            onHint?.("Hold still...");
+          } else {
+            onHint?.("Look straight at the camera");
+          }
+        } else {
+          const size = Math.abs(off);
+          const sign = off > 0 ? 1 : -1;
+          const rightWay = wantSign === 0 || sign === wantSign;
+          if (!rightWay) {
+            onHint?.(wantSign > 0 ? "Turn to your LEFT, not right" : "Turn to your RIGHT, not left");
+          } else if (size < POSE_TURN_MIN) {
+            onHint?.("A little more - keep turning slowly");
+          } else if (size > POSE_TURN_MAX) {
+            onHint?.("That is too far - turn back a little");
+          } else {
+            samples.push(det.descriptor);
+            signs.push(sign);
+            onHint?.("Perfect - hold still...");
+          }
+        }
+      }
+    }
+    await sleep(FRAME_GAP_MS);
+  }
+
+  if (samples.length < POSE_MIN_FRAMES) return null;
+
+  let mean = meanVector(samples);
+  const kept = samples.filter((s: Float32Array) => distance(s, mean) <= MAX_OUTLIER_DISTANCE);
+  if (kept.length < POSE_MIN_FRAMES) return null;
+  mean = meanVector(kept);
+
+  const sign = kind === "front" ? 0 : signs.reduce((a: number, b: number) => a + b, 0) >= 0 ? 1 : -1;
+  return { descriptor: mean, frames: kept.length, sign };
+}

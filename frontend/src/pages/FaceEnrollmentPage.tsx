@@ -6,7 +6,7 @@ import {
   getFaceGuidance,
   loadFastFaceModels,
 } from "../utils/faceGuidance";
-import { captureAveragedDescriptor, normalizeFrame } from "../utils/faceCapture";
+import { capturePoseDescriptor, normalizeFrame } from "../utils/faceCapture";
 
 const MODELS_URL = "/models";
 const STABLE_FRAMES_REQUIRED = 6;
@@ -116,6 +116,8 @@ export default function FaceEnrollmentPage() {
   const [guidanceOk, setGuidanceOk] = useState(false);
   const [progress, setProgress] = useState(0);
   const [canForceCapture, setCanForceCapture] = useState(false);
+  const [poseStep, setPoseStep] = useState(-1); // -1 none, 0..2 = current pose, 3 = all captured
+  const [poseWant, setPoseWant] = useState(0); // +1 turn left, -1 turn right, 0 = straight/either
 
   function stopDetectionLoop() {
     if (intervalRef.current !== null) {
@@ -230,22 +232,45 @@ export default function FaceEnrollmentPage() {
     const video = videoRef.current;
     if (!video) { capturingRef.current = false; return; }
 
-    const captured = await captureAveragedDescriptor(video, setMessage);
-
-    if (!captured) {
+    const failPoses = (text: string) => {
       capturingRef.current = false;
+      stableCountRef.current = 0;
+      setPoseStep(-1);
       setStep("capturing");
       setProgress(0);
-      setMessage("Lost the face — hold position and try again");
+      setMessage(text);
       intervalRef.current = window.setInterval(runDetectionTick, DETECT_INTERVAL_MS);
-      return;
-    }
+    };
 
-    const embedding = captured.descriptor;
-    setMessage("Uploading…");
+    // Pose 1 - straight at the camera
+    setPoseStep(0);
+    setPoseWant(0);
+    const front = await capturePoseDescriptor(video, "front", 0, 8000, setMessage);
+    if (!front) { failPoses("Could not capture pose 1 - look straight at the camera and try again"); return; }
+
+    // Pose 2 - turn head slightly to the left
+    setPoseStep(1);
+    setPoseWant(1);
+    let second = await capturePoseDescriptor(video, "turn", 1, 9000, setMessage);
+    if (!second) {
+      setPoseWant(0);
+      second = await capturePoseDescriptor(video, "turn", 0, 6000, setMessage);
+    }
+    if (!second) { failPoses("Could not capture pose 2 - turn your head slowly and try again"); return; }
+
+    // Pose 3 - turn head slightly the other way
+    const thirdWant = -second.sign;
+    setPoseStep(2);
+    setPoseWant(thirdWant);
+    const third = await capturePoseDescriptor(video, "turn", thirdWant, 9000, setMessage);
+    if (!third) { failPoses("Could not capture pose 3 - turn your head the other way and try again"); return; }
+
+    const embeddings = [front.descriptor, second.descriptor, third.descriptor];
+    setPoseStep(3);
+    setMessage("Uploading...");
 
     try {
-      await api.post("/students/me/face-enrollment/", { embedding, consent: true });
+      await api.post("/students/me/face-enrollment/", { embeddings, consent: true });
       stopCamera();
       await refreshInfo();
       setRetaking(false);
@@ -266,6 +291,7 @@ export default function FaceEnrollmentPage() {
       await refreshInfo();
     } finally {
       capturingRef.current = false;
+      setPoseStep(-1);
     }
   }
 
@@ -404,6 +430,34 @@ export default function FaceEnrollmentPage() {
         </div>
       )}
 
+      {step === "processing" && poseStep >= 0 && (
+        <div style={{ marginTop: "1rem" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1, height: 6, borderRadius: 3,
+                  background: i < poseStep ? "#16a34a" : i === poseStep ? "#f59e0b" : "#e5e7eb",
+                }}
+              />
+            ))}
+          </div>
+          <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>
+            {poseStep >= 3
+              ? "All 3 poses captured"
+              : `Step ${poseStep + 1} of 3: ` +
+                (poseStep === 0
+                  ? "Look straight at the camera"
+                  : poseWant > 0
+                  ? "Slowly turn your head a little to your LEFT"
+                  : poseWant < 0
+                  ? "Slowly turn your head a little to your RIGHT"
+                  : "Slowly turn your head a little to either side")}
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           position: "relative", marginTop: "1rem",
@@ -440,7 +494,18 @@ export default function FaceEnrollmentPage() {
                   }}
                 />
               )}
-              {step === "processing" && (
+              {step === "processing" && poseStep >= 0 && poseStep < 3 && (
+                <div
+                  style={{
+                    position: "absolute", inset: 0, display: "flex", alignItems: "center",
+                    justifyContent: poseWant > 0 ? "flex-start" : poseWant < 0 ? "flex-end" : "center",
+                    padding: "0 10%", fontSize: "3rem", color: "#f59e0b",
+                  }}
+                >
+                  {poseStep === 0 ? "\u25CF" : poseWant > 0 ? "\u25C0" : poseWant < 0 ? "\u25B6" : "\u2194"}
+                </div>
+              )}
+              {step === "processing" && poseStep === 3 && (
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span
                     style={{
