@@ -22,7 +22,7 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsStudent
 from attendance.net import client_ip
-from students.face_utils import clean_embedding
+from students.face_utils import clean_embedding, clean_pose_set, split_poses
 from students.models import FaceProfile, FaceProfileAudit
 
 logger = logging.getLogger(__name__)
@@ -53,12 +53,15 @@ def _find_duplicate_profile(
     if exclude_student_id is not None:
         qs = qs.exclude(student_id=exclude_student_id)
 
+    try:
+        probe = split_poses(embedding)[0]  # the front pose
+    except ValueError:
+        return None
+
     for profile in qs.iterator():
-        stored = profile.embedding
-        if not stored or len(stored) != 128:
-            continue
         try:
-            distance = _face_distance(embedding, stored)
+            stored_poses = split_poses(profile.embedding)
+            distance = min(_face_distance(probe, pose) for pose in stored_poses)
         except (ValueError, TypeError):
             continue
         if math.isfinite(distance) and distance < threshold:
@@ -123,7 +126,11 @@ def face_enrollment(request):
         )
 
     try:
-        embedding = clean_embedding(embedding_raw)
+        poses_raw = request.data.get("embeddings")
+        if poses_raw is not None:
+            embedding = clean_pose_set(poses_raw)
+        else:
+            embedding = clean_embedding(embedding_raw)
     except ValueError:
         return Response(
             {"detail": "A valid 128-value embedding array is required."},
@@ -131,6 +138,15 @@ def face_enrollment(request):
         )
 
     # Duplicate-face guard — exclude own profile so re-enrollment never self-flags
+    poses = split_poses(embedding)
+    if len(poses) > 1:
+        spread = max(_face_distance(poses[0], pose) for pose in poses[1:])
+        if spread > getattr(settings, "FACE_POSE_MAX_SPREAD", 0.7):
+            return Response(
+                {"detail": "The captured poses do not look like the same person. Please retake."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     exclude_id = student.pk if (profile and profile.embedding) else None
     duplicate = _find_duplicate_profile(embedding, exclude_student_id=exclude_id)
 

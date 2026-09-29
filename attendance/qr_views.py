@@ -23,7 +23,7 @@ from attendance.services import auto_present_incharge_or_standin, combined_partn
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
-from students.face_utils import clean_embedding
+from students.face_utils import clean_embedding, split_poses
 
 logger = logging.getLogger(__name__)
 
@@ -380,13 +380,13 @@ def qr_scan(request):
 
     threshold = getattr(settings, 'FACE_MATCH_THRESHOLD', 0.6)
     try:
-        stored = clean_embedding(face_profile.embedding)
+        stored_poses = split_poses(face_profile.embedding)
     except ValueError:
         return Response(
             {'detail': 'Your saved face data is invalid. Please re-enroll your face.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    distance = _face_distance(embedding, stored)
+    distance = min(_face_distance(embedding, pose) for pose in stored_poses)
 
     # A NaN or infinite distance must never count as a match (NaN > threshold is False).
     # The score is logged server-side only: returning it lets an attacker tune a fake vector.
