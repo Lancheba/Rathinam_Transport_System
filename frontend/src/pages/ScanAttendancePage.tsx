@@ -4,6 +4,7 @@ import * as faceapi from "face-api.js";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { DETECTOR_OPTIONS, getFaceGuidance, loadFastFaceModels } from "../utils/faceGuidance";
+import { captureAveragedDescriptor } from "../utils/faceCapture";
 
 const MODELS_URL = "/models";
 const FACE_LOCK_TIMEOUT_MS = 6000; // give up and show an error after this long
@@ -126,14 +127,11 @@ export default function ScanAttendancePage() {
     }
 
     setMessage("Hold still — verifying…");
-    const detection = await faceapi
-      .detectSingleFace(videoRef.current!, DETECTOR_OPTIONS)
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    const captured = await captureAveragedDescriptor(videoRef.current!, setMessage);
 
     streamRef.current?.getTracks().forEach(t => t.stop());
 
-    if (!detection) {
+    if (!captured) {
       setStage("error");
       setMessage("Lost the face — try again with better lighting.");
       return;
@@ -142,7 +140,7 @@ export default function ScanAttendancePage() {
     try {
       const res = await api.post("/attendance/qr/scan/", {
         token: payload.token,
-        embedding: Array.from(detection.descriptor),
+        embedding: captured.descriptor,
       });
       setStage("done");
       setSlot(res.data.slot);

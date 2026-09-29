@@ -6,6 +6,7 @@ import {
   getFaceGuidance,
   loadFastFaceModels,
 } from "../utils/faceGuidance";
+import { captureAveragedDescriptor } from "../utils/faceCapture";
 
 const MODELS_URL = "/models";
 const STABLE_FRAMES_REQUIRED = 6;
@@ -226,12 +227,9 @@ export default function FaceEnrollmentPage() {
     const video = videoRef.current;
     if (!video) { capturingRef.current = false; return; }
 
-    const detection = await faceapi
-      .detectSingleFace(video, DETECTOR_OPTIONS)
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    const captured = await captureAveragedDescriptor(video, setMessage);
 
-    if (!detection) {
+    if (!captured) {
       capturingRef.current = false;
       setStep("capturing");
       setProgress(0);
@@ -240,7 +238,7 @@ export default function FaceEnrollmentPage() {
       return;
     }
 
-    const embedding = Array.from(detection.descriptor);
+    const embedding = captured.descriptor;
     setMessage("Uploading…");
 
     try {
