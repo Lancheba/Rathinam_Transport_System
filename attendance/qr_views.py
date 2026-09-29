@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from attendance.models import AttendanceQRToken, AttendanceRecord, AttendanceSession, AttendanceWindowConfig
 from attendance.permissions import IsInCharge, incharge_bus
 from attendance.detection import run_detection, log_manual_mark, log_cross_bus_scan
-from attendance.services import auto_present_incharge_or_standin, combined_partner_bus_ids, get_windows, is_school_day, set_attendance
+from attendance.services import auto_present_incharge_or_standin, combined_partner_bus_ids, finalize_session, get_windows, is_school_day, set_attendance
 from students.models import FaceProfile, Student
 from config.throttles import FaceScanThrottle
 from accounts.permissions import IsStudent
@@ -94,6 +94,18 @@ def qr_generate(request):
             {'detail': 'Attendance is not taken today (weekend or holiday).'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    # If the in-charge is opening the EVENING slot but the MORNING session was
+    # never opened (i.e. no QR was generated for morning), auto-create and
+    # finalize that morning session so all students are marked ABSENT for
+    # morning — making evening attendance fully independent of morning.
+    if slot == 'EVENING':
+        morning_session, morning_created = AttendanceSession.objects.get_or_create(
+            bus=bus, date=today, slot='MORNING',
+            defaults={'marked_by': request.user},
+        )
+        if not morning_session.opened_at and not morning_session.auto_finalized:
+            finalize_session(morning_session)
+
     session, _created = AttendanceSession.objects.get_or_create(
         bus=bus, date=today, slot=slot,
         defaults={'marked_by': request.user},
@@ -348,7 +360,7 @@ def qr_scan(request):
         )
     lockout_key = f'face_scan_fail_{student.pk}_{session.pk}'
     max_attempts = getattr(settings, 'FACE_SCAN_MAX_ATTEMPTS_PER_SESSION', 5)
-    if cache.get(lockout_key, 0) >= max_attempts:
+    if max_attempts > 0 and cache.get(lockout_key, 0) >= max_attempts:  # 0 = unlimited (testing only)
         logger.warning('Face scan locked out for student %s session %s', student.pk, session.pk)
         return Response(
             {'detail': 'Too many failed face scans for this session. Ask your cab in-charge to mark you manually.'},
