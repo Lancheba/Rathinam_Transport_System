@@ -6,7 +6,7 @@ import {
   getFaceGuidance,
   loadFastFaceModels,
 } from "../utils/faceGuidance";
-import { captureAveragedDescriptor } from "../utils/faceCapture";
+import { captureAveragedDescriptor, normalizeFrame } from "../utils/faceCapture";
 
 const MODELS_URL = "/models";
 const STABLE_FRAMES_REQUIRED = 6;
@@ -154,17 +154,20 @@ export default function FaceEnrollmentPage() {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || capturingRef.current) return;
 
-    const detection = await faceapi.detectSingleFace(video, DETECTOR_OPTIONS);
+    const frame = normalizeFrame(video);
+    const detection = frame && !frame.tooDark
+      ? await faceapi.detectSingleFace(frame.canvas, DETECTOR_OPTIONS)
+      : undefined;
 
-    if (!detection) {
+    if (!frame || !detection) {
       stableCountRef.current = 0;
       setGuidanceOk(false);
       setProgress(0);
-      setMessage("Bring your face into the frame");
+      setMessage(frame && frame.tooDark ? "Too dark - move toward a light" : "Bring your face into the frame");
       return;
     }
 
-    const guidance = getFaceGuidance(detection.box, video.videoWidth, video.videoHeight);
+    const guidance = getFaceGuidance(detection.box, frame.canvas.width, frame.canvas.height);
     setGuidanceOk(guidance.ok);
     setMessage(guidance.text);
 

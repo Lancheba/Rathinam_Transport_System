@@ -1,54 +1,102 @@
 ﻿import * as faceapi from "face-api.js";
 
 // Shared high-accuracy capture used by BOTH face enrollment and attendance scan.
-// Instead of trusting one video frame, it waits for the camera to settle, collects
-// several good frames, drops outliers and averages them into a single descriptor.
+// It waits for the camera to settle, normalizes each frame's brightness/contrast
+// (so dim or uneven light still works), collects several good frames, drops
+// outliers and averages them into a single 128-number descriptor.
 
 const CAPTURE_OPTIONS = new faceapi.TinyFaceDetectorOptions({
   inputSize: 320,
-  scoreThreshold: 0.6,
+  scoreThreshold: 0.45,
 });
 
 const TARGET_FRAMES = 5;
 const MIN_FRAMES = 3;
 const WARMUP_MS = 800;
 const FRAME_GAP_MS = 120;
-const MAX_CAPTURE_MS = 6000;
-const MIN_DETECTION_SCORE = 0.8;
-const MIN_BRIGHTNESS = 60;
-const MAX_BRIGHTNESS = 215;
-const MAX_YAW_OFFSET = 0.18;
+const MAX_CAPTURE_MS = 8000;
+const MIN_DETECTION_SCORE = 0.7;
+const MAX_YAW_OFFSET = 0.2;
 const MAX_OUTLIER_DISTANCE = 0.45;
+const WORK_WIDTH = 640;
+const TOO_DARK_LEVEL = 25;
 
 export type CapturedFace = { descriptor: number[]; frames: number };
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-function faceBrightness(
-  video: HTMLVideoElement,
-  box: { x: number; y: number; width: number; height: number }
-): number | null {
-  try {
-    const x = Math.max(0, Math.floor(box.x));
-    const y = Math.max(0, Math.floor(box.y));
-    const w = Math.min(video.videoWidth - x, Math.floor(box.width));
-    const h = Math.min(video.videoHeight - y, Math.floor(box.height));
-    if (w < 10 || h < 10) return null;
-    const c = document.createElement("canvas");
-    c.width = 32;
-    c.height = 32;
-    const ctx = c.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(video, x, y, w, h, 0, 0, 32, 32);
-    const data = ctx.getImageData(0, 0, 32, 32).data;
-    let sum = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    }
-    return sum / (data.length / 4);
-  } catch {
-    return null;
+let workCanvas: HTMLCanvasElement | null = null;
+
+export type NormalizedFrame = { canvas: HTMLCanvasElement; tooDark: boolean };
+
+// Draw the video frame to a canvas and auto-correct it: stretch contrast between
+// the 2nd and 98th brightness percentiles, then apply gamma so the average
+// brightness lands near mid-grey. The same correction runs at enrollment and scan.
+export function normalizeFrame(video: HTMLVideoElement): NormalizedFrame | null {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) return null;
+
+  const scale = Math.min(1, WORK_WIDTH / vw);
+  const w = Math.round(vw * scale);
+  const h = Math.round(vh * scale);
+
+  if (!workCanvas) workCanvas = document.createElement("canvas");
+  workCanvas.width = w;
+  workCanvas.height = h;
+  const ctx = workCanvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  ctx.drawImage(video, 0, 0, w, h);
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+
+  const hist = new Uint32Array(256);
+  const total = w * h;
+  for (let i = 0; i < d.length; i += 4) {
+    const y = Math.floor(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+    hist[y]++;
   }
+
+  const lowTarget = total * 0.02;
+  const highTarget = total * 0.98;
+  let acc = 0;
+  let lo = 0;
+  let hi = 255;
+  for (let v = 0; v < 256; v++) {
+    acc += hist[v];
+    if (acc >= lowTarget) { lo = v; break; }
+  }
+  acc = 0;
+  for (let v = 0; v < 256; v++) {
+    acc += hist[v];
+    if (acc >= highTarget) { hi = v; break; }
+  }
+
+  const tooDark = hi < TOO_DARK_LEVEL;
+  if (hi - lo < 40) hi = Math.min(255, lo + 40);
+
+  const stretch = (v: number) => Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+
+  let meanStretched = 0;
+  for (let v = 0; v < 256; v++) meanStretched += hist[v] * stretch(v);
+  meanStretched = Math.min(0.9, Math.max(0.05, meanStretched / total));
+
+  const gamma = Math.min(1.5, Math.max(0.45, Math.log(0.5) / Math.log(meanStretched)));
+
+  const lut = new Uint8ClampedArray(256);
+  for (let v = 0; v < 256; v++) {
+    lut[v] = Math.round(Math.pow(stretch(v), gamma) * 255);
+  }
+
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = lut[d[i]];
+    d[i + 1] = lut[d[i + 1]];
+    d[i + 2] = lut[d[i + 2]];
+  }
+  ctx.putImageData(img, 0, 0);
+
+  return { canvas: workCanvas, tooDark };
 }
 
 function isFrontal(landmarks: faceapi.FaceLandmarks68): boolean {
@@ -91,21 +139,21 @@ export async function captureAveragedDescriptor(
 
   while (samples.length < TARGET_FRAMES && Date.now() - start < MAX_CAPTURE_MS) {
     if (video.readyState >= 2) {
-      const det = await faceapi
-        .detectSingleFace(video, CAPTURE_OPTIONS)
-        .withFaceLandmarks()
-        .withFaceDescriptor();
+      const frame = normalizeFrame(video);
+      if (frame && frame.tooDark) {
+        onProgress?.("Too dark - move toward a light");
+      } else if (frame) {
+        const det = await faceapi
+          .detectSingleFace(frame.canvas, CAPTURE_OPTIONS)
+          .withFaceLandmarks()
+          .withFaceDescriptor();
 
-      if (det && det.detection.score >= MIN_DETECTION_SCORE && isFrontal(det.landmarks)) {
-        const b = faceBrightness(video, det.detection.box);
-        if (b === null || (b >= MIN_BRIGHTNESS && b <= MAX_BRIGHTNESS)) {
+        if (det && det.detection.score >= MIN_DETECTION_SCORE && isFrontal(det.landmarks)) {
           samples.push(det.descriptor);
           onProgress?.(`Hold still - capturing ${samples.length}/${TARGET_FRAMES}`);
         } else {
-          onProgress?.(b < MIN_BRIGHTNESS ? "Too dark - face a light" : "Too bright - avoid glare");
+          onProgress?.("Look straight at the camera");
         }
-      } else {
-        onProgress?.("Look straight at the camera");
       }
     }
     await sleep(FRAME_GAP_MS);

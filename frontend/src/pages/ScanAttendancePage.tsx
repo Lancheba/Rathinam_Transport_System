@@ -4,7 +4,7 @@ import * as faceapi from "face-api.js";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { DETECTOR_OPTIONS, getFaceGuidance, loadFastFaceModels } from "../utils/faceGuidance";
-import { captureAveragedDescriptor } from "../utils/faceCapture";
+import { captureAveragedDescriptor, normalizeFrame } from "../utils/faceCapture";
 
 const MODELS_URL = "/models";
 const FACE_LOCK_TIMEOUT_MS = 6000; // give up and show an error after this long
@@ -80,12 +80,18 @@ export default function ScanAttendancePage() {
     while (Date.now() - start < FACE_LOCK_TIMEOUT_MS) {
       const video = videoRef.current;
       if (video && video.readyState >= 2) {
-        const detection = await faceapi.detectSingleFace(video, DETECTOR_OPTIONS);
-        if (!detection) {
+        const frame = normalizeFrame(video);
+        const detection = frame && !frame.tooDark
+          ? await faceapi.detectSingleFace(frame.canvas, DETECTOR_OPTIONS)
+          : undefined;
+        if (frame && frame.tooDark) {
+          setGuidanceOk(false);
+          setMessage("Too dark - move toward a light");
+        } else if (!detection || !frame) {
           setGuidanceOk(false);
           setMessage("Bring your face into the frame");
         } else {
-          const guidance = getFaceGuidance(detection.box, video.videoWidth, video.videoHeight);
+          const guidance = getFaceGuidance(detection.box, frame.canvas.width, frame.canvas.height);
           setGuidanceOk(guidance.ok);
           setMessage(guidance.text);
           if (guidance.ok) return true;
@@ -159,12 +165,14 @@ export default function ScanAttendancePage() {
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: "2rem auto", padding: "1rem", textAlign: "center" }}>
+    <div style={stage === "verifying"
+      ? { position: "fixed", inset: 0, zIndex: 9999, background: "#fff", color: "#111", padding: "1rem", textAlign: "center", overflowY: "auto" }
+      : { maxWidth: 480, margin: "2rem auto", padding: "1rem", textAlign: "center" }}>
       <h2>Scan Attendance</h2>
 
       <video ref={videoRef} autoPlay muted playsInline
         style={{
-          width: "100%", borderRadius: 12, background: "#000",
+          width: "100%", maxWidth: 480, display: "block", margin: "0 auto", borderRadius: 12, background: "#000",
           border: stage === "verifying" ? `3px solid ${guidanceOk ? "#16a34a" : "#f59e0b"}` : "3px solid transparent",
         }} />
       <canvas ref={canvasRef} style={{ display: "none" }} />
